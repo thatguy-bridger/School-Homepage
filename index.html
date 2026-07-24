@@ -927,6 +927,13 @@
                         <span class="sr-only">Theme</span>
                     </button>
                 </div>
+
+                <div class="orbit-item">
+                    <button type="button" id="settings-dock-button" class="sidebar-link" onclick="event.preventDefault(); openContextualSettings()" title="Settings">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span class="sr-only">Settings</span>
+                    </button>
+                </div>
             </div>
         </aside>
 
@@ -1108,14 +1115,15 @@
 
     <!-- Settings Modal (Calendar) -->
     <div id="calendar-settings-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="closeCalendarSettingsModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-lg p-8 border" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center mb-6">
+        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-lg h-[85vh] flex flex-col p-8 border" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-6 flex-shrink-0">
                 <h3 class="text-2xl font-bold tracking-tight">Calendar Settings</h3>
                 <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeCalendarSettingsModal()">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
 
+            <div class="flex-grow overflow-y-auto pr-4 -mr-4">
             <div class="mb-6">
                 <h4 class="text-lg font-semibold mb-3">Preferences</h4>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1177,6 +1185,7 @@
                 <h4 class="text-lg font-semibold mb-3">Data</h4>
                 <button type="button" class="modal-footer-button bg-red-600" onclick="confirmClearAllNotes()">Clear All Notes</button>
             </div>
+            </div>
         </div>
     </div>
 
@@ -1220,6 +1229,15 @@
             const view = location.hash.replace('#', '') === 'calendar' ? 'calendar' : 'classes';
             if (view !== activeAppView) switchAppView(view);
         });
+
+        // Single dock-level Settings entry point: opens whichever settings modal matches the active view.
+        function openContextualSettings() {
+            if (activeAppView === 'calendar') {
+                openCalendarSettingsModal();
+            } else {
+                openSchedulingSettingsModal();
+            }
+        }
 
         // ===================== THEME (shared) =====================
         let currentThemeState = localStorage.getItem('theme') || 'system';
@@ -1335,8 +1353,9 @@
             // own patch of sky and don't constantly cross the center), plus a randomized drift
             // recipe (two summed sine waves per axis, at incommensurate frequencies) layered on top
             // of that home spot so they still wander sporadically and occasionally cross paths.
+            const spacingDeg = 360 / links.length;
             const drift = links.map((_, i) => {
-                const homeAngle = (i * 120 + (Math.random() * 30 - 15)) * (Math.PI / 180);
+                const homeAngle = (i * spacingDeg + (Math.random() - 0.5) * spacingDeg * 0.25) * (Math.PI / 180);
                 const homeRadius = 58 + Math.random() * 10;
                 return {
                     homeX: Math.cos(homeAngle) * homeRadius,
