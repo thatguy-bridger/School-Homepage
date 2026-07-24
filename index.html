@@ -400,9 +400,16 @@
             border-color: var(--accent-2) !important;
         }
 
+        /* Every class tile with an assigned color gets a faint, permanent tint of it */
+        .class-card[data-has-color] {
+            border-color: color-mix(in srgb, var(--class-color) 55%, var(--glass-border)) !important;
+            background: color-mix(in srgb, var(--class-color) 7%, var(--glass-bg));
+        }
+
         /* Highlights the class tile that's currently in session, using its own assigned color */
         .class-card.is-current-period {
             border-color: var(--class-color, var(--accent-2)) !important;
+            background: color-mix(in srgb, var(--class-color, var(--accent-2)) 16%, var(--glass-bg)) !important;
             box-shadow: 0 0 0 2px var(--class-color, var(--accent-2)), 0 20px 40px color-mix(in srgb, var(--class-color, var(--accent-2)) 45%, transparent) !important;
         }
         .class-card.is-current-period h4 {
@@ -1749,7 +1756,7 @@
             const noteValue = classNotes[noteId] || '';
             const hasNote = !!noteValue;
             return `
-                <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}"
+                <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}
                      onclick="window.location.href='${classItem.url}'">
                     <div class="flex items-start justify-between gap-2 mb-2 pr-8">
                         <h4 class="text-xl font-bold">${classItem.title}</h4>
@@ -2522,14 +2529,12 @@
             const activeSlot = isCurrent ? info.scheduleSlot : null;
             const activeColor = isCurrent && info.classItem && info.classItem.color ? info.classItem.color : null;
 
+            // --class-color itself is set once at render time (createClassCardHTML); only the
+            // is-current-period class is toggled here so a card's permanent color tint survives
+            // it going in and out of session.
             document.querySelectorAll('.class-card').forEach(card => {
                 const active = !!activeSlot && card.dataset.scheduleSlot === activeSlot;
                 card.classList.toggle('is-current-period', active);
-                if (active && activeColor) {
-                    card.style.setProperty('--class-color', activeColor);
-                } else {
-                    card.style.removeProperty('--class-color');
-                }
             });
 
             const body = document.body;
@@ -4121,6 +4126,7 @@
             loadClassNotes();
             loadUserScheduleDates();
             loadUserScheduleSlotOptions();
+            loadScheduleDatesForCalendar();
 
             renderClassLinks();
             loadDayNotes();
