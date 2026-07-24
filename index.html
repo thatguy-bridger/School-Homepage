@@ -89,6 +89,10 @@
         .bg-blob-1 { width: 32rem; height: 32rem; top: -10rem; left: -8rem; background: var(--accent-1); transition: background-color 0.6s ease-in-out; }
         .bg-blob-2 { width: 28rem; height: 28rem; bottom: -8rem; right: -6rem; background: var(--accent-3); animation-delay: -6s; transition: background-color 0.6s ease-in-out; }
         .bg-blob-3 { width: 24rem; height: 24rem; top: 40%; left: 55%; background: var(--accent-2); animation-delay: -12s; transition: background-color 0.6s ease-in-out; }
+        /* While a class is in session, the ambient background subtly leans toward its custom color */
+        body.has-active-class .bg-blob-1 { background: color-mix(in srgb, var(--active-class-color) 55%, var(--accent-1)); }
+        body.has-active-class .bg-blob-2 { background: color-mix(in srgb, var(--active-class-color) 55%, var(--accent-3)); }
+        body.has-active-class .bg-blob-3 { background: color-mix(in srgb, var(--active-class-color) 55%, var(--accent-2)); }
         @keyframes drift {
             0% { transform: translate(0, 0) scale(1); }
             100% { transform: translate(2.5rem, -2rem) scale(1.08); }
@@ -396,6 +400,17 @@
             border-color: var(--accent-2) !important;
         }
 
+        /* Highlights the class tile that's currently in session, using its own assigned color */
+        .class-card.is-current-period {
+            border-color: var(--class-color, var(--accent-2)) !important;
+            box-shadow: 0 0 0 2px var(--class-color, var(--accent-2)), 0 20px 40px color-mix(in srgb, var(--class-color, var(--accent-2)) 45%, transparent) !important;
+        }
+        .class-card.is-current-period h4 {
+            background: none;
+            -webkit-text-fill-color: var(--class-color, inherit);
+            color: var(--class-color, inherit);
+        }
+
         .class-card h4 {
             background: var(--accent-grad);
             -webkit-background-clip: text;
@@ -587,6 +602,18 @@
             border: 1px solid;
         }
 
+        .class-color-input {
+            flex-shrink: 0;
+            width: 2.4rem;
+            height: 2.4rem;
+            padding: 0;
+            border: 1px solid var(--glass-border);
+            border-radius: 0.6rem;
+            background: none;
+            cursor: pointer;
+        }
+        .class-color-input::-webkit-color-swatch-wrapper { padding: 0.2rem; }
+        .class-color-input::-webkit-color-swatch { border: none; border-radius: 0.4rem; }
         .class-input-group .class-title-input,
         .class-input-group .class-details-input,
         .class-input-group .class-url-input,
@@ -1605,6 +1632,7 @@
                 if (typeof category.isSideStacked === 'undefined') category.isSideStacked = false;
                 category.classes.forEach(classItem => {
                     if (typeof classItem.scheduleSlot === 'undefined') classItem.scheduleSlot = '';
+                    if (typeof classItem.color === 'undefined') classItem.color = '';
                     if (!classItem.noteId) {
                         classItem.noteId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
                         assignedNewIds = true;
@@ -1721,7 +1749,7 @@
             const noteValue = classNotes[noteId] || '';
             const hasNote = !!noteValue;
             return `
-                <div class="class-card p-6 rounded-2xl border"
+                <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}"
                      onclick="window.location.href='${classItem.url}'">
                     <div class="flex items-start justify-between gap-2 mb-2 pr-8">
                         <h4 class="text-xl font-bold">${classItem.title}</h4>
@@ -1919,6 +1947,7 @@
                             <circle cx="12" cy="19" r="1.5"/>
                         </svg>
                     </span>
+                    <input type="color" value="${classItem.color || '#64748b'}" class="class-color-input" title="Class color" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'color', this.value); updateCurrentClassHighlight();">
                     <input type="text" value="${classItem.title}" placeholder="Class Title" class="class-title-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'title', this.value)">
                     <input type="text" value="${classItem.details}" placeholder="Details (Room, Time)" class="class-details-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'details', this.value)">
                     <select class="class-schedule-slot-select form-select" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'scheduleSlot', this.value)">
@@ -2428,6 +2457,7 @@
             const formattedDate = `${date.getMonth() + 1}.${date.getDate()}.${date.getFullYear()}`;
             document.getElementById('Time').textContent = `Time: ${time} | Date: ${formattedDate}`;
             updateCountdownChip();
+            updateCurrentClassHighlight();
         }
 
         // --- PERIOD COUNTDOWN CHIP ---
@@ -2474,15 +2504,41 @@
 
             for (const c of candidates) {
                 if (nowMinutes >= c.startMin && nowMinutes < c.endMin) {
-                    return { status: 'current', label: c.classItem ? c.classItem.title : c.slot.label, secondsLeft: (c.endMin - nowMinutes) * 60 };
+                    return { status: 'current', label: c.classItem ? c.classItem.title : c.slot.label, secondsLeft: (c.endMin - nowMinutes) * 60, scheduleSlot: c.slot.value, classItem: c.classItem };
                 }
             }
             for (const c of candidates) {
                 if (c.startMin > nowMinutes) {
-                    return { status: 'next', label: c.classItem ? c.classItem.title : c.slot.label, secondsLeft: (c.startMin - nowMinutes) * 60 };
+                    return { status: 'next', label: c.classItem ? c.classItem.title : c.slot.label, secondsLeft: (c.startMin - nowMinutes) * 60, scheduleSlot: c.slot.value, classItem: c.classItem };
                 }
             }
             return null;
+        }
+
+        // --- HIGHLIGHT THE CLASS TILE THAT'S CURRENTLY IN SESSION ---
+        function updateCurrentClassHighlight() {
+            const info = getCurrentOrNextPeriodInfo();
+            const isCurrent = info && info.status === 'current';
+            const activeSlot = isCurrent ? info.scheduleSlot : null;
+            const activeColor = isCurrent && info.classItem && info.classItem.color ? info.classItem.color : null;
+
+            document.querySelectorAll('.class-card').forEach(card => {
+                const active = !!activeSlot && card.dataset.scheduleSlot === activeSlot;
+                card.classList.toggle('is-current-period', active);
+                if (active && activeColor) {
+                    card.style.setProperty('--class-color', activeColor);
+                } else {
+                    card.style.removeProperty('--class-color');
+                }
+            });
+
+            const body = document.body;
+            if (activeColor) {
+                body.style.setProperty('--active-class-color', activeColor);
+                body.classList.add('has-active-class');
+            } else {
+                body.classList.remove('has-active-class');
+            }
         }
 
         function updateCountdownChip() {
@@ -2628,6 +2684,13 @@
             return items;
         }
 
+        function classNameHtml(classItem) {
+            return classItem.color ? `<span style="color:${escapeAttr(classItem.color)}">${escapeHtml(classItem.title)}</span>` : escapeHtml(classItem.title);
+        }
+        function classDotHtml(classItem) {
+            return classItem.color ? `<span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:${escapeAttr(classItem.color)}"></span>` : '';
+        }
+
         const defaultADays = userADays;
         const defaultBDays = userBDays;
 
@@ -2700,7 +2763,7 @@
                 const titleHtml = note && note.title ? `<p class="font-semibold text-sm">${escapeHtml(note.title)}</p>` : (dayType ? `<p class="font-semibold text-sm">${dayType}-Day</p>` : '<p class="font-semibold text-sm">Scheduled</p>');
                 const notesHtml = note && note.notes ? `<p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">${escapeHtml(note.notes)}</p>` : '';
                 const classesToday = getClassesForDate(currentDay);
-                const classesHtml = classesToday.length ? `<p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1 truncate">${escapeHtml(classesToday.map(c => c.classItem.title).join(', '))}</p>` : '';
+                const classesHtml = classesToday.length ? `<p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1 truncate">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>` : '';
                 const externalHtml = externalEvents.length ? `<div class="mt-1 space-y-1">${externalEvents.slice(0, 2).map(event => `<p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">${escapeHtml(event.title)}</p>`).join('')}</div>` : '';
                 upcomingItems.push(`
                     <div class="rounded-xl border border-gray-200/70 dark:border-gray-700/70 p-3">
@@ -2826,7 +2889,7 @@
                         ${externalEvents.slice(0, 4).map(e => `<span class="w-1.5 h-1.5 rounded-full" style="background:${e.color}" title="${escapeHtml(e.title)} — ${escapeHtml(e.feedLabel)}"></span>`).join('')}
                     </div>
                 ` : '';
-                const classesPreviewHtml = classesToday.length ? `<p class="day-classes-preview">${escapeHtml(classesToday.map(c => c.classItem.title).join(', '))}</p>` : '';
+                const classesPreviewHtml = classesToday.length ? `<p class="day-classes-preview">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>` : '';
                 cells += `
                     <div class="day-cell p-2 rounded-lg border ${isOutside ? 'outside-month' : ''} ${isToday ? 'is-today' : ''}" onclick="openDay('${dateKey(cursor)}')">
                         <div class="flex justify-between items-center">
@@ -2875,7 +2938,7 @@
                 ` : '';
                 const classesHtml = classesToday.length ? `
                     <div class="week-classes-list">
-                        ${classesToday.map(c => `<p class="week-class-row"><span class="truncate">${escapeHtml(c.classItem.title)}</span>${c.timeRange ? `<span class="week-class-time">${escapeHtml(c.timeRange.split(' - ')[0])}</span>` : ''}</p>`).join('')}
+                        ${classesToday.map(c => `<p class="week-class-row"><span class="flex items-center gap-1.5 min-w-0">${classDotHtml(c.classItem)}<span class="truncate">${classNameHtml(c.classItem)}</span></span>${c.timeRange ? `<span class="week-class-time">${escapeHtml(c.timeRange.split(' - ')[0])}</span>` : ''}</p>`).join('')}
                     </div>
                 ` : '';
                 cols += `
@@ -2910,8 +2973,8 @@
                     <p class="text-sm font-semibold mb-2">Today's Classes</p>
                     <div class="space-y-2">
                         ${classesToday.map(c => `
-                            <a class="day-class-row" href="${c.classItem.url || '#'}" onclick="${c.classItem.url ? '' : 'return false;'}">
-                                <span class="font-medium">${escapeHtml(c.classItem.title)}</span>
+                            <a class="day-class-row" style="${c.classItem.color ? `border-left: 3px solid ${escapeAttr(c.classItem.color)};` : ''}" href="${c.classItem.url || '#'}" onclick="${c.classItem.url ? '' : 'return false;'}">
+                                <span class="flex items-center gap-2 font-medium">${classDotHtml(c.classItem)}${classNameHtml(c.classItem)}</span>
                                 ${c.timeRange ? `<span class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(c.timeRange)}</span>` : ''}
                             </a>
                         `).join('')}
@@ -3054,7 +3117,7 @@
                     : '';
                 const classesToday = getClassesForDate(entry.date);
                 const classesHtml = classesToday.length ? `
-                    <p class="text-xs mt-1 text-gray-500 dark:text-gray-400 truncate">${escapeHtml(classesToday.map(c => c.classItem.title).join(', '))}</p>
+                    <p class="text-xs mt-1 text-gray-500 dark:text-gray-400 truncate">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>
                 ` : '';
                 const externalHtml = externalEvents.length ? `
                     <div class="mt-2 space-y-1">
