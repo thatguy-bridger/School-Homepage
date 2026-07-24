@@ -609,18 +609,62 @@
             border: 1px solid;
         }
 
-        .class-color-input {
+        .class-color-swatch-btn {
             flex-shrink: 0;
             width: 2.4rem;
             height: 2.4rem;
             padding: 0;
-            border: 1px solid var(--glass-border);
+            border: 2px solid var(--glass-border);
             border-radius: 0.6rem;
-            background: none;
             cursor: pointer;
+            transition: transform 0.15s ease-in-out;
         }
-        .class-color-input::-webkit-color-swatch-wrapper { padding: 0.2rem; }
-        .class-color-input::-webkit-color-swatch { border: none; border-radius: 0.4rem; }
+        .class-color-swatch-btn:hover { transform: scale(1.08); }
+        .class-color-swatch-btn.is-empty {
+            background: var(--glass-bg-strong) !important;
+            border-style: dashed;
+        }
+
+        /* ===================== Class Color Picker Popover ===================== */
+        .class-color-popover {
+            position: fixed;
+            z-index: 80;
+            width: 13.5rem;
+            padding: 0.9rem;
+            border-radius: 1.1rem;
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+            box-shadow: var(--glass-shadow);
+        }
+        .class-color-popover.hidden { display: none; }
+        .class-color-swatch-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.55rem;
+            justify-items: center;
+        }
+        .class-color-swatch {
+            width: 1.9rem;
+            height: 1.9rem;
+            border-radius: 9999px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            padding: 0;
+            transition: transform 0.15s ease-in-out;
+        }
+        .class-color-swatch:hover { transform: scale(1.15); }
+        .class-color-swatch.is-selected { border-color: var(--text-primary); }
+        .class-color-swatch.is-none {
+            background: var(--glass-bg);
+            border: 2px dashed var(--glass-border);
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .class-input-group .class-title-input,
         .class-input-group .class-details-input,
         .class-input-group .class-url-input,
@@ -1046,6 +1090,10 @@
     </div>
 
     <div id="orbit-tooltip" class="orbit-tooltip" aria-hidden="true"></div>
+
+    <div id="class-color-popover" class="class-color-popover hidden" onclick="event.stopPropagation()">
+        <div class="class-color-swatch-grid" id="class-color-swatch-grid"></div>
+    </div>
 
     <div id="theme-popover" class="theme-popover hidden" role="dialog" aria-label="Theme settings">
         <p class="theme-popover-label">Mode</p>
@@ -1954,7 +2002,7 @@
                             <circle cx="12" cy="19" r="1.5"/>
                         </svg>
                     </span>
-                    <input type="color" value="${classItem.color || '#64748b'}" class="class-color-input" title="Class color" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'color', this.value); updateCurrentClassHighlight();">
+                    <button type="button" class="class-color-swatch-btn ${classItem.color ? '' : 'is-empty'}" data-category-index="${categoryIndex}" data-class-index="${classIndex}" style="background:${classItem.color || 'transparent'}" title="Class color" onclick="event.stopPropagation(); openClassColorPicker(this, ${categoryIndex}, ${classIndex})"></button>
                     <input type="text" value="${classItem.title}" placeholder="Class Title" class="class-title-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'title', this.value)">
                     <input type="text" value="${classItem.details}" placeholder="Details (Room, Time)" class="class-details-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'details', this.value)">
                     <select class="class-schedule-slot-select form-select" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'scheduleSlot', this.value)">
@@ -2039,6 +2087,76 @@
             classData[categoryIndex].classes[classIndex][field] = value;
             saveToLocalStorage();
         }
+
+        // --- CLASS COLOR PICKER (curated pastel palette) ---
+        const PASTEL_CLASS_COLORS = [
+            '#EAB8B8', '#EAC7B8', '#EAD6B8', '#EAE5B8', '#E0EAB8',
+            '#D1EAB8', '#C2EAB8', '#B8EABD', '#B8EACC', '#B8EADB',
+            '#B8EAEA', '#B8DBEA', '#B8CCEA', '#B8BDEA', '#C2B8EA',
+            '#D1B8EA', '#E0B8EA', '#EAB8E5', '#EAB8D6', '#EAB8C7'
+        ];
+        let classColorPickerTarget = null;
+
+        function openClassColorPicker(triggerEl, categoryIndex, classIndex) {
+            classColorPickerTarget = { categoryIndex, classIndex };
+            renderClassColorSwatches();
+            positionClassColorPopover(triggerEl);
+            document.getElementById('class-color-popover').classList.remove('hidden');
+        }
+
+        function closeClassColorPicker() {
+            document.getElementById('class-color-popover').classList.add('hidden');
+            classColorPickerTarget = null;
+        }
+
+        function positionClassColorPopover(triggerEl) {
+            const popover = document.getElementById('class-color-popover');
+            const rect = triggerEl.getBoundingClientRect();
+
+            popover.style.visibility = 'hidden';
+            popover.classList.remove('hidden');
+            const pw = popover.offsetWidth, ph = popover.offsetHeight;
+            popover.classList.add('hidden');
+            popover.style.visibility = '';
+
+            let left = Math.max(12, Math.min(rect.left, window.innerWidth - pw - 12));
+            let top = rect.bottom + 8;
+            if (top + ph > window.innerHeight - 12) top = Math.max(12, rect.top - ph - 8);
+            popover.style.left = left + 'px';
+            popover.style.top = top + 'px';
+        }
+
+        function renderClassColorSwatches() {
+            const grid = document.getElementById('class-color-swatch-grid');
+            const current = classColorPickerTarget
+                ? classData[classColorPickerTarget.categoryIndex].classes[classColorPickerTarget.classIndex].color
+                : '';
+            grid.innerHTML = `
+                <button type="button" class="class-color-swatch is-none ${!current ? 'is-selected' : ''}" title="No color" onclick="selectClassColor('')">&#10005;</button>
+                ${PASTEL_CLASS_COLORS.map(hex => `<button type="button" class="class-color-swatch ${current === hex ? 'is-selected' : ''}" style="background:${hex}" title="${hex}" onclick="selectClassColor('${hex}')"></button>`).join('')}
+            `;
+        }
+
+        function selectClassColor(hex) {
+            if (!classColorPickerTarget) return;
+            const { categoryIndex, classIndex } = classColorPickerTarget;
+            updateClassItem(categoryIndex, classIndex, 'color', hex);
+            const btn = document.querySelector(`.class-color-swatch-btn[data-category-index="${categoryIndex}"][data-class-index="${classIndex}"]`);
+            if (btn) {
+                btn.style.background = hex || 'transparent';
+                btn.classList.toggle('is-empty', !hex);
+            }
+            closeClassColorPicker();
+            updateCurrentClassHighlight();
+        }
+
+        document.addEventListener('click', (e) => {
+            const popover = document.getElementById('class-color-popover');
+            if (popover.classList.contains('hidden')) return;
+            if (!popover.contains(e.target) && !e.target.closest('.class-color-swatch-btn')) {
+                closeClassColorPicker();
+            }
+        });
 
         function toggleSideStacked(categoryIndex) {
             classData[categoryIndex].isSideStacked = !classData[categoryIndex].isSideStacked;
