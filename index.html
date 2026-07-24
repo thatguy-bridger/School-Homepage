@@ -665,6 +665,27 @@
             align-items: center;
             justify-content: center;
         }
+        .class-color-custom-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--glass-border);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .class-color-custom-input {
+            flex-shrink: 0;
+            width: 1.9rem;
+            height: 1.9rem;
+            padding: 0;
+            border: 2px solid var(--glass-border);
+            border-radius: 9999px;
+            cursor: pointer;
+        }
+        .class-color-custom-input::-webkit-color-swatch-wrapper { padding: 0.15rem; }
+        .class-color-custom-input::-webkit-color-swatch { border: none; border-radius: 9999px; }
         .class-input-group .class-title-input,
         .class-input-group .class-details-input,
         .class-input-group .class-url-input,
@@ -1093,6 +1114,10 @@
 
     <div id="class-color-popover" class="class-color-popover hidden" onclick="event.stopPropagation()">
         <div class="class-color-swatch-grid" id="class-color-swatch-grid"></div>
+        <div class="class-color-custom-row">
+            <input type="color" id="class-color-custom-input" class="class-color-custom-input" title="Custom color" onchange="selectClassColor(this.value)">
+            <span>Custom color</span>
+        </div>
     </div>
 
     <div id="theme-popover" class="theme-popover hidden" role="dialog" aria-label="Theme settings">
@@ -2090,10 +2115,10 @@
 
         // --- CLASS COLOR PICKER (curated pastel palette) ---
         const PASTEL_CLASS_COLORS = [
-            '#EAB8B8', '#EAC7B8', '#EAD6B8', '#EAE5B8', '#E0EAB8',
-            '#D1EAB8', '#C2EAB8', '#B8EABD', '#B8EACC', '#B8EADB',
-            '#B8EAEA', '#B8DBEA', '#B8CCEA', '#B8BDEA', '#C2B8EA',
-            '#D1B8EA', '#E0B8EA', '#EAB8E5', '#EAB8D6', '#EAB8C7'
+            '#F08989', '#F0A889', '#F0C789', '#F0E689', '#DCF089',
+            '#BDF089', '#9EF089', '#89F093', '#89F0B2', '#89F0D1',
+            '#89F0F0', '#89D1F0', '#89B2F0', '#8993F0', '#9E89F0',
+            '#BD89F0', '#DC89F0', '#F089E6', '#F089C7', '#F089A8'
         ];
         let classColorPickerTarget = null;
 
@@ -2135,6 +2160,8 @@
                 <button type="button" class="class-color-swatch is-none ${!current ? 'is-selected' : ''}" title="No color" onclick="selectClassColor('')">&#10005;</button>
                 ${PASTEL_CLASS_COLORS.map(hex => `<button type="button" class="class-color-swatch ${current === hex ? 'is-selected' : ''}" style="background:${hex}" title="${hex}" onclick="selectClassColor('${hex}')"></button>`).join('')}
             `;
+            const customInput = document.getElementById('class-color-custom-input');
+            if (customInput) customInput.value = /^#[0-9a-fA-F]{6}$/.test(current) ? current : '#000000';
         }
 
         function selectClassColor(hex) {
@@ -2581,8 +2608,10 @@
             const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: hour12 });
             const formattedDate = `${date.getMonth() + 1}.${date.getDate()}.${date.getFullYear()}`;
             document.getElementById('Time').textContent = `Time: ${time} | Date: ${formattedDate}`;
-            updateCountdownChip();
-            updateCurrentClassHighlight();
+            const info = getCurrentOrNextPeriodInfo();
+            updateCountdownChip(info);
+            updateCurrentClassHighlight(info);
+            checkScheduledClassPrompt(info);
         }
 
         // --- PERIOD COUNTDOWN CHIP ---
@@ -2641,8 +2670,8 @@
         }
 
         // --- HIGHLIGHT THE CLASS TILE THAT'S CURRENTLY IN SESSION ---
-        function updateCurrentClassHighlight() {
-            const info = getCurrentOrNextPeriodInfo();
+        function updateCurrentClassHighlight(info) {
+            if (info === undefined) info = getCurrentOrNextPeriodInfo();
             const isCurrent = info && info.status === 'current';
             const activeSlot = isCurrent ? info.scheduleSlot : null;
             const activeColor = isCurrent && info.classItem && info.classItem.color ? info.classItem.color : null;
@@ -2664,10 +2693,10 @@
             }
         }
 
-        function updateCountdownChip() {
+        function updateCountdownChip(info) {
             const chip = document.getElementById('period-countdown-chip');
             if (!chip) return;
-            const info = getCurrentOrNextPeriodInfo();
+            if (info === undefined) info = getCurrentOrNextPeriodInfo();
             if (!info) {
                 chip.classList.add('hidden');
                 return;
@@ -2681,6 +2710,36 @@
             chip.classList.toggle('is-next', info.status === 'next');
             const verb = info.status === 'current' ? 'ends in' : 'starts in';
             chip.innerHTML = `<span class="countdown-dot"></span><span>${escapeHtml(info.label)} ${verb} <strong>${timeStr}</strong></span>`;
+        }
+
+        // --- "OPEN CURRENT CLASS?" PROMPT (re-checked every tick, not just at page load) ---
+        let lastPromptedScheduleSlot = null;
+        function checkScheduledClassPrompt(info) {
+            const isCurrent = info && info.status === 'current';
+            if (!isCurrent) {
+                lastPromptedScheduleSlot = null;
+                return;
+            }
+            if (info.scheduleSlot === lastPromptedScheduleSlot) return;
+            const modal = document.getElementById('confirmation-modal');
+            if (modal && !modal.classList.contains('hidden')) return;
+
+            const scheduledUrlResult = getScheduledClassUrl();
+            if (scheduledUrlResult === undefined) return;
+            lastPromptedScheduleSlot = info.scheduleSlot;
+
+            const URLParts = scheduledUrlResult.split("(");
+            const myInterval = setInterval(() => {
+                window.open(URLParts[1]);
+                clearInterval(myInterval);
+            }, 3000);
+
+            showConfirmationModal(`Open Current Class: ${scheduledUrlResult}?`, [
+                { text: 'Continue', action: () => {
+                    window.location.href = URLParts[1];
+                }},
+                { text: 'Cancel', action: () => {} }
+            ]);
         }
 
         // --- SCHEDULE REDIRECTION LOGIC ---
@@ -4303,21 +4362,9 @@
                 initCalendar();
             }
 
-            const scheduledUrlResult = getScheduledClassUrl();
-            if (scheduledUrlResult !== undefined) {
-                const URLParts = scheduledUrlResult.split("(");
-                const myInterval = setInterval(() => {
-                    window.open(URLParts[1]);
-                    clearInterval(myInterval);
-                }, 3000);
-
-                showConfirmationModal(`Open Current Class: ${scheduledUrlResult}?`, [
-                    { text: 'Continue', action: () => {
-                        window.location.href = URLParts[1];
-                    }},
-                    { text: 'Cancel', action: () => {} }
-                ]);
-            }
+            // Note: the "Open Current Class?" prompt is handled by checkScheduledClassPrompt(),
+            // called every tick from displayTime() above -- not just once here at load -- so it
+            // still fires if a period starts while the tab is already open.
         });
     </script>
 </body>
