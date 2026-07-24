@@ -1371,6 +1371,27 @@
             let mouse = null;
             let lockedIndex = -1;
 
+            // Stage geometry only actually changes on resize or when the dock's own transform
+            // transitions (scroll-hide / hub-peek reveal) settle -- not every frame -- so it's
+            // cached instead of measured with getBoundingClientRect() on every tick. Reading DOM
+            // geometry right after writing styles forces a synchronous layout; doing that for
+            // every icon on every animation frame is what was making the whole page feel laggy.
+            let stageCenterX = 0, stageCenterY = 0, maxDist = 100;
+            function refreshStageGeometry() {
+                const r = stage.getBoundingClientRect();
+                stageCenterX = r.left + r.width / 2;
+                stageCenterY = r.top + r.height / 2;
+                maxDist = Math.max(r.width, r.height) * 0.85;
+            }
+            refreshStageGeometry();
+            window.addEventListener('resize', refreshStageGeometry);
+            const sidebarEl = stage.closest('.app-sidebar');
+            if (sidebarEl) {
+                sidebarEl.addEventListener('transitionend', (e) => {
+                    if (e.propertyName === 'transform') refreshStageGeometry();
+                });
+            }
+
             function positionOrbitTooltip(link) {
                 const r = link.getBoundingClientRect();
                 tooltip.style.left = (r.left + r.width / 2) + 'px';
@@ -1378,9 +1399,6 @@
             }
 
             function frame(t) {
-                const stageRect = stage.getBoundingClientRect();
-                const maxDist = Math.max(stageRect.width, stageRect.height) * 0.85;
-
                 links.forEach((link, i) => {
                     // The locked (hovered) icon freezes in place instead of continuing to drift.
                     if (i === lockedIndex) return;
@@ -1396,8 +1414,8 @@
                     link.style.setProperty('--pulse', pulse.toFixed(3));
 
                     if (mouse) {
-                        const r = link.getBoundingClientRect();
-                        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+                        // Same x/y we just used for the transform -- no DOM read needed to know where the icon is.
+                        const cx = stageCenterX + x, cy = stageCenterY + y;
                         const dist = Math.hypot(mouse.x - cx, mouse.y - cy);
                         const tt = Math.max(0, 1 - dist / maxDist);
                         link.style.setProperty('--mag', (1 + tt * 0.5).toFixed(3));
@@ -2599,6 +2617,7 @@
             classData.forEach(category => {
                 category.classes.forEach(classItem => {
                     if (!classItem.scheduleSlot) return;
+                    if (classItem.scheduleSlot === 'ADVISORY' && isHalfDay) return;
                     const slotDayType = classItem.scheduleSlot.split('_')[0];
                     if (slotDayType !== dayType && classItem.scheduleSlot !== 'ADVISORY') return;
                     const timeRange = getSlotTimeRange(classItem.scheduleSlot, isHalfDay);
