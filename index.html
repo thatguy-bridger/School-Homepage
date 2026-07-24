@@ -686,12 +686,37 @@
         }
         .class-color-custom-input::-webkit-color-swatch-wrapper { padding: 0.15rem; }
         .class-color-custom-input::-webkit-color-swatch { border: none; border-radius: 9999px; }
+
+        .ics-toggle-row { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
+        .ics-toggle-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .ics-toggle-label input[type="checkbox"] {
+            margin-top: 0.15rem;
+            flex-shrink: 0;
+            width: 1rem;
+            height: 1rem;
+            accent-color: var(--accent-2);
+            cursor: pointer;
+        }
+        .ics-toggle-label strong { color: var(--text-primary); }
         .class-input-group .class-title-input,
         .class-input-group .class-details-input,
         .class-input-group .class-url-input,
         .class-input-group .class-schedule-slot-select {
             flex-grow: 1;
             flex-basis: 150px;
+            min-width: 0;
+        }
+        .class-input-group .class-teacher-input,
+        .class-input-group .class-room-input {
+            flex-grow: 1;
+            flex-basis: 90px;
             min-width: 0;
         }
         .class-input-group .flex.items-center.gap-2 {
@@ -1273,8 +1298,18 @@
             <div class="mb-6">
                 <h4 class="text-lg font-semibold mb-3">Google Calendar Sync</h4>
                 <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
-                    Publishes your day notes (and A/B-Day labels) as a live .ics feed via a secret GitHub Gist, which Google Calendar can subscribe to. The gist URL is unauthenticated once created — anyone with the link can read it, so keep it as private as the token below.
+                    Publishes a live .ics feed via a secret GitHub Gist, which Google Calendar can subscribe to. The gist URL is unauthenticated once created — anyone with the link can read it, so keep it as private as the token below.
                 </p>
+                <div class="ics-toggle-row">
+                    <label class="ics-toggle-label">
+                        <input type="checkbox" id="ics-include-day-events" onchange="saveIcsEventTogglePref('icsIncludeDayEvents', this.checked)">
+                        <span><strong>A/B Day events</strong> — one event per school day ("A Day - School" / "B Day - School"), with your day notes as the description.</span>
+                    </label>
+                    <label class="ics-toggle-label">
+                        <input type="checkbox" id="ics-include-class-events" onchange="saveIcsEventTogglePref('icsIncludeClassEvents', this.checked)">
+                        <span><strong>Individual class events</strong> — one event per class per day ("Class - Teacher | Room"), with that class's quick note as the description.</span>
+                    </label>
+                </div>
                 <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">GitHub Token (Gist read/write scope)</label>
                 <input type="password" id="pref-github-token" class="form-input mb-3" placeholder="github_pat_..." onchange="saveGithubTokenPref(this.value)" autocomplete="off">
                 <div id="gist-sync-status" class="text-xs text-gray-600 dark:text-gray-300 mb-3">Not connected yet.</div>
@@ -1713,6 +1748,8 @@
                 category.classes.forEach(classItem => {
                     if (typeof classItem.scheduleSlot === 'undefined') classItem.scheduleSlot = '';
                     if (typeof classItem.color === 'undefined') classItem.color = '';
+                    if (typeof classItem.teacher === 'undefined') classItem.teacher = '';
+                    if (typeof classItem.room === 'undefined') classItem.room = '';
                     if (!classItem.noteId) {
                         classItem.noteId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
                         assignedNewIds = true;
@@ -2030,6 +2067,8 @@
                     <button type="button" class="class-color-swatch-btn ${classItem.color ? '' : 'is-empty'}" data-category-index="${categoryIndex}" data-class-index="${classIndex}" style="background:${classItem.color || 'transparent'}" title="Class color" onclick="event.stopPropagation(); openClassColorPicker(this, ${categoryIndex}, ${classIndex})"></button>
                     <input type="text" value="${classItem.title}" placeholder="Class Title" class="class-title-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'title', this.value)">
                     <input type="text" value="${classItem.details}" placeholder="Details (Room, Time)" class="class-details-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'details', this.value)">
+                    <input type="text" value="${classItem.teacher || ''}" placeholder="Teacher" class="class-teacher-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'teacher', this.value)">
+                    <input type="text" value="${classItem.room || ''}" placeholder="Room" class="class-room-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'room', this.value)">
                     <select class="class-schedule-slot-select form-select" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'scheduleSlot', this.value)">
                         ${scheduleOptionsHtml}
                     </select>
@@ -2078,7 +2117,7 @@
                 console.error("Invalid categoryIndex:", categoryIndex);
                 return;
             }
-            classData[categoryIndex].classes.push({ title: '', details: '', url: '', scheduleSlot: '' });
+            classData[categoryIndex].classes.push({ title: '', details: '', url: '', scheduleSlot: '', color: '', teacher: '', room: '' });
             renderClassEditor(document.getElementById('class-links-container'));
             saveToLocalStorage();
         }
@@ -4018,6 +4057,8 @@
         function openCalendarSettingsModal() {
             document.getElementById('pref-default-view-select').value = localStorage.getItem('calendarView') || 'month';
             document.getElementById('pref-week-start-select').value = localStorage.getItem('weekStart') || '0';
+            document.getElementById('ics-include-day-events').checked = localStorage.getItem('icsIncludeDayEvents') !== 'false';
+            document.getElementById('ics-include-class-events').checked = localStorage.getItem('icsIncludeClassEvents') === 'true';
             renderExternalFeedsList();
             updateGistSyncUI();
             const modal = document.getElementById('calendar-settings-modal');
@@ -4048,6 +4089,11 @@
         function saveWeekStartPref(value) {
             localStorage.setItem('weekStart', value);
             renderCalendar();
+        }
+
+        function saveIcsEventTogglePref(key, checked) {
+            localStorage.setItem(key, checked ? 'true' : 'false');
+            scheduleGistSync();
         }
 
         // --- GOOGLE CALENDAR SYNC (via a secret GitHub Gist serving a live .ics feed) ---
@@ -4097,6 +4143,15 @@
             return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
         }
 
+        function formatIcsLocalDateTime(date, hour, minute) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            const hh = String(hour).padStart(2, '0');
+            const mm = String(minute).padStart(2, '0');
+            return `${y}${m}${d}T${hh}${mm}00`;
+        }
+
         function buildIcsFeed() {
             const dtstamp = formatIcsTimestamp(new Date());
             const lines = [
@@ -4105,35 +4160,90 @@
                 'PRODID:-//School Dashboard//School Calendar//EN',
                 'CALSCALE:GREGORIAN',
                 'METHOD:PUBLISH',
-                'X-WR-CALNAME:School Calendar Notes'
+                'X-WR-CALNAME:School Calendar'
             ];
+
+            const includeDayEvents = localStorage.getItem('icsIncludeDayEvents') !== 'false';
+            const includeClassEvents = localStorage.getItem('icsIncludeClassEvents') === 'true';
 
             const allDateKeys = new Set([...userADays, ...userBDays, ...Object.keys(dayNotes)]);
 
             allDateKeys.forEach(key => {
                 const note = dayNotes[key];
-                const dayType = userADays.includes(key) ? 'A-Day' : userBDays.includes(key) ? 'B-Day' : null;
+                const dayType = userADays.includes(key) ? 'A' : userBDays.includes(key) ? 'B' : null;
                 if (!note && !dayType) return;
 
                 const date = parseDateKey(key);
-                const nextDate = new Date(date);
-                nextDate.setDate(nextDate.getDate() + 1);
+                const classesForDay = dayType ? getClassesForDate(date) : [];
+                const timedClasses = classesForDay.filter(c => c.timeRange);
 
-                const summary = (note && note.title) ? note.title : (dayType || 'School Day');
-                const descriptionParts = [];
-                if (dayType) descriptionParts.push(dayType);
-                if (note && note.notes) descriptionParts.push(note.notes);
+                if (includeDayEvents) {
+                    const summary = dayType ? `${dayType} Day - School` : ((note && note.title) ? note.title : 'Note');
+                    const description = (note && note.notes) ? note.notes : '';
 
-                lines.push('BEGIN:VEVENT');
-                lines.push(foldIcsLine(`UID:${key}@pick-a-class-school-calendar`));
-                lines.push(`DTSTAMP:${dtstamp}`);
-                lines.push(`DTSTART;VALUE=DATE:${formatIcsDate(date)}`);
-                lines.push(`DTEND;VALUE=DATE:${formatIcsDate(nextDate)}`);
-                lines.push(foldIcsLine(`SUMMARY:${escapeIcsText(summary)}`));
-                if (descriptionParts.length) {
-                    lines.push(foldIcsLine(`DESCRIPTION:${escapeIcsText(descriptionParts.join(' — '))}`));
+                    lines.push('BEGIN:VEVENT');
+                    lines.push(foldIcsLine(`UID:${key}-day@pick-a-class-school-calendar`));
+                    lines.push(`DTSTAMP:${dtstamp}`);
+
+                    if (timedClasses.length) {
+                        let earliestStart = null, latestEnd = null;
+                        timedClasses.forEach(c => {
+                            const [startStr, endStr] = c.timeRange.split(' - ');
+                            const start = parseTime(startStr), end = parseTime(endStr);
+                            const startMin = start.hour * 60 + start.minute;
+                            let endMin = end.hour * 60 + end.minute;
+                            if (endMin < startMin) endMin += 24 * 60;
+                            if (earliestStart === null || startMin < earliestStart) earliestStart = startMin;
+                            if (latestEnd === null || endMin > latestEnd) latestEnd = endMin;
+                        });
+                        lines.push(`DTSTART:${formatIcsLocalDateTime(date, Math.floor(earliestStart / 60), earliestStart % 60)}`);
+                        const endDate = new Date(date);
+                        if (latestEnd >= 24 * 60) endDate.setDate(endDate.getDate() + 1);
+                        lines.push(`DTEND:${formatIcsLocalDateTime(endDate, Math.floor((latestEnd % (24 * 60)) / 60), latestEnd % 60)}`);
+                    } else {
+                        const nextDate = new Date(date);
+                        nextDate.setDate(nextDate.getDate() + 1);
+                        lines.push(`DTSTART;VALUE=DATE:${formatIcsDate(date)}`);
+                        lines.push(`DTEND;VALUE=DATE:${formatIcsDate(nextDate)}`);
+                    }
+
+                    lines.push(foldIcsLine(`SUMMARY:${escapeIcsText(summary)}`));
+                    if (description) {
+                        lines.push(foldIcsLine(`DESCRIPTION:${escapeIcsText(description)}`));
+                    }
+                    lines.push('END:VEVENT');
                 }
-                lines.push('END:VEVENT');
+
+                if (includeClassEvents && dayType) {
+                    timedClasses.forEach(c => {
+                        const [startStr, endStr] = c.timeRange.split(' - ');
+                        const start = parseTime(startStr), end = parseTime(endStr);
+                        const startMin = start.hour * 60 + start.minute;
+                        let endMin = end.hour * 60 + end.minute;
+                        if (endMin < startMin) endMin += 24 * 60;
+
+                        const teacherRoomParts = [];
+                        if (c.classItem.teacher) teacherRoomParts.push(c.classItem.teacher);
+                        if (c.classItem.room) teacherRoomParts.push(`Room ${c.classItem.room}`);
+                        const summary = teacherRoomParts.length
+                            ? `${c.classItem.title} - ${teacherRoomParts.join(' | ')}`
+                            : c.classItem.title;
+                        const description = c.classItem.noteId ? (classNotes[c.classItem.noteId] || '') : '';
+
+                        lines.push('BEGIN:VEVENT');
+                        lines.push(foldIcsLine(`UID:${key}-${c.classItem.noteId || c.classItem.scheduleSlot}@pick-a-class-school-calendar`));
+                        lines.push(`DTSTAMP:${dtstamp}`);
+                        lines.push(`DTSTART:${formatIcsLocalDateTime(date, start.hour, start.minute)}`);
+                        const endDate = new Date(date);
+                        if (endMin >= 24 * 60) endDate.setDate(endDate.getDate() + 1);
+                        lines.push(`DTEND:${formatIcsLocalDateTime(endDate, end.hour, end.minute)}`);
+                        lines.push(foldIcsLine(`SUMMARY:${escapeIcsText(summary)}`));
+                        if (description) {
+                            lines.push(foldIcsLine(`DESCRIPTION:${escapeIcsText(description)}`));
+                        }
+                        lines.push('END:VEVENT');
+                    });
+                }
             });
 
             lines.push('END:VCALENDAR');
