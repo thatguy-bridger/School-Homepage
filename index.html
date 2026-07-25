@@ -15,12 +15,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts - Inter for a modern look -->
     <style>
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         /* ===================== Glassmorphism Design System ===================== */
         :root {
             --bg-solid: #eef1f8;
-            --glass-bg: rgba(255, 255, 255, 0.55);
-            --glass-bg-strong: rgba(255, 255, 255, 0.75);
+            --glass-bg: rgba(255, 255, 255, 0.42);
+            --glass-bg-strong: rgba(255, 255, 255, 0.62);
             --glass-border: rgba(15, 23, 42, 0.08);
             --glass-shadow: 0 8px 32px rgba(27, 30, 36, 0.1);
             --text-primary: #0f172a;
@@ -34,6 +33,11 @@
             --accent-grad: linear-gradient(135deg, var(--accent-1), var(--accent-2), var(--accent-3));
             --glow-accent: rgba(168, 85, 247, 0.35);
             --scrollbar-thumb: rgba(99, 102, 241, 0.4);
+            /* ===== Shared motion tokens ===== */
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --duration-fast: 0.2s;
+            --duration-base: 0.33s;
         }
         body.dark-theme {
             --bg-solid: #05050a;
@@ -78,25 +82,21 @@
         .bg-blob {
             position: fixed;
             border-radius: 9999px;
-            filter: blur(90px);
-            opacity: 0.55;
-            z-index: -1;
+            filter: blur(95px);
+            opacity: 0.7;
+            z-index: 0;
             pointer-events: none;
             transition: opacity 0.6s ease-in-out;
-            animation: drift 22s ease-in-out infinite alternate;
+            will-change: transform;
         }
-        body.dark-theme .bg-blob { opacity: 0.35; }
-        .bg-blob-1 { width: 32rem; height: 32rem; top: -10rem; left: -8rem; background: var(--accent-1); transition: background-color 0.6s ease-in-out; }
-        .bg-blob-2 { width: 28rem; height: 28rem; bottom: -8rem; right: -6rem; background: var(--accent-3); animation-delay: -6s; transition: background-color 0.6s ease-in-out; }
-        .bg-blob-3 { width: 24rem; height: 24rem; top: 40%; left: 55%; background: var(--accent-2); animation-delay: -12s; transition: background-color 0.6s ease-in-out; }
+        body.dark-theme .bg-blob { opacity: 0.3; }
+        .bg-blob-1 { width: 40rem; height: 40rem; top: -6rem; left: -6rem; background: var(--accent-1); transition: background-color 0.6s ease-in-out; }
+        .bg-blob-2 { width: 36rem; height: 36rem; bottom: -4rem; right: -4rem; background: var(--accent-3); transition: background-color 0.6s ease-in-out; }
+        .bg-blob-3 { width: 34rem; height: 34rem; top: 35%; left: 50%; background: var(--accent-2); transition: background-color 0.6s ease-in-out; }
         /* While a class is in session, the ambient background subtly leans toward its custom color */
         body.has-active-class .bg-blob-1 { background: color-mix(in srgb, var(--active-class-color) 55%, var(--accent-1)); }
         body.has-active-class .bg-blob-2 { background: color-mix(in srgb, var(--active-class-color) 55%, var(--accent-3)); }
         body.has-active-class .bg-blob-3 { background: color-mix(in srgb, var(--active-class-color) 55%, var(--accent-2)); }
-        @keyframes drift {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(2.5rem, -2rem) scale(1.08); }
-        }
 
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -246,9 +246,17 @@
             backdrop-filter: blur(28px) saturate(160%);
             -webkit-backdrop-filter: blur(28px) saturate(160%);
             box-shadow: var(--glass-shadow);
-            transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+            transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out, opacity var(--duration-fast) var(--ease-out), transform 0.26s var(--ease-spring);
         }
-        .theme-popover.hidden { display: none; }
+        .theme-popover.hidden {
+            display: block;
+            opacity: 0;
+            transform: translateY(10px) scale(0.92);
+            pointer-events: none;
+        }
         .theme-popover-label {
             font-size: 0.7rem;
             font-weight: 700;
@@ -507,13 +515,26 @@
         }
 
         /* --- Modal Styles --- */
+        /* Backdrop fade: this transition was previously missing entirely, so toggling the
+           opacity-0/show classes never fired a transitionend event -- the modal's hide handler
+           was waiting on an event that could never come, leaving it invisible but still
+           display:flex (and still eating clicks across the whole screen) after "closing". */
+        .modal {
+            transition: opacity var(--duration-base) var(--ease-out);
+        }
         .modal-content {
             background: var(--glass-bg-strong);
             border-color: var(--glass-border) !important;
             backdrop-filter: blur(32px) saturate(160%);
             -webkit-backdrop-filter: blur(32px) saturate(160%);
             box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35) !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+            opacity: 0;
+            transform: translateY(29px) scale(0.92);
+            transition: transform 0.52s var(--ease-spring), opacity var(--duration-base) var(--ease-out), background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+        }
+        .modal.show .modal-content {
+            opacity: 1;
+            transform: translateY(0) scale(1);
         }
 
         .modal-content h3 {
@@ -637,8 +658,17 @@
             backdrop-filter: blur(24px) saturate(160%);
             -webkit-backdrop-filter: blur(24px) saturate(160%);
             box-shadow: var(--glass-shadow);
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+            transition: opacity var(--duration-fast) var(--ease-out), transform 0.26s var(--ease-spring);
         }
-        .class-color-popover.hidden { display: none; }
+        .class-color-popover.hidden {
+            display: block;
+            opacity: 0;
+            transform: translateY(10px) scale(0.92);
+            pointer-events: none;
+        }
         .class-color-swatch-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -803,10 +833,23 @@
             transform: scale(1.05);
             box-shadow: 0 10px 24px var(--glow-accent);
         }
+        .modal-footer-button:active { transform: scale(0.922); }
         .modal-footer-button.bg-indigo-600 { background: var(--accent-grad); color: white; }
         .modal-footer-button.bg-blue-600 { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-1)); color: white; }
         .modal-footer-button.bg-red-600 { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
         .modal-footer-button.bg-green-600 { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+        /* Neutral variant for dismissive/secondary actions (e.g. Cancel) so the primary
+           action in a confirmation modal stays the only one drawing the eye. */
+        .modal-footer-button.is-secondary {
+            background: var(--glass-bg-strong);
+            color: var(--text-secondary);
+            box-shadow: none;
+            border-color: var(--glass-border);
+        }
+        .modal-footer-button.is-secondary:hover {
+            color: var(--text-primary);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+        }
 
         /* Force Tailwind gray utilities to follow our manual theme toggle instead of OS preference */
         .text-gray-400, .text-gray-500, .text-gray-600, .text-gray-700, .text-gray-900 { color: var(--text-secondary) !important; }
@@ -1002,6 +1045,92 @@
 
         #save-indicator { transition: opacity 0.4s ease-in-out; opacity: 0; }
         #save-indicator.show { opacity: 1; }
+
+        /* ===================== Global press/click feedback ===================== */
+        /* Placed last so it wins the cascade over each element's own :hover transform
+           (equal specificity, later rule wins) -- gives every clickable control a quick
+           tactile "squish" on press instead of just snapping straight to its hover state. */
+        .icon-btn:active, #today-button:active, #export-button:active, #import-button:active,
+        .sidebar-link:active, .theme-mode-btn:active, .theme-palette-swatch:active,
+        .class-color-swatch-btn:active, .class-color-swatch:active, .view-tab:active,
+        .nav-arrow-btn:active, .class-note-toggle:active, .remove-class-btn:active,
+        .duplicate-class-btn:active, .duplicate-category-btn:active, .toggle-layout-button:active,
+        .modal-content button.text-gray-400:active {
+            transform: scale(0.9);
+        }
+        .class-card:active { transform: translateY(-4px) scale(0.974); }
+        .day-cell:active { transform: scale(0.961); }
+        .week-day-col:active { transform: scale(0.974); }
+        .agenda-row:active { transform: translateX(3px) scale(0.987); }
+
+        /* ===================== Screen-switch (view transition) ===================== */
+        ::view-transition-old(root), ::view-transition-new(root) {
+            animation-duration: 0.46s;
+            animation-timing-function: var(--ease-out);
+        }
+        ::view-transition-old(root) { animation-name: view-fade-out; }
+        ::view-transition-new(root) { animation-name: view-fade-in; }
+        @keyframes view-fade-out { to { opacity: 0; transform: scale(0.98) translateY(8px); } }
+        @keyframes view-fade-in { from { opacity: 0; transform: scale(1.02) translateY(-10px); } }
+
+        /* Calendar prev/next and the class editor toggle animate via a manual JS clone-and-slide
+           (animateContentSwap) instead of the View Transitions API -- the native API's automatic
+           group resize/morph between differently-sized old/new snapshots (e.g. a 5-row vs 6-row
+           month grid) reads as a jump instead of a smooth slide. .content-swap-outgoing is the
+           temporary absolutely-positioned clone that animateContentSwap animates out.
+        */
+        .content-swap-outgoing {
+            position: absolute;
+            pointer-events: none;
+            margin: 0 !important;
+            z-index: 5;
+        }
+
+        /* ===================== Cursor-follower glow ===================== */
+        .cursor-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 16rem;
+            height: 16rem;
+            margin: -8rem 0 0 -8rem;
+            border-radius: 9999px;
+            background: radial-gradient(circle, var(--accent-2) 0%, transparent 72%);
+            opacity: 0;
+            filter: blur(40px);
+            pointer-events: none;
+            z-index: 1;
+            transition: opacity 0.4s ease-in-out, background-color 0.5s ease-in-out;
+        }
+        .cursor-glow.is-active { opacity: 0.16; }
+        body.dark-theme .cursor-glow.is-active { opacity: 0.22; }
+        @media (pointer: coarse) {
+            .cursor-glow { display: none; }
+        }
+
+        /* ===================== Click ripple ===================== */
+        /* A soft, very transparent bloom that spreads outward from every click, sized to roughly
+           track the reach of the detach-push effect. Uses whatever single color the cursor trail
+           is currently showing (--cursor-glow-rgb, updated every frame in setupCursorGlow) instead
+           of its own fixed palette, so the two effects read as the same "thing". */
+        .click-ripple {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 7vmin;
+            height: 7vmin;
+            margin: -3.5vmin 0 0 -3.5vmin;
+            border-radius: 9999px;
+            background: radial-gradient(circle, rgba(var(--cursor-glow-rgb, 168, 85, 247), 0.85) 0%, rgba(var(--cursor-glow-rgb, 168, 85, 247), 0.3) 45%, transparent 78%);
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 500;
+            animation: click-ripple-expand 0.9s var(--ease-out) forwards;
+        }
+        @keyframes click-ripple-expand {
+            from { transform: scale(0.5); opacity: 0.5; }
+            to { transform: scale(13); opacity: 0; }
+        }
     </style>
 </head>
 <body class="min-h-screen p-4 sm:p-8">
@@ -1020,6 +1149,7 @@
     <div class="bg-blob bg-blob-1"></div>
     <div class="bg-blob bg-blob-2"></div>
     <div class="bg-blob bg-blob-3"></div>
+    <div class="cursor-glow" id="cursor-glow"></div>
 
     <div class="app-shell">
         <!-- Sidebar: app-level navigation -->
@@ -1602,6 +1732,261 @@
             });
         }
 
+        // ===================== AMBIENT BACKGROUND BLOBS: free-roaming random wander =====================
+        function setupBackgroundBlobs() {
+            const blobs = Array.from(document.querySelectorAll('.bg-blob'));
+            if (!blobs.length) return;
+
+            const rand = (min, max) => min + Math.random() * (max - min);
+            const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+
+            // Each blob picks a brand new random destination (position anywhere across the
+            // viewport, a random spin, a random scale) and a random travel time to get there.
+            // On arrival it immediately rolls a fresh random destination -- so blobs can end up
+            // anywhere, cross paths, swap corners, spin past each other, at a different pace every leg.
+            function rollTarget(s, now) {
+                const vw = window.innerWidth, vh = window.innerHeight;
+                s.fromX = s.toX; s.fromY = s.toY; s.fromRot = s.toRot; s.fromScale = s.toScale;
+                s.toX = rand(-vw * 0.72, vw * 0.72);
+                s.toY = rand(-vh * 0.72, vh * 0.72);
+                s.toRot = s.fromRot + rand(-416, 416);
+                s.toScale = rand(0.48, 1.72);
+                s.startTime = now;
+                s.duration = rand(5200, 20800);
+            }
+
+            const now0 = performance.now();
+            const state = blobs.map(() => {
+                const s = { toX: 0, toY: 0, toRot: rand(0, 360), toScale: rand(0.85, 1.15), curX: 0, curY: 0 };
+                rollTarget(s, now0);
+                return s;
+            });
+
+            // Base (untransformed) center of each blob, so a click ripple can push it directly
+            // away from the click point -- measured once, before any transform is applied.
+            const baseCenters = blobs.map(el => {
+                const r = el.getBoundingClientRect();
+                return { cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+            });
+
+            // A click ripple gives each blob a shove away from the click point: a single push
+            // that eases out then slowly eases back to where it would otherwise be -- like
+            // tugging it on a rubber band and letting go, not a multi-bounce wobble.
+            const impulse = blobs.map(() => ({ dirX: 0, dirY: 0, mag: 0, startTime: 0, duration: 900 }));
+            document.addEventListener('app:click-ripple', (e) => {
+                const { x: clickX, y: clickY } = e.detail;
+                const now = performance.now();
+                state.forEach((s, i) => {
+                    const cx = baseCenters[i].cx + s.curX, cy = baseCenters[i].cy + s.curY;
+                    let dx = cx - clickX, dy = cy - clickY;
+                    let dist = Math.hypot(dx, dy);
+                    if (dist < 40) { const a = rand(0, Math.PI * 2); dx = Math.cos(a); dy = Math.sin(a); dist = 1; }
+                    const maxDist = Math.max(window.innerWidth, window.innerHeight);
+                    // Power curve instead of a straight line: the far-edge floor (0.35) and the
+                    // point-blank ceiling (1) stay put, but everything in between is pulled up,
+                    // so blobs at close/middle distance get noticeably more intensity than a
+                    // linear falloff would give them.
+                    const falloff = 0.35 + 0.65 * Math.pow(Math.max(0, 1 - dist / maxDist), 0.55);
+                    const imp = impulse[i];
+                    imp.dirX = dx / dist;
+                    imp.dirY = dy / dist;
+                    imp.mag = 95 * falloff;
+                    imp.startTime = now;
+                    imp.duration = rand(1100, 1500);
+                });
+            });
+
+            function frame(now) {
+                blobs.forEach((el, i) => {
+                    const s = state[i];
+                    let t = (now - s.startTime) / s.duration;
+                    if (t >= 1) { rollTarget(s, now); t = 0; }
+                    const e = easeInOutSine(Math.min(1, Math.max(0, t)));
+                    let x = s.fromX + (s.toX - s.fromX) * e;
+                    let y = s.fromY + (s.toY - s.fromY) * e;
+                    const rot = s.fromRot + (s.toRot - s.fromRot) * e;
+                    const scale = s.fromScale + (s.toScale - s.fromScale) * e;
+
+                    const imp = impulse[i];
+                    if (imp.mag > 0) {
+                        const it = (now - imp.startTime) / imp.duration;
+                        if (it >= 1) {
+                            imp.mag = 0;
+                        } else {
+                            const envelope = Math.sin(Math.PI * it) * (1 - it * 0.1);
+                            x += imp.dirX * imp.mag * envelope;
+                            y += imp.dirY * imp.mag * envelope;
+                        }
+                    }
+
+                    s.curX = x; s.curY = y;
+                    el.style.transform = 'translate(' + x.toFixed(1) + 'px, ' + y.toFixed(1) + 'px) rotate(' + rot.toFixed(1) + 'deg) scale(' + scale.toFixed(3) + ')';
+                });
+                requestAnimationFrame(frame);
+            }
+            requestAnimationFrame(frame);
+        }
+
+        // ===================== CURSOR-FOLLOWER GLOW =====================
+        function setupCursorGlow() {
+            const glow = document.getElementById('cursor-glow');
+            if (!glow || window.matchMedia('(pointer: coarse)').matches) return;
+
+            let targetX = window.innerWidth / 2, targetY = window.innerHeight / 2;
+            let x = targetX, y = targetY;
+            let active = false;
+
+            window.addEventListener('mousemove', (e) => {
+                targetX = e.clientX;
+                targetY = e.clientY;
+                if (!active) { active = true; glow.classList.add('is-active'); }
+            }, { passive: true });
+            document.addEventListener('mouseleave', () => { active = false; glow.classList.remove('is-active'); });
+
+            // Cycles the glow's own tint through the theme's 3 accent colors while it drifts,
+            // independent of the palette/theme picker's own transitions -- refreshed from the
+            // live CSS variables whenever they might have changed instead of every frame.
+            const hexToRgb = (hex) => {
+                const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
+                return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [168, 85, 247];
+            };
+            let accentRgb = [hexToRgb('#6366f1'), hexToRgb('#a855f7'), hexToRgb('#ec4899')];
+            function refreshAccentColors() {
+                const cs = getComputedStyle(document.body);
+                accentRgb = [
+                    hexToRgb(cs.getPropertyValue('--accent-1') || '#6366f1'),
+                    hexToRgb(cs.getPropertyValue('--accent-2') || '#a855f7'),
+                    hexToRgb(cs.getPropertyValue('--accent-3') || '#ec4899')
+                ];
+            }
+            refreshAccentColors();
+            new MutationObserver(refreshAccentColors).observe(document.body, { attributes: true, attributeFilter: ['class', 'data-palette'] });
+
+            const CYCLE_LEG_MS = 9000;
+            function frame(now) {
+                // Lags behind the real pointer with a soft spring-ish ease, so it reads as a
+                // trailing glow rather than a rigid 1:1 cursor replacement.
+                x += (targetX - x) * 0.084;
+                y += (targetY - y) * 0.084;
+                glow.style.transform = 'translate3d(' + x.toFixed(1) + 'px, ' + y.toFixed(1) + 'px, 0)';
+
+                const legPos = (now % (CYCLE_LEG_MS * 3)) / CYCLE_LEG_MS;
+                const i = Math.floor(legPos);
+                const t = -(Math.cos(Math.PI * (legPos - i)) - 1) / 2;
+                const from = accentRgb[i], to = accentRgb[(i + 1) % 3];
+                const r = Math.round(from[0] + (to[0] - from[0]) * t);
+                const g = Math.round(from[1] + (to[1] - from[1]) * t);
+                const b = Math.round(from[2] + (to[2] - from[2]) * t);
+                glow.style.background = 'radial-gradient(circle, rgb(' + r + ',' + g + ',' + b + ') 0%, transparent 72%)';
+                // Exposed so the click ripple can match whatever color the trail is showing right now.
+                document.documentElement.style.setProperty('--cursor-glow-rgb', r + ',' + g + ',' + b);
+
+                requestAnimationFrame(frame);
+            }
+            requestAnimationFrame(frame);
+        }
+
+        // ===================== CLICK RIPPLE + DETACHED ELEMENT PHYSICS =====================
+        // Every click anywhere on screen spawns a light color ripple at the click point, and
+        // gives each visible UI element its own independent push away from that point -- not one
+        // rigid whole-page shift. Each element's push is scaled by two things, like a real
+        // shockwave hitting objects of different size and distance: closer elements move more
+        // (distance falloff), and bigger elements move less, as if they have more mass (inverse
+        // of sqrt(area), since area grows quadratically but "how far a shove moves something"
+        // is closer to a linear/mass relationship). The blobs get their own separate, stronger
+        // impulse via the same 'app:click-ripple' event (handled in setupBackgroundBlobs).
+        function setupClickEffects() {
+            function spawnRipple(x, y) {
+                const el = document.createElement('div');
+                el.className = 'click-ripple';
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                document.body.appendChild(el);
+                el.addEventListener('animationend', () => el.remove(), { once: true });
+                setTimeout(() => el.remove(), 1000);
+            }
+
+            // Curated set of visible "objects" on screen -- deliberately excludes anything that
+            // already drives its own per-frame transform (blobs, cursor glow, the orbit dock
+            // icons), since this would fight with those elements' own rAF loops for control of
+            // .style.transform.
+            const DETACH_SELECTOR = '.main-container, .class-card, .day-cell, .week-day-col, .agenda-row, ' +
+                '.icon-btn, #today-button, #export-button, #import-button, .nav-arrow-btn, .view-tab, ' +
+                'h1.gradient-text, h2, .countdown-chip';
+
+            const activeImpulses = [];
+            let loopActive = false;
+
+            function frame(now) {
+                for (let i = activeImpulses.length - 1; i >= 0; i--) {
+                    const imp = activeImpulses[i];
+                    const t = (now - imp.startTime) / imp.duration;
+                    if (t >= 1) {
+                        imp.el.style.transform = '';
+                        activeImpulses.splice(i, 1);
+                        continue;
+                    }
+                    // Same single-hump "push then slowly ease back" shape as the blob impulse --
+                    // a rubber-band tug, not a multi-bounce wobble.
+                    const envelope = Math.sin(Math.PI * t) * (1 - t * 0.1);
+                    const dx = imp.dirX * imp.mag * envelope;
+                    const dy = imp.dirY * imp.mag * envelope;
+                    imp.el.style.transform = 'translate(' + dx.toFixed(2) + 'px, ' + dy.toFixed(2) + 'px)';
+                }
+                if (activeImpulses.length) {
+                    requestAnimationFrame(frame);
+                } else {
+                    loopActive = false;
+                }
+            }
+
+            function triggerDetach(clickX, clickY) {
+                const maxDist = Math.max(window.innerWidth, window.innerHeight);
+                const now = performance.now();
+                document.querySelectorAll(DETACH_SELECTOR).forEach((el) => {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.width < 4 || rect.height < 4) return; // hidden (display:none) or collapsed
+
+                    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+                    let dx = cx - clickX, dy = cy - clickY;
+                    let dist = Math.hypot(dx, dy);
+                    if (dist < 10) { const a = Math.random() * Math.PI * 2; dx = Math.cos(a); dy = Math.sin(a); dist = 1; }
+                    // Same power-curve shape as the ripple's color and the blob falloff: the
+                    // far-edge floor (0.12) and point-blank ceiling (1) stay anchored, but
+                    // close/middle distances get pulled up for noticeably more intense movement.
+                    const distFalloff = 0.12 + 0.88 * Math.pow(Math.max(0, 1 - dist / maxDist), 0.55);
+
+                    // "Mass": bigger footprint (area) resists the shove more. sqrt(area) is used
+                    // as the reference linear size so this scales gently rather than blowing up
+                    // or vanishing across the huge range from a small icon button to the whole panel.
+                    const area = rect.width * rect.height;
+                    const massScale = Math.min(1.6, Math.max(0.15, 70 / Math.sqrt(area)));
+
+                    let imp = activeImpulses.find((entry) => entry.el === el);
+                    if (!imp) {
+                        imp = { el, dirX: 0, dirY: 0, mag: 0, startTime: 0, duration: 0 };
+                        activeImpulses.push(imp);
+                    }
+                    imp.dirX = dx / dist;
+                    imp.dirY = dy / dist;
+                    imp.mag = 30 * distFalloff * massScale;
+                    imp.startTime = now;
+                    imp.duration = 700 + Math.random() * 220;
+                });
+
+                if (!loopActive && activeImpulses.length) {
+                    loopActive = true;
+                    requestAnimationFrame(frame);
+                }
+            }
+
+            document.addEventListener('click', (e) => {
+                spawnRipple(e.clientX, e.clientY);
+                triggerDetach(e.clientX, e.clientY);
+                document.dispatchEvent(new CustomEvent('app:click-ripple', { detail: { x: e.clientX, y: e.clientY } }));
+            });
+        }
+
         // ===================== SIDEBAR SCROLL-HIDE =====================
         function setupSidebarScrollHide() {
             const sidebar = document.querySelector('.app-sidebar');
@@ -1650,6 +2035,8 @@
                     button.classList.add('bg-green-600');
                 } else if (option.text === 'Undo Change') {
                     button.classList.add('bg-red-600');
+                } else if (option.text === 'Cancel') {
+                    button.classList.add('is-secondary');
                 } else {
                     button.classList.add('bg-indigo-600');
                 }
@@ -1795,7 +2182,7 @@
         function toggleClassEditMode() {
             classEditMode = !classEditMode;
             document.getElementById('edit-classes-button').classList.toggle('is-active', classEditMode);
-            renderClassLinks();
+            animateContentSwap(document.getElementById('class-links-container'), renderClassLinks, { direction: 0 });
         }
 
         function renderClassLinks() {
@@ -3041,6 +3428,70 @@
             `;
         }
 
+        // ===================== MANUAL CONTENT-SWAP ANIMATION (slide/fade a container's content) =====================
+        // Clones the container's current contents into an absolutely-positioned overlay, lets
+        // updateFn() replace the real container's innerHTML, then animates the clone out and the
+        // real container in. Doing this by hand (rather than the View Transitions API) avoids the
+        // API's automatic old/new snapshot resize-morph, which looks like a jump whenever the two
+        // states have different heights (e.g. a calendar month with 5 vs 6 week rows).
+        function animateContentSwap(container, updateFn, options) {
+            options = options || {};
+            const direction = options.direction || 0; // -1, 0, or 1
+            const distance = options.distance || 46;
+            if (!container || !container.firstChild) { updateFn(); return; }
+
+            const parent = container.parentElement;
+            const parentPosition = getComputedStyle(parent).position;
+            const restoreParentPosition = parentPosition === 'static';
+            if (restoreParentPosition) parent.style.position = 'relative';
+
+            const outgoing = container.cloneNode(true);
+            outgoing.removeAttribute('id');
+            outgoing.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+            outgoing.className = container.className + ' content-swap-outgoing';
+            outgoing.style.top = container.offsetTop + 'px';
+            outgoing.style.left = container.offsetLeft + 'px';
+            outgoing.style.width = container.getBoundingClientRect().width + 'px';
+            parent.insertBefore(outgoing, container.nextSibling);
+
+            updateFn();
+
+            const outX = direction !== 0 ? -direction * distance : 0;
+            const inX = direction !== 0 ? direction * distance : 0;
+            const outScale = direction === 0 ? 0.97 : 1;
+            const inScale = direction === 0 ? 1.02 : 1;
+            const dur = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--duration-base')) || 0.33) * 1.4;
+            const ease = 'var(--ease-out)';
+
+            outgoing.style.transition = 'none';
+            outgoing.style.transform = 'translateX(0) scale(1)';
+            outgoing.style.opacity = '1';
+
+            container.style.transition = 'none';
+            container.style.transform = 'translateX(' + inX + 'px) scale(' + inScale + ')';
+            container.style.opacity = '0';
+
+            void container.offsetWidth; // force reflow so the "from" state above actually paints
+
+            requestAnimationFrame(() => {
+                outgoing.style.transition = 'transform ' + dur + 's ' + ease + ', opacity ' + dur + 's ' + ease;
+                outgoing.style.transform = 'translateX(' + outX + 'px) scale(' + outScale + ')';
+                outgoing.style.opacity = '0';
+
+                container.style.transition = 'transform ' + dur + 's ' + ease + ', opacity ' + dur + 's ' + ease;
+                container.style.transform = 'translateX(0) scale(1)';
+                container.style.opacity = '1';
+            });
+
+            setTimeout(() => {
+                outgoing.remove();
+                container.style.transition = '';
+                container.style.transform = '';
+                container.style.opacity = '';
+                if (restoreParentPosition) parent.style.position = '';
+            }, dur * 1000 + 60);
+        }
+
         function switchView(view) {
             calendarView = view;
             localStorage.setItem('calendarView', view);
@@ -3066,7 +3517,7 @@
                 currentDate.setDate(currentDate.getDate() + direction);
                 selectedDayKey = dateKey(currentDate);
             }
-            renderCalendar();
+            animateContentSwap(document.getElementById('view-content'), renderCalendar, { direction: direction > 0 ? 1 : -1, distance: 60 });
         }
 
         function renderCalendar() {
@@ -4492,6 +4943,9 @@
             applyTheme(currentThemeState);
             applyPalette(currentPaletteState);
             setupSidebarDock();
+            setupBackgroundBlobs();
+            setupCursorGlow();
+            setupClickEffects();
             setupSidebarScrollHide();
             setupHubPeek();
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
@@ -4542,3 +4996,4 @@
     </script>
 </body>
 </html>
+
