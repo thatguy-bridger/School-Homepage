@@ -1363,7 +1363,7 @@
                 </button>
             </div>
 
-            <div class="flex-grow overflow-y-auto pr-4 -mr-4">
+            <div class="flex-grow overflow-y-auto pr-4 -mr-4" id="scheduling-settings-body">
                 <div class="mb-8">
                     <h4 class="text-2xl font-semibold mb-3">Preferences</h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1418,7 +1418,7 @@
                 </div>
             </div>
 
-            <div class="flex justify-end gap-4 mt-6 flex-shrink-0">
+            <div class="flex justify-end gap-4 mt-6 flex-shrink-0" id="scheduling-settings-footer">
                 <button type="button" class="modal-footer-button bg-red-600" onclick="closeSchedulingSettingsModal()">Cancel</button>
                 <button type="button" class="modal-footer-button bg-green-600" onclick="saveSchedulingSettingsAndCloseModal()">Save & Close</button>
             </div>
@@ -1435,7 +1435,7 @@
                 </button>
             </div>
 
-            <div class="flex-grow overflow-y-auto pr-4 -mr-4">
+            <div class="flex-grow overflow-y-auto pr-4 -mr-4" id="calendar-settings-body">
             <div class="mb-6">
                 <h4 class="text-lg font-semibold mb-3">Preferences</h4>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1517,6 +1517,51 @@
         </div>
     </div>
 
+    <!-- Merged Settings Modal (hub dock settings button only -- the individual per-view settings
+         buttons above keep opening their own scheduling-settings-modal / calendar-settings-modal
+         directly). Borrows those two modals' content divs at open time and returns them at close
+         time (see openAllSettingsModal / closeAllSettingsModal) rather than duplicating every
+         field's id and wiring. -->
+    <div id="all-settings-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="closeAllSettingsModal(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-4xl h-[90vh] flex flex-col p-8 border" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-6 flex-shrink-0">
+                <h3 class="text-3xl font-bold tracking-tight">Settings</h3>
+                <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeAllSettingsModal()">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="flex-grow overflow-y-auto pr-4 -mr-4">
+                <h4 class="text-2xl font-semibold mb-3">Classes &amp; Schedule</h4>
+                <div id="all-settings-scheduling-slot" class="mb-4"></div>
+
+                <hr class="border-0 h-px bg-gradient-to-r from-transparent via-current opacity-20 my-8">
+
+                <h4 class="text-2xl font-semibold mb-3">Calendar</h4>
+                <div id="all-settings-calendar-slot" class="mb-4"></div>
+
+                <hr class="border-0 h-px bg-gradient-to-r from-transparent via-current opacity-20 my-8">
+
+                <div class="mb-4">
+                    <h4 class="text-2xl font-semibold mb-3">Backup &amp; Restore</h4>
+                    <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                        Export everything in this app -- classes, schedule dates, notes, calendar feeds, and preferences -- as one file, and re-import it later on this or another device. The export includes your GitHub sync token if you've set one up, so keep the file as private as you would a password.
+                    </p>
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <button type="button" class="modal-footer-button bg-indigo-600" onclick="exportAllData()">Export All Data</button>
+                        <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="document.getElementById('all-data-import-input').click()">Import All Data</button>
+                        <input type="file" id="all-data-import-input" accept="application/json,.json" class="hidden">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-4 mt-6 flex-shrink-0">
+                <button type="button" class="modal-footer-button bg-red-600" onclick="closeAllSettingsModal()">Cancel</button>
+                <button type="button" class="modal-footer-button bg-green-600" onclick="saveAllSettingsAndClose()">Save &amp; Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Custom Confirmation Modal -->
     <div id="confirmation-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="hideConfirmationModal(event)">
         <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-8 border" onclick="event.stopPropagation()">
@@ -1560,11 +1605,130 @@
 
         // Single dock-level Settings entry point: opens whichever settings modal matches the active view.
         function openContextualSettings() {
-            if (activeAppView === 'calendar') {
-                openCalendarSettingsModal();
-            } else {
-                openSchedulingSettingsModal();
+            openAllSettingsModal();
+        }
+
+        // ===================== MERGED SETTINGS MODAL (hub dock button only) =====================
+        function openAllSettingsModal() {
+            // Same prep each individual modal's own opener does, so every field is fresh.
+            loadUserScheduleDates();
+            loadUserScheduleSlotOptions();
+            renderSchedulingSettingsForm();
+            loadPreferences();
+            document.getElementById('pref-default-view-select').value = localStorage.getItem('calendarView') || 'month';
+            document.getElementById('pref-week-start-select').value = localStorage.getItem('weekStart') || '0';
+            document.getElementById('ics-include-day-events').checked = localStorage.getItem('icsIncludeDayEvents') !== 'false';
+            document.getElementById('ics-include-class-events').checked = localStorage.getItem('icsIncludeClassEvents') === 'true';
+            renderExternalFeedsList();
+            updateGistSyncUI();
+
+            document.getElementById('all-settings-scheduling-slot').appendChild(document.getElementById('scheduling-settings-body'));
+            document.getElementById('all-settings-calendar-slot').appendChild(document.getElementById('calendar-settings-body'));
+
+            const modal = document.getElementById('all-settings-modal');
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('show');
+            });
+        }
+
+        // Returns the borrowed panels to their original modals so the individual settings
+        // buttons still work normally the next time either is opened on its own.
+        function returnSettingsPanelsHome() {
+            const schedulingBody = document.getElementById('scheduling-settings-body');
+            const calendarBody = document.getElementById('calendar-settings-body');
+            const schedulingFooter = document.getElementById('scheduling-settings-footer');
+            if (schedulingBody && schedulingFooter) {
+                schedulingFooter.parentElement.insertBefore(schedulingBody, schedulingFooter);
             }
+            const calendarModalContent = document.querySelector('#calendar-settings-modal .modal-content');
+            if (calendarBody && calendarModalContent) {
+                calendarModalContent.appendChild(calendarBody);
+            }
+        }
+
+        function closeAllSettingsModal(event) {
+            const modal = document.getElementById('all-settings-modal');
+            const modalContent = modal.querySelector('.modal-content');
+            if (event && modalContent.contains(event.target)) return;
+            returnSettingsPanelsHome();
+            modal.classList.add('opacity-0');
+            modal.classList.remove('show');
+            modal.addEventListener('transitionend', () => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, { once: true });
+        }
+
+        function saveAllSettingsAndClose() {
+            saveUserScheduleDates();
+            saveUserScheduleSlotOptions();
+            closeAllSettingsModal();
+            getScheduledClassUrl();
+        }
+
+        // ===================== EXPORT / IMPORT ALL DATA =====================
+        // The complete, authoritative set of localStorage keys this app owns.
+        const ALL_DATA_KEYS = [
+            'classDataV3', 'userADays', 'userBDays', 'userScheduleSlotOptionsV2',
+            'dayNotesV1', 'classNotesV1',
+            'theme', 'themePalette', 'motionPref', 'timeFormat',
+            'calendarView', 'weekStart',
+            'showGoogleCalendar', 'googleCalendarEmbedUrl',
+            'icsIncludeDayEvents', 'icsIncludeClassEvents',
+            'externalIcsFeeds', 'externalIcsCache',
+            'githubGistToken', 'githubGistId', 'githubGistRawUrl'
+        ];
+
+        function exportAllData() {
+            const data = {};
+            ALL_DATA_KEYS.forEach((key) => {
+                const value = localStorage.getItem(key);
+                if (value !== null) data[key] = value;
+            });
+            const payload = { app: 'school-dashboard', exportedAt: new Date().toISOString(), data };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `school-dashboard-backup-${dateKey(new Date())}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importAllDataFile(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                let payload;
+                try {
+                    payload = JSON.parse(reader.result);
+                } catch (err) {
+                    alert('That file could not be read as a valid backup (invalid JSON).');
+                    return;
+                }
+                const data = payload && payload.data ? payload.data : payload;
+                if (!data || typeof data !== 'object') {
+                    alert('That file does not look like a School Dashboard backup.');
+                    return;
+                }
+                showConfirmationModal('Import this backup? It will overwrite your current classes, schedule dates, notes, calendar feeds, and preferences on this device.', [
+                    { text: 'Confirm', action: () => {
+                        ALL_DATA_KEYS.forEach((key) => {
+                            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                                localStorage.setItem(key, data[key]);
+                            }
+                        });
+                        window.location.reload();
+                    }},
+                    { text: 'Cancel', action: () => {} }
+                ]);
+            };
+            reader.readAsText(file);
         }
 
         // ===================== THEME (shared) =====================
@@ -5071,6 +5235,12 @@
             });
             window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', () => {
                 if (currentMotionState === 'auto') applyMotionPref('auto');
+            });
+            document.getElementById('all-data-import-input').addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    importAllDataFile(e.target.files[0]);
+                    e.target.value = '';
+                }
             });
 
             const style = document.createElement('style');
