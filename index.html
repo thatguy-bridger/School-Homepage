@@ -2041,11 +2041,25 @@
                 });
             });
 
+            // Every glass panel in the app (cards, modals, popovers) sits on top of these blobs
+            // and uses backdrop-filter, which has to re-sample whatever's behind it any time that
+            // content changes -- so animating the blobs at a full 60fps forces a continuous,
+            // expensive backdrop-filter recomposite across the whole UI every single frame
+            // (this is notably heavier in Firefox than Chromium). The blobs' own motion is slow
+            // enough (many-second travel times) that updating it at ~24fps instead of 60fps is
+            // visually indistinguishable, so throttle the actual work/paint to cut that cost.
+            const BLOB_FRAME_INTERVAL = 1000 / 24;
+            let lastBlobPaint = 0;
             function frame(now) {
                 if (isReducedMotion()) {
                     requestAnimationFrame(frame);
                     return;
                 }
+                if (now - lastBlobPaint < BLOB_FRAME_INTERVAL) {
+                    requestAnimationFrame(frame);
+                    return;
+                }
+                lastBlobPaint = now;
                 const impulseTotals = blobs.map(() => ({ dx: 0, dy: 0 }));
                 for (let i = impulses.length - 1; i >= 0; i--) {
                     const imp = impulses[i];
@@ -2117,6 +2131,13 @@
             new MutationObserver(refreshAccentColors).observe(document.body, { attributes: true, attributeFilter: ['class', 'data-palette'] });
 
             const CYCLE_LEG_MS = 9000;
+            // The position update below is a cheap, GPU-friendly transform, so it stays at full
+            // frame rate for smooth tracking. Rebuilding the gradient string and writing
+            // .style.background every frame is much more expensive on a blurred element (it's a
+            // real paint, not just a composite) for a color cycle that only needs to be updated a
+            // handful of times per second to look perfectly smooth -- so that part is throttled.
+            const COLOR_UPDATE_INTERVAL = 120;
+            let lastColorUpdate = 0;
             function frame(now) {
                 if (isReducedMotion()) {
                     glow.classList.remove('is-active');
@@ -2129,16 +2150,19 @@
                 y += (targetY - y) * 0.084;
                 glow.style.transform = 'translate3d(' + x.toFixed(1) + 'px, ' + y.toFixed(1) + 'px, 0)';
 
-                const legPos = (now % (CYCLE_LEG_MS * 3)) / CYCLE_LEG_MS;
-                const i = Math.floor(legPos);
-                const t = -(Math.cos(Math.PI * (legPos - i)) - 1) / 2;
-                const from = accentRgb[i], to = accentRgb[(i + 1) % 3];
-                const r = Math.round(from[0] + (to[0] - from[0]) * t);
-                const g = Math.round(from[1] + (to[1] - from[1]) * t);
-                const b = Math.round(from[2] + (to[2] - from[2]) * t);
-                glow.style.background = 'radial-gradient(circle, rgb(' + r + ',' + g + ',' + b + ') 0%, transparent 72%)';
-                // Exposed so the click ripple can match whatever color the trail is showing right now.
-                document.documentElement.style.setProperty('--cursor-glow-rgb', r + ',' + g + ',' + b);
+                if (now - lastColorUpdate >= COLOR_UPDATE_INTERVAL) {
+                    lastColorUpdate = now;
+                    const legPos = (now % (CYCLE_LEG_MS * 3)) / CYCLE_LEG_MS;
+                    const i = Math.floor(legPos);
+                    const t = -(Math.cos(Math.PI * (legPos - i)) - 1) / 2;
+                    const from = accentRgb[i], to = accentRgb[(i + 1) % 3];
+                    const r = Math.round(from[0] + (to[0] - from[0]) * t);
+                    const g = Math.round(from[1] + (to[1] - from[1]) * t);
+                    const b = Math.round(from[2] + (to[2] - from[2]) * t);
+                    glow.style.background = 'radial-gradient(circle, rgb(' + r + ',' + g + ',' + b + ') 0%, transparent 72%)';
+                    // Exposed so the click ripple can match whatever color the trail is showing right now.
+                    document.documentElement.style.setProperty('--cursor-glow-rgb', r + ',' + g + ',' + b);
+                }
 
                 requestAnimationFrame(frame);
             }
@@ -4505,6 +4529,8 @@
                 externalFeeds = JSON.parse(saved).map(normalizeExternalFeed);
             } else {
                 externalFeeds = [
+                    { id: 'altahawks', label: 'Alta Hawks Athletics', url: 'https://www.calendarwiz.com/CalendarWiz_iCal.php?crd=altahawks' },
+                    { id: 'agilixbuzz', label: 'Online Courses', url: 'https://api.agilixbuzz.com/ical/~0~prObHCX.wEg28NaXxE2J3.VuXpEWjdZzfVNB4mDxpG8!/calendar.ics' }
                 ].map(normalizeExternalFeed);
                 saveExternalFeeds();
             }
