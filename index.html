@@ -1732,6 +1732,15 @@
             });
         }
 
+        // Shared envelope for every click-triggered push (blobs and UI elements alike): a fast
+        // burst up to full strength, then a linear glide back down to rest at a constant speed --
+        // not a symmetric ease-in/ease-out hump. t is normalized progress through the impulse, 0-1.
+        function pushEnvelope(t) {
+            const attack = 0.16;
+            if (t < attack) return Math.sin((t / attack) * Math.PI / 2);
+            return Math.max(0, 1 - (t - attack) / (1 - attack));
+        }
+
         // ===================== AMBIENT BACKGROUND BLOBS: free-roaming random wander =====================
         function setupBackgroundBlobs() {
             const blobs = Array.from(document.querySelectorAll('.bg-blob'));
@@ -1771,8 +1780,14 @@
 
             // A click ripple gives each blob a shove away from the click point: a single push
             // that eases out then slowly eases back to where it would otherwise be -- like
-            // tugging it on a rubber band and letting go, not a multi-bounce wobble.
-            const impulse = blobs.map(() => ({ dirX: 0, dirY: 0, mag: 0, startTime: 0, duration: 900 }));
+            // tugging it on a rubber band and letting go, not a multi-bounce wobble. Impulses are
+            // additive (a fresh click just pushes a new entry) rather than overwriting a single
+            // slot per blob, so a second click landing while a blob is still mid-recoil doesn't
+            // reset it back to zero and cause a visible jump -- the old impulse keeps decaying on
+            // its own curve while the new one layers on top, and duration is fixed (not
+            // randomized) so every blob settles back at the same, consistent pace.
+            const BLOB_IMPULSE_DURATION = 1400;
+            const impulses = [];
             document.addEventListener('app:click-ripple', (e) => {
                 const { x: clickX, y: clickY } = e.detail;
                 const now = performance.now();
@@ -1782,21 +1797,37 @@
                     let dist = Math.hypot(dx, dy);
                     if (dist < 40) { const a = rand(0, Math.PI * 2); dx = Math.cos(a); dy = Math.sin(a); dist = 1; }
                     const maxDist = Math.max(window.innerWidth, window.innerHeight);
-                    // Power curve instead of a straight line: the far-edge floor (0.35) and the
-                    // point-blank ceiling (1) stay put, but everything in between is pulled up,
-                    // so blobs at close/middle distance get noticeably more intensity than a
-                    // linear falloff would give them.
-                    const falloff = 0.35 + 0.65 * Math.pow(Math.max(0, 1 - dist / maxDist), 0.55);
-                    const imp = impulse[i];
-                    imp.dirX = dx / dist;
-                    imp.dirY = dy / dist;
-                    imp.mag = 95 * falloff;
-                    imp.startTime = now;
-                    imp.duration = rand(1100, 1500);
+                    // Steep power curve: the far-edge floor (0.35) and point-blank ceiling (1)
+                    // stay put, but the curve is now convex (exponent > 1) so the boost is
+                    // concentrated close to the click -- middle/far distances fall off faster
+                    // instead of being pulled up.
+                    const falloff = 0.35 + 0.65 * Math.pow(Math.max(0, 1 - dist / maxDist), 1.8);
+                    impulses.push({
+                        blobIndex: i,
+                        dirX: dx / dist,
+                        dirY: dy / dist,
+                        mag: 125 * falloff,
+                        startTime: now,
+                        duration: BLOB_IMPULSE_DURATION
+                    });
                 });
             });
 
             function frame(now) {
+                const impulseTotals = blobs.map(() => ({ dx: 0, dy: 0 }));
+                for (let i = impulses.length - 1; i >= 0; i--) {
+                    const imp = impulses[i];
+                    const it = (now - imp.startTime) / imp.duration;
+                    if (it >= 1) {
+                        impulses.splice(i, 1);
+                        continue;
+                    }
+                    const envelope = pushEnvelope(it);
+                    const total = impulseTotals[imp.blobIndex];
+                    total.dx += imp.dirX * imp.mag * envelope;
+                    total.dy += imp.dirY * imp.mag * envelope;
+                }
+
                 blobs.forEach((el, i) => {
                     const s = state[i];
                     let t = (now - s.startTime) / s.duration;
@@ -1807,17 +1838,8 @@
                     const rot = s.fromRot + (s.toRot - s.fromRot) * e;
                     const scale = s.fromScale + (s.toScale - s.fromScale) * e;
 
-                    const imp = impulse[i];
-                    if (imp.mag > 0) {
-                        const it = (now - imp.startTime) / imp.duration;
-                        if (it >= 1) {
-                            imp.mag = 0;
-                        } else {
-                            const envelope = Math.sin(Math.PI * it) * (1 - it * 0.1);
-                            x += imp.dirX * imp.mag * envelope;
-                            y += imp.dirY * imp.mag * envelope;
-                        }
-                    }
+                    x += impulseTotals[i].dx;
+                    y += impulseTotals[i].dy;
 
                     s.curX = x; s.curY = y;
                     el.style.transform = 'translate(' + x.toFixed(1) + 'px, ' + y.toFixed(1) + 'px) rotate(' + rot.toFixed(1) + 'deg) scale(' + scale.toFixed(3) + ')';
@@ -1914,25 +1936,45 @@
                 '.icon-btn, #today-button, #export-button, #import-button, .nav-arrow-btn, .view-tab, ' +
                 'h1.gradient-text, h2, .countdown-chip';
 
+            const DETACH_DURATION = 950; // fixed (not randomized) so every element settles at the same pace
+
             const activeImpulses = [];
+            let animatedEls = new Set();
             let loopActive = false;
 
             function frame(now) {
+                // Impulses are additive rather than replaced: if a second click lands on an
+                // element that's still mid-recoil, its old impulse keeps decaying on its own
+                // curve instead of being reset to zero, and the new impulse's contribution is
+                // summed on top -- so the element's position stays continuous, no snap-back jump.
+                const totals = new Map();
                 for (let i = activeImpulses.length - 1; i >= 0; i--) {
                     const imp = activeImpulses[i];
                     const t = (now - imp.startTime) / imp.duration;
                     if (t >= 1) {
-                        imp.el.style.transform = '';
                         activeImpulses.splice(i, 1);
                         continue;
                     }
-                    // Same single-hump "push then slowly ease back" shape as the blob impulse --
-                    // a rubber-band tug, not a multi-bounce wobble.
-                    const envelope = Math.sin(Math.PI * t) * (1 - t * 0.1);
+                    // Fast burst up to full strength, then a linear (constant-speed) glide back
+                    // to rest -- see pushEnvelope.
+                    const envelope = pushEnvelope(t);
                     const dx = imp.dirX * imp.mag * envelope;
                     const dy = imp.dirY * imp.mag * envelope;
-                    imp.el.style.transform = 'translate(' + dx.toFixed(2) + 'px, ' + dy.toFixed(2) + 'px)';
+                    const cur = totals.get(imp.el) || { dx: 0, dy: 0 };
+                    cur.dx += dx;
+                    cur.dy += dy;
+                    totals.set(imp.el, cur);
                 }
+
+                const newAnimatedEls = new Set(totals.keys());
+                animatedEls.forEach((el) => {
+                    if (!newAnimatedEls.has(el)) el.style.transform = '';
+                });
+                totals.forEach((v, el) => {
+                    el.style.transform = 'translate(' + v.dx.toFixed(2) + 'px, ' + v.dy.toFixed(2) + 'px)';
+                });
+                animatedEls = newAnimatedEls;
+
                 if (activeImpulses.length) {
                     requestAnimationFrame(frame);
                 } else {
@@ -1951,27 +1993,28 @@
                     let dx = cx - clickX, dy = cy - clickY;
                     let dist = Math.hypot(dx, dy);
                     if (dist < 10) { const a = Math.random() * Math.PI * 2; dx = Math.cos(a); dy = Math.sin(a); dist = 1; }
-                    // Same power-curve shape as the ripple's color and the blob falloff: the
-                    // far-edge floor (0.12) and point-blank ceiling (1) stay anchored, but
-                    // close/middle distances get pulled up for noticeably more intense movement.
-                    const distFalloff = 0.12 + 0.88 * Math.pow(Math.max(0, 1 - dist / maxDist), 0.55);
+                    // Steep power curve: the far-edge floor (0.12) and point-blank ceiling (1)
+                    // stay anchored, but the curve is convex (exponent > 1) so the extra push is
+                    // concentrated on elements close to the click rather than spread evenly.
+                    const distFalloff = 0.12 + 0.88 * Math.pow(Math.max(0, 1 - dist / maxDist), 1.8);
 
                     // "Mass": bigger footprint (area) resists the shove more. sqrt(area) is used
                     // as the reference linear size so this scales gently rather than blowing up
                     // or vanishing across the huge range from a small icon button to the whole panel.
+                    // The raw ratio is pulled halfway back toward 1 (neutral/no effect) so size
+                    // still matters but at half the influence it used to have.
                     const area = rect.width * rect.height;
-                    const massScale = Math.min(1.6, Math.max(0.15, 70 / Math.sqrt(area)));
+                    const rawMassScale = Math.min(1.6, Math.max(0.15, 70 / Math.sqrt(area)));
+                    const massScale = 1 + (rawMassScale - 1) * 0.5;
 
-                    let imp = activeImpulses.find((entry) => entry.el === el);
-                    if (!imp) {
-                        imp = { el, dirX: 0, dirY: 0, mag: 0, startTime: 0, duration: 0 };
-                        activeImpulses.push(imp);
-                    }
-                    imp.dirX = dx / dist;
-                    imp.dirY = dy / dist;
-                    imp.mag = 30 * distFalloff * massScale;
-                    imp.startTime = now;
-                    imp.duration = 700 + Math.random() * 220;
+                    activeImpulses.push({
+                        el,
+                        dirX: dx / dist,
+                        dirY: dy / dist,
+                        mag: 42 * distFalloff * massScale,
+                        startTime: now,
+                        duration: DETACH_DURATION
+                    });
                 });
 
                 if (!loopActive && activeImpulses.length) {
@@ -4996,4 +5039,3 @@
     </script>
 </body>
 </html>
-
