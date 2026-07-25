@@ -1684,20 +1684,19 @@
         // =====================================================================================
         // ===================== CLASSES: SCHEDULE DATA =====================
         // =====================================================================================
-        let userADays = [""];
-        let userBDays = [""];
-
+        let userADays = [""]
+        let userBDays = [""]
         const defaultScheduleSlotOptions = [
             { label: 'None (Not Scheduled)', value: '' },
-            { label: 'Advisory',              value: 'ADVISORY', fullDayTime: '09:05 - 09:45', halfDayTime: null },
-            { label: 'A Day - Period 1',      value: 'A_P1',     fullDayTime: '07:45 - 09:05', halfDayTime: '07:45 - 08:50' },
-            { label: 'A Day - Period 2',      value: 'A_P2',     fullDayTime: '09:45 - 11:05', halfDayTime: '08:50 - 10:00' },
-            { label: 'A Day - Period 3',      value: 'A_P3',     fullDayTime: '11:05 - 13:00', halfDayTime: '10:00 - 11:10' },
-            { label: 'A Day - Period 4',      value: 'A_P4',     fullDayTime: '13:00 - 14:25', halfDayTime: '11:10 - 12:00' },
-            { label: 'B Day - Period 5',      value: 'B_P5',     fullDayTime: '07:45 - 09:05', halfDayTime: '07:45 - 08:50' },
-            { label: 'B Day - Period 6',      value: 'B_P6',     fullDayTime: '09:45 - 11:05', halfDayTime: '08:50 - 10:00' },
-            { label: 'B Day - Period 7',      value: 'B_P7',     fullDayTime: '11:05 - 13:00', halfDayTime: '10:00 - 11:10' },
-            { label: 'B Day - Period 8',      value: 'B_P8',     fullDayTime: '13:00 - 14:25', halfDayTime: '11:10 - 12:00' },
+            { label: 'Advisory',              value: 'ADVISORY', fullDayTime: '09:05 - 09:46', halfDayTime: null },
+            { label: 'A Day - Period 1',      value: 'A_P1',     fullDayTime: '07:45 - 09:05', halfDayTime: '07:45 - 08:51' },
+            { label: 'A Day - Period 2',      value: 'A_P2',     fullDayTime: '09:45 - 11:05', halfDayTime: '08:50 - 10:01' },
+            { label: 'A Day - Period 3',      value: 'A_P3',     fullDayTime: '11:05 - 13:00', halfDayTime: '10:00 - 11:11' },
+            { label: 'A Day - Period 4',      value: 'A_P4',     fullDayTime: '13:00 - 14:26', halfDayTime: '11:10 - 12:01' },
+            { label: 'B Day - Period 5',      value: 'B_P5',     fullDayTime: '07:45 - 09:05', halfDayTime: '07:45 - 08:51' },
+            { label: 'B Day - Period 6',      value: 'B_P6',     fullDayTime: '09:45 - 11:05', halfDayTime: '08:50 - 10:01' },
+            { label: 'B Day - Period 7',      value: 'B_P7',     fullDayTime: '11:05 - 13:00', halfDayTime: '10:00 - 11:11' },
+            { label: 'B Day - Period 8',      value: 'B_P8',     fullDayTime: '13:00 - 14:26', halfDayTime: '11:10 - 12:01' },
         ];
 
         let userScheduleSlotOptions = [];
@@ -1727,7 +1726,7 @@
                 categoryName: 'Other',
                 classes: [
                     { title: 'Advisory', details: 'Advisory - Room 0000, Mr. Teacher', url: '', scheduleSlot: 'ADVISORY' },
-                    { title: 'Online Courses', details: '-', url: 'https://canyonsva.agilixbuzz.com/', scheduleSlot: '' },
+                    { title: 'Online Courses', details: '-', url: '', scheduleSlot: '' },
                     { title: 'Dashboard', details: 'Class Dashboard', url: '', scheduleSlot: '' }
                 ],
                 isSideStacked: false
@@ -2382,6 +2381,26 @@
             if (!timeStr || !timeStr.includes(':')) return { hour: 0, minute: 0 };
             const [hourStr, minuteStr] = timeStr.split(':');
             return { hour: parseInt(hourStr, 10), minute: parseInt(minuteStr, 10) };
+        }
+
+        // Formats a 24h "HH:MM" (or {hour,minute}) per the user's Clock Format preference (default 12h AM/PM).
+        function formatTimeLabel(hour, minute) {
+            const use12 = (localStorage.getItem('timeFormat') || '12') === '12';
+            const mm = String(minute).padStart(2, '0');
+            if (!use12) return `${String(hour).padStart(2, '0')}:${mm}`;
+            const period = hour >= 12 ? 'PM' : 'AM';
+            let h12 = hour % 12;
+            if (h12 === 0) h12 = 12;
+            return `${h12}:${mm} ${period}`;
+        }
+        function formatTimeOnly(timeStr) {
+            const t = parseTime(timeStr);
+            return formatTimeLabel(t.hour, t.minute);
+        }
+        function formatTimeRangeLabel(timeRange) {
+            if (!timeRange) return '';
+            const [startStr, endStr] = timeRange.split(' - ');
+            return `${formatTimeOnly(startStr)} - ${formatTimeOnly(endStr)}`;
         }
 
         // --- PREFERENCES ---
@@ -3165,7 +3184,7 @@
                 ` : '';
                 const classesHtml = classesToday.length ? `
                     <div class="week-classes-list">
-                        ${classesToday.map(c => `<p class="week-class-row"><span class="flex items-center gap-1.5 min-w-0">${classDotHtml(c.classItem)}<span class="truncate">${classNameHtml(c.classItem)}</span></span>${c.timeRange ? `<span class="week-class-time">${escapeHtml(c.timeRange.split(' - ')[0])}</span>` : ''}</p>`).join('')}
+                        ${classesToday.map(c => `<p class="week-class-row"><span class="flex items-center gap-1.5 min-w-0">${classDotHtml(c.classItem)}<span class="truncate">${classNameHtml(c.classItem)}</span></span>${c.timeRange ? `<span class="week-class-time">${escapeHtml(formatTimeOnly(c.timeRange.split(' - ')[0]))}</span>` : ''}</p>`).join('')}
                     </div>
                 ` : '';
                 cols += `
@@ -3202,7 +3221,7 @@
                         ${classesToday.map(c => `
                             <a class="day-class-row" style="${c.classItem.color ? `border-left: 3px solid ${escapeAttr(c.classItem.color)};` : ''}" href="${c.classItem.url || '#'}" onclick="${c.classItem.url ? '' : 'return false;'}">
                                 <span class="flex items-center gap-2 font-medium">${classDotHtml(c.classItem)}${classNameHtml(c.classItem)}</span>
-                                ${c.timeRange ? `<span class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(c.timeRange)}</span>` : ''}
+                                ${c.timeRange ? `<span class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>` : ''}
                             </a>
                         `).join('')}
                     </div>
@@ -4166,7 +4185,7 @@
                 'PRODID:-//School Dashboard//School Calendar//EN',
                 'CALSCALE:GREGORIAN',
                 'METHOD:PUBLISH',
-                'X-WR-CALNAME:[2] 🏫School Schedule'
+                'X-WR-CALNAME:School Calendar'
             ];
 
             const includeDayEvents = localStorage.getItem('icsIncludeDayEvents') !== 'false';
