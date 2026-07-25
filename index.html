@@ -122,63 +122,72 @@
             width: 100%;
             max-width: 1600px;
             margin: 0 auto;
+            /* Clears the fixed .app-topbar (4.5rem tall) so it never overlaps page content. */
+            padding-top: 4.5rem;
         }
 
-        .app-sidebar {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1.1rem;
-            position: fixed;
-            left: 50%;
-            bottom: 1rem;
-            /* Resting state: drops ~80% of its own height below the fold, just a sliver peeking above it */
-            transform: translate(-50%, 11.25rem);
-            z-index: 40;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 1.75rem;
-            backdrop-filter: blur(28px) saturate(160%);
-            -webkit-backdrop-filter: blur(28px) saturate(160%);
-            box-shadow: var(--glass-shadow);
-            transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out, transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
-        }
-        /* Hovering the hub slides the whole dock fully into view */
-        .app-sidebar.is-revealed {
-            transform: translate(-50%, 0);
-        }
-        /* Slides down out of the way while the page is being scrolled -- wins over is-revealed */
-        .app-sidebar.is-hidden {
-            transform: translate(-50%, calc(100% + 2rem));
-        }
+        /* Always-visible top bar (replaces the old bottom-fixed, mostly-hidden floating dock). */
+        .app-topbar {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
 
-        /* ===================== Orbit Nav (Classes / Calendar / Theme drift around the PA hub) ===================== */
+    position: fixed;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+
+    width: clamp(200px, 50vw, 400px);
+    height: 4rem;
+    padding: 0 1rem;
+
+    z-index: 40;
+
+    background: var(--glass-bg-strong);
+    border: 1px solid var(--glass-border);
+    border-radius: 9999px;
+
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+
+    box-shadow:
+        0 12px 36px rgba(0,0,0,.12),
+        0 2px 8px rgba(0,0,0,.05);
+
+    transition:
+        background-color .5s,
+        border-color .5s,
+        width .3s,
+        transform .3s;
+}
+.app-topbar:hover {
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow:
+        0 18px 50px rgba(0,0,0,.16),
+        0 4px 12px rgba(0,0,0,.06);
+}
+
+        /* ===================== Orbit Nav (Classes / Calendar / Theme drift along the top bar) ===================== */
         .orbit-stage {
             position: relative;
-            width: 10.5rem;
-            height: 10.5rem;
+            flex: 1;
+            min-width: 0;
+            height: 100%;
         }
 
-        .orbit-hub {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 2.5rem;
-            height: 2.5rem;
+        .topbar-logo {
+            flex-shrink: 0;
+            width: 3rem;
+            height: 3rem;
             border-radius: 0.9rem;
             background: var(--accent-grad);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 800;
-            color: white;
-            font-size: 0.8rem;
-            letter-spacing: -0.02em;
             box-shadow: 0 6px 18px var(--glow-accent);
-            z-index: 200;
             transition: background-color 0.5s ease-in-out, box-shadow 0.5s ease-in-out;
         }
+        .topbar-logo img { width: 1.5rem; height: 1.5rem; }
 
         /* Position/depth are driven per-frame from JS (organic drift, not a fixed CSS loop) */
         .orbit-item {
@@ -214,7 +223,7 @@
             box-shadow: 0 6px 16px var(--glow-accent);
         }
         .sidebar-link.is-locked {
-            transform: scale(1.7);
+            transform: scale(1.35);
             color: white;
             background: var(--accent-grad);
             box-shadow: 0 10px 26px var(--glow-accent);
@@ -934,12 +943,17 @@
             font-weight: 700;
             padding: 0.1rem 0.4rem;
             border-radius: 9999px;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25em;
         }
+        .day-badge svg { width: 0.85em; height: 0.85em; flex-shrink: 0; }
         .day-badge.badge-a { background-color: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }
         .day-badge.badge-b { background-color: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+        .day-badge.badge-none { background-color: rgba(100, 116, 139, 0.16); color: var(--text-muted); }
         body.dark-theme .day-badge.badge-a { background-color: rgba(34, 211, 238, 0.2); color: #67e8f9; }
         body.dark-theme .day-badge.badge-b { background-color: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        body.dark-theme .day-badge.badge-none { background-color: rgba(148, 163, 184, 0.18); color: #cbd5e1; }
 
         .countdown-chip {
             display: inline-flex;
@@ -997,6 +1011,81 @@
             font-size: 0.65rem;
             color: var(--text-muted);
         }
+
+        /* ===================== Mini calendar preview (Classes screen) ===================== */
+        /* Previously built entirely from raw Tailwind gray/white/slate + dark: utility classes,
+           which follow the OS's prefers-color-scheme media query -- completely independent of
+           this app's manual light/dark/system toggle (there's no tailwind.config setting
+           darkMode to sync with .dark-theme). That's why it could render with the wrong
+           palette and looked visually inconsistent with the rest of the glass design system.
+           These classes use the same custom properties as everything else instead. */
+        .mini-calendar-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1rem;
+            backdrop-filter: blur(16px) saturate(160%);
+            -webkit-backdrop-filter: blur(16px) saturate(160%);
+            box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+            transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out;
+        }
+        body.dark-theme .mini-calendar-panel { box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3); }
+        .mini-calendar-title { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
+        .mini-calendar-subtitle { font-size: 0.72rem; color: var(--text-muted); }
+        .mini-calendar-open-btn {
+            padding: 0.5rem 0.9rem;
+            border-radius: 9999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            transition: all 0.2s ease-in-out;
+        }
+        .mini-calendar-open-btn:hover { border-color: var(--accent-2); box-shadow: 0 6px 16px var(--glow-accent); }
+        .mini-weekday-label {
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        .mini-day-cell {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.15rem;
+            border-radius: 0.6rem;
+            border: 1px solid var(--glass-border);
+            padding: 0.3rem 0.2rem;
+            min-height: 3.4rem;
+            transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+        }
+        .mini-day-cell.is-outside { opacity: 0.35; }
+        .mini-day-cell.is-today {
+            background: color-mix(in srgb, var(--accent-2) 14%, transparent);
+            border-color: var(--accent-2);
+        }
+        .mini-day-number { font-size: 0.72rem; font-weight: 600; color: var(--text-primary); }
+        .mini-day-cell.is-today .mini-day-number { color: var(--accent-2); }
+        .mini-day-cell .day-badge { font-size: 0.55rem; padding: 0.05rem 0.3rem; }
+        .mini-day-cell .note-dot { position: static; width: 0.3rem; height: 0.3rem; box-shadow: none; }
+        .mini-external-dots { display: flex; gap: 0.2rem; }
+        .mini-external-dot { width: 0.3rem; height: 0.3rem; border-radius: 9999px; }
+        .mini-upcoming-card {
+            border-radius: 0.85rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-strong);
+            padding: 0.65rem 0.85rem;
+        }
+        .mini-upcoming-date { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-muted); }
+        .mini-upcoming-title { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+        .mini-upcoming-sub { font-size: 0.72rem; color: var(--text-secondary); margin-top: 0.15rem; }
+        .mini-empty-state { font-size: 0.85rem; color: var(--text-muted); }
+
         .day-classes-section { margin-bottom: 1.5rem; }
         .day-class-row {
             display: flex;
@@ -1144,6 +1233,63 @@
             to { transform: scale(9.1); opacity: 0; }
         }
 
+        /* ===================== No-school toast ===================== */
+        .no-school-toast {
+            position: fixed;
+            top: 1.25rem;
+            left: 50%;
+            z-index: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            max-width: min(90vw, 26rem);
+            padding: 0.9rem 1.1rem;
+            border-radius: 1.1rem;
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+            box-shadow: var(--glass-shadow);
+            opacity: 0;
+            transform: translate(-50%, -1.25rem);
+            pointer-events: none;
+            transition: opacity 0.35s var(--ease-out), transform 0.4s var(--ease-spring), background-color 0.5s ease-in-out, border-color 0.5s ease-in-out;
+        }
+        .no-school-toast.hidden { display: none; }
+        .no-school-toast.is-visible {
+            opacity: 1;
+            transform: translate(-50%, 0);
+            pointer-events: auto;
+        }
+        .no-school-toast .toast-icon {
+            flex-shrink: 0;
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-grad);
+            color: white;
+        }
+        .no-school-toast .toast-icon svg { width: 1.2rem; height: 1.2rem; }
+        .no-school-toast .toast-title { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); }
+        .no-school-toast .toast-sub { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.1rem; }
+        .no-school-toast .toast-close {
+            flex-shrink: 0;
+            margin-left: 0.25rem;
+            color: var(--text-muted);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 9999px;
+            transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out, transform 0.15s ease-in-out;
+        }
+        .no-school-toast .toast-close:hover { color: var(--text-primary); background: var(--glass-bg); }
+        .no-school-toast .toast-close:active { transform: scale(0.9); }
+        .no-school-toast .toast-close svg { width: 1rem; height: 1rem; }
+
         /* ===================== Reduced motion ===================== */
         /* Crushes every CSS animation/transition to effectively instant (not literally 0, so
            transitionend still reliably fires -- some of this app's logic, like closing modals,
@@ -1180,46 +1326,47 @@
     <div class="bg-blob bg-blob-3"></div>
     <div class="cursor-glow" id="cursor-glow"></div>
 
-    <div class="app-shell">
-        <!-- Sidebar: app-level navigation -->
-        <aside class="app-sidebar">
-            <div class="orbit-stage" id="orbit-stage">
-                <div class="orbit-hub" aria-hidden="true"> <img src="Resources/logo.svg" alt="" class="orbit-hub-logo"></div>
+    <div id="no-school-toast" class="no-school-toast hidden" role="status" aria-live="polite"></div>
 
-                <div class="orbit-item">
-                    <a href="#classes" data-view="classes" class="sidebar-link active" onclick="event.preventDefault(); switchAppView('classes')" title="Classes">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path></svg>
-                        <span class="sr-only">Classes</span>
-                    </a>
-                </div>
-
-                <div class="orbit-item">
-                    <a href="#calendar" data-view="calendar" class="sidebar-link" onclick="event.preventDefault(); switchAppView('calendar')" title="Calendar">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <span class="sr-only">Calendar</span>
-                    </a>
-                </div>
-
-                <div class="orbit-item">
-                    <button type="button" id="theme-toggle" class="sidebar-link" aria-haspopup="true" aria-expanded="false" onclick="event.preventDefault(); toggleThemePopover()" title="Theme">
-                        <svg id="moon-icon" class="hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9 9 0 008.354-5.646z"></path></svg>
-                        <svg id="sun-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6m0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0m0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13m8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5M3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8m10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0m-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0m9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707M4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708"/>
-                        </svg>
-                        <svg id="system-icon" class="hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13V7a2 2 0 012-2h14a2 2 0 012 2v6m-2 8H5a2 2 0 01-2-2v-6a2 2 0 012-2h14a2 2 0 012 2v6a2 2 0 01-2 2z"></path></svg>
-                        <span class="sr-only">Theme</span>
-                    </button>
-                </div>
-
-                <div class="orbit-item">
-                    <button type="button" id="settings-dock-button" class="sidebar-link" onclick="event.preventDefault(); openContextualSettings()" title="Settings">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        <span class="sr-only">Settings</span>
-                    </button>
-                </div>
+    <!-- Top bar: app-level navigation -->
+    <header class="app-topbar">
+        <div class="topbar-logo" aria-hidden="true"><img src="Resources/logo.svg" alt="" class="orbit-hub-logo"></div>
+        <div class="orbit-stage" id="orbit-stage">
+            <div class="orbit-item">
+                <a href="#classes" data-view="classes" class="sidebar-link active" onclick="event.preventDefault(); switchAppView('classes')" title="Classes">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path></svg>
+                    <span class="sr-only">Classes</span>
+                </a>
             </div>
-        </aside>
 
+            <div class="orbit-item">
+                <a href="#calendar" data-view="calendar" class="sidebar-link" onclick="event.preventDefault(); switchAppView('calendar')" title="Calendar">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="sr-only">Calendar</span>
+                </a>
+            </div>
+
+            <div class="orbit-item">
+                <button type="button" id="theme-toggle" class="sidebar-link" aria-haspopup="true" aria-expanded="false" onclick="event.preventDefault(); toggleThemePopover()" title="Theme">
+                    <svg id="moon-icon" class="hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9 9 0 008.354-5.646z"></path></svg>
+                    <svg id="sun-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6m0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0m0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13m8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5M3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8m10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0m-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0m9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707M4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708"/>
+                    </svg>
+                    <svg id="system-icon" class="hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13V7a2 2 0 012-2h14a2 2 0 012 2v6m-2 8H5a2 2 0 01-2-2v-6a2 2 0 012-2h14a2 2 0 012 2v6a2 2 0 01-2 2z"></path></svg>
+                    <span class="sr-only">Theme</span>
+                </button>
+            </div>
+
+            <div class="orbit-item">
+                <button type="button" id="settings-dock-button" class="sidebar-link" onclick="event.preventDefault(); openContextualSettings()" title="Settings">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <span class="sr-only">Settings</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-shell">
         <!-- Main content: swappable views -->
         <main class="app-main">
             <!-- ===================== CLASSES VIEW ===================== -->
@@ -1399,6 +1546,11 @@
                         <h5 class="text-lg font-semibold mb-2">B-Days</h5>
                         <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Enter dates in M.D.YYYY format, separated by commas (e.g., 8.19.2025, 8.21.2025).</p>
                         <textarea id="bdays-input" class="form-input w-full h-32"></textarea>
+                    </div>
+                    <div class="mb-6">
+                        <h5 class="text-lg font-semibold mb-2">No School Days</h5>
+                        <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Holidays, breaks, teacher in-service days, etc. Same M.D.YYYY format as above. A date listed here overrides A/B Days -- no periods, no countdown, no calendar sync for that day. Nothing else gets shifted or rescheduled.</p>
+                        <textarea id="noschool-input" class="form-input w-full h-24"></textarea>
                     </div>
                     <div>
                         <h5 class="text-lg font-semibold mb-2">Period Times</h5>
@@ -1854,48 +2006,48 @@
             const links = Array.from(stage.querySelectorAll('.sidebar-link'));
             const tooltip = document.getElementById('orbit-tooltip');
 
-            // Each icon gets its own home spot spaced around the hub (so they mostly keep to their
-            // own patch of sky and don't constantly cross the center), plus a randomized drift
-            // recipe (two summed sine waves per axis, at incommensurate frequencies) layered on top
-            // of that home spot so they still wander sporadically and occasionally cross paths.
-            const spacingDeg = 360 / links.length;
-            const drift = links.map((_, i) => {
-                const homeAngle = (i * spacingDeg + (Math.random() - 0.5) * spacingDeg * 0.25) * (Math.PI / 180);
-                const homeRadius = 58 + Math.random() * 10;
-                return {
-                    homeX: Math.cos(homeAngle) * homeRadius,
-                    homeY: Math.sin(homeAngle) * homeRadius,
-                    ax1: 10 + Math.random() * 8, fx1: 0.00015 + Math.random() * 0.00010, px1: Math.random() * Math.PI * 2,
-                    ax2: 5 + Math.random() * 6, fx2: 0.00035 + Math.random() * 0.00025, px2: Math.random() * Math.PI * 2,
-                    ay1: 10 + Math.random() * 8, fy1: 0.00018 + Math.random() * 0.00012, py1: Math.random() * Math.PI * 2,
-                    ay2: 5 + Math.random() * 6, fy2: 0.00032 + Math.random() * 0.00022, py2: Math.random() * Math.PI * 2,
-                    sizeAmp: 0.14 + Math.random() * 0.10, sizeFreq: 0.00020 + Math.random() * 0.00018, sizePhase: Math.random() * Math.PI * 2
-                };
-            });
+            // Each icon gets its own home lane spaced evenly along the bar (so they mostly keep to
+            // their own patch of it and don't constantly collide), plus a randomized drift recipe
+            // (two summed sine waves per axis, at incommensurate frequencies) layered on top of
+            // that home spot so they still wander organically and occasionally cross into a
+            // neighboring lane. Amplitudes are derived from the stage's actual measured size
+            // (a horizontal bar, not the old fixed-size circular stage), so they scale with
+            // whatever width/height the bar ends up with at a given viewport.
+            let drift = [];
+            function buildDriftRecipes(width, height) {
+                const laneWidth = width / links.length;
+                const maxAx = Math.max(6, laneWidth * 0.28);
+                const maxAy = Math.max(4, height / 2 - 26);
+                drift = links.map((_, i) => {
+                    const homeX = (i + 0.5) * laneWidth - width / 2;
+                    return {
+                        homeX, homeY: 0,
+                        ax1: maxAx * 0.55 + Math.random() * maxAx * 0.25, fx1: 0.00015 + Math.random() * 0.00010, px1: Math.random() * Math.PI * 2,
+                        ax2: maxAx * 0.25 + Math.random() * maxAx * 0.15, fx2: 0.00035 + Math.random() * 0.00025, px2: Math.random() * Math.PI * 2,
+                        ay1: maxAy * 0.55 + Math.random() * maxAy * 0.25, fy1: 0.00018 + Math.random() * 0.00012, py1: Math.random() * Math.PI * 2,
+                        ay2: maxAy * 0.25 + Math.random() * maxAy * 0.15, fy2: 0.00032 + Math.random() * 0.00022, py2: Math.random() * Math.PI * 2,
+                        sizeAmp: 0.1 + Math.random() * 0.06, sizeFreq: 0.00020 + Math.random() * 0.00018, sizePhase: Math.random() * Math.PI * 2
+                    };
+                });
+            }
 
             let mouse = null;
             let lockedIndex = -1;
 
-            // Stage geometry only actually changes on resize or when the dock's own transform
-            // transitions (scroll-hide / hub-peek reveal) settle -- not every frame -- so it's
-            // cached instead of measured with getBoundingClientRect() on every tick. Reading DOM
-            // geometry right after writing styles forces a synchronous layout; doing that for
-            // every icon on every animation frame is what was making the whole page feel laggy.
+            // Stage geometry only actually changes on resize -- not every frame -- so it's cached
+            // instead of measured with getBoundingClientRect() on every tick. Reading DOM geometry
+            // right after writing styles forces a synchronous layout; doing that for every icon on
+            // every animation frame is what was making the whole page feel laggy.
             let stageCenterX = 0, stageCenterY = 0, maxDist = 100;
             function refreshStageGeometry() {
                 const r = stage.getBoundingClientRect();
                 stageCenterX = r.left + r.width / 2;
                 stageCenterY = r.top + r.height / 2;
                 maxDist = Math.max(r.width, r.height) * 0.85;
+                buildDriftRecipes(r.width, r.height);
             }
             refreshStageGeometry();
             window.addEventListener('resize', refreshStageGeometry);
-            const sidebarEl = stage.closest('.app-sidebar');
-            if (sidebarEl) {
-                sidebarEl.addEventListener('transitionend', (e) => {
-                    if (e.propertyName === 'transform') refreshStageGeometry();
-                });
-            }
 
             function positionOrbitTooltip(link) {
                 const r = link.getBoundingClientRect();
@@ -2292,40 +2444,6 @@
             });
         }
 
-        // ===================== SIDEBAR SCROLL-HIDE =====================
-        function setupSidebarScrollHide() {
-            const sidebar = document.querySelector('.app-sidebar');
-            if (!sidebar) return;
-            let lastY = window.scrollY;
-            let ticking = false;
-            window.addEventListener('scroll', () => {
-                if (ticking) return;
-                ticking = true;
-                requestAnimationFrame(() => {
-                    const y = window.scrollY;
-                    const delta = y - lastY;
-                    if (delta > 4 && y > 80) {
-                        sidebar.classList.add('is-hidden');
-                        sidebar.classList.remove('is-revealed');
-                    } else if (delta < -4 || y <= 80) {
-                        sidebar.classList.remove('is-hidden');
-                    }
-                    lastY = y;
-                    ticking = false;
-                });
-            }, { passive: true });
-        }
-
-        // ===================== PA HUB PEEK/REVEAL =====================
-        function setupHubPeek() {
-            const sidebar = document.querySelector('.app-sidebar');
-            if (!sidebar) return;
-            // The hub itself is a small target -- while peeking, most of what's actually visible
-            // above the fold is the surrounding glass background, so that has to trigger the reveal too.
-            sidebar.addEventListener('mouseenter', () => sidebar.classList.add('is-revealed'));
-            sidebar.addEventListener('mouseleave', () => sidebar.classList.remove('is-revealed'));
-        }
-
         // ===================== CONFIRMATION MODAL (shared) =====================
         function showConfirmationModal(message, options) {
             document.getElementById('confirmation-message').textContent = message;
@@ -2378,6 +2496,7 @@
         // =====================================================================================
         let userADays = [""]
         let userBDays = [""]
+        let userNoSchoolDays = []
         const defaultScheduleSlotOptions = [
             { label: 'None (Not Scheduled)', value: '' },
             { label: 'Advisory',              value: 'ADVISORY', fullDayTime: '09:05 - 09:46', halfDayTime: null },
@@ -2969,19 +3088,24 @@
         function loadUserScheduleDates() {
             const savedADays = localStorage.getItem('userADays');
             const savedBDays = localStorage.getItem('userBDays');
+            const savedNoSchool = localStorage.getItem('noSchoolDaysV1');
             if (savedADays) userADays = JSON.parse(savedADays);
             if (savedBDays) userBDays = JSON.parse(savedBDays);
+            userNoSchoolDays = savedNoSchool ? JSON.parse(savedNoSchool) : [];
         }
 
         function saveUserScheduleDates() {
             const aDaysInput = document.getElementById('adays-input').value;
             const bDaysInput = document.getElementById('bdays-input').value;
+            const noSchoolInput = document.getElementById('noschool-input').value;
 
             userADays = aDaysInput.split(',').map(date => date.trim()).filter(date => date !== '');
             userBDays = bDaysInput.split(',').map(date => date.trim()).filter(date => date !== '');
+            userNoSchoolDays = noSchoolInput.split(',').map(date => date.trim()).filter(date => date !== '');
 
             localStorage.setItem('userADays', JSON.stringify(userADays));
             localStorage.setItem('userBDays', JSON.stringify(userBDays));
+            localStorage.setItem('noSchoolDaysV1', JSON.stringify(userNoSchoolDays));
             scheduleGistSync();
         }
 
@@ -3002,6 +3126,7 @@
         function renderSchedulingSettingsForm() {
             document.getElementById('adays-input').value = userADays.join(', ');
             document.getElementById('bdays-input').value = userBDays.join(', ');
+            document.getElementById('noschool-input').value = userNoSchoolDays.join(', ');
 
             const timeSlotsDisplay = document.getElementById('time-slots-display');
             timeSlotsDisplay.innerHTML = '';
@@ -3376,7 +3501,7 @@
             const dateString = `${now.getMonth() + 1}.${now.getDate()}.${now.getFullYear()}`;
             const isADay = userADays.includes(dateString);
             const isBDay = userBDays.includes(dateString);
-            if (!isADay && !isBDay) return null;
+            if (isNoSchoolDay(now) || (!isADay && !isBDay)) return null;
             const isHalfDay = now.getDay() === 5;
             const nowMinutes = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
 
@@ -3515,7 +3640,7 @@
             const isBDay = userBDays.includes(currentDateString);
             const isHalfDay = (dotw === 5);
 
-            if (!isADay && !isBDay) {
+            if (isNoSchoolDay(now) || (!isADay && !isBDay)) {
                 console.log("Not a scheduled A or B day. Staying on current page.");
                 return;
             }
@@ -3574,6 +3699,7 @@
         let selectedDayKey = null;
         let userADaysCal = [];
         let userBDaysCal = [];
+        let userNoSchoolDaysCal = [];
         let dayNotes = {};
 
         function dateKey(date) {
@@ -3586,14 +3712,71 @@
         function isSameDay(a, b) {
             return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
         }
+        // Shared "no entry" glyph for every No School badge, so it has the same iconic weight as
+        // the A/B day badges instead of being a plain text pill.
+        const NO_SCHOOL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9"></circle><line x1="6" y1="18" x2="18" y2="6"></line></svg>';
+        function isNoSchoolDay(date) {
+            const key = dateKey(date);
+            // Recognizes both the settings-modal "No School Days" list and a day note titled
+            // exactly "No School" -- which is what the CSV importer produces for a "No School"
+            // subject row (see parseColumnarCsv/applyImportedDayTypes), so a bulk-imported school
+            // calendar gets the same suppression/badges without needing the textarea too.
+            if (userNoSchoolDaysCal.includes(key)) return true;
+            const note = dayNotes[key];
+            return !!(note && note.title === 'No School');
+        }
         function getDayType(date) {
             const key = dateKey(date);
+            if (isNoSchoolDay(date)) return null;
             if (userADaysCal.includes(key)) return 'A';
             if (userBDaysCal.includes(key)) return 'B';
             return null;
         }
         function getNote(date) {
             return dayNotes[dateKey(date)] || null;
+        }
+
+        // ===================== NO-SCHOOL TOAST =====================
+        // Shown once per browser tab session (not on every re-render) when today is a no-school
+        // day -- whether that came from the settings-modal "No School Days" list or a bulk CSV
+        // import that left a "No School" day note (see isNoSchoolDay).
+        let noSchoolToastHideTimer = null;
+        function checkNoSchoolToast() {
+            const today = new Date();
+            if (!isNoSchoolDay(today)) return;
+            const key = dateKey(today);
+            const sessionFlag = 'noSchoolToastShown:' + key;
+            if (sessionStorage.getItem(sessionFlag)) return;
+            sessionStorage.setItem(sessionFlag, '1');
+            const note = dayNotes[key];
+            showNoSchoolToast(note && note.notes ? note.notes : '');
+        }
+
+        function showNoSchoolToast(reason) {
+            const toast = document.getElementById('no-school-toast');
+            if (!toast) return;
+            toast.innerHTML = `
+                <div class="toast-icon">${NO_SCHOOL_ICON}</div>
+                <div class="min-w-0">
+                    <p class="toast-title">No School Today</p>
+                    ${reason ? `<p class="toast-sub">${escapeHtml(reason)}</p>` : ''}
+                </div>
+                <button type="button" class="toast-close" onclick="hideNoSchoolToast()" aria-label="Dismiss">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            `;
+            toast.classList.remove('hidden');
+            requestAnimationFrame(() => toast.classList.add('is-visible'));
+            clearTimeout(noSchoolToastHideTimer);
+            noSchoolToastHideTimer = setTimeout(hideNoSchoolToast, 8000);
+        }
+
+        function hideNoSchoolToast() {
+            const toast = document.getElementById('no-school-toast');
+            if (!toast) return;
+            clearTimeout(noSchoolToastHideTimer);
+            toast.classList.remove('is-visible');
+            setTimeout(() => toast.classList.add('hidden'), 450);
         }
 
         // --- CLASSES SCHEDULED FOR A GIVEN CALENDAR DATE ---
@@ -3635,8 +3818,10 @@
         function loadScheduleDatesForCalendar() {
             const savedADays = localStorage.getItem('userADays');
             const savedBDays = localStorage.getItem('userBDays');
+            const savedNoSchool = localStorage.getItem('noSchoolDaysV1');
             userADaysCal = savedADays ? JSON.parse(savedADays) : defaultADays;
             userBDaysCal = savedBDays ? JSON.parse(savedBDays) : defaultBDays;
+            userNoSchoolDaysCal = savedNoSchool ? JSON.parse(savedNoSchool) : [];
         }
         function loadDayNotes() {
             const saved = localStorage.getItem('dayNotesV1');
@@ -3662,7 +3847,7 @@
             const today = new Date();
             const weekdayLabelsBase = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const weekdayHeaders = Array.from({ length: 7 }, (_, i) => weekdayLabelsBase[(weekStart + i) % 7])
-                .map(label => `<div class="text-[10px] uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400 text-center">${label}</div>`)
+                .map(label => `<div class="mini-weekday-label">${label}</div>`)
                 .join('');
 
             let cells = '';
@@ -3673,13 +3858,13 @@
                 const dayType = getDayType(cursor);
                 const note = getNote(cursor);
                 const externalEvents = getExternalEventsForDate(cursor);
-                const badgeHtml = dayType ? `<span class="mt-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${dayType === 'A' ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300' : 'bg-amber-500/15 text-amber-600 dark:text-amber-300'}">${dayType}-Day</span>` : '';
-                const noteDotHtml = note && (note.title || note.notes) ? `<span class="w-1.5 h-1.5 rounded-full bg-violet-500 mt-1"></span>` : '';
-                const externalDotsHtml = externalEvents.length ? `<div class="flex gap-1 mt-1 justify-center">${externalEvents.slice(0, 2).map(event => `<span class="w-1.5 h-1.5 rounded-full" style="background:${event.color}"></span>`).join('')}</div>` : '';
+                const badgeHtml = dayType ? `<span class="day-badge ${dayType === 'A' ? 'badge-a' : 'badge-b'}">${dayType}</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none" title="No School">${NO_SCHOOL_ICON}</span>` : '';
+                const noteDotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
+                const externalDotsHtml = externalEvents.length ? `<div class="mini-external-dots">${externalEvents.slice(0, 2).map(event => `<span class="mini-external-dot" style="background:${event.color}"></span>`).join('')}</div>` : '';
 
                 cells += `
-                    <div class="flex flex-col items-center justify-start rounded-lg border border-gray-200/70 dark:border-gray-700/70 p-1.5 min-h-[54px] ${isOutside ? 'opacity-40' : ''} ${isToday ? 'bg-indigo-500/10 border-indigo-400/40' : ''}">
-                        <span class="text-xs font-semibold ${isToday ? 'text-indigo-600 dark:text-indigo-300' : ''}">${cursor.getDate()}</span>
+                    <div class="mini-day-cell ${isOutside ? 'is-outside' : ''} ${isToday ? 'is-today' : ''}">
+                        <span class="mini-day-number">${cursor.getDate()}</span>
                         ${badgeHtml}
                         ${noteDotHtml}
                         ${externalDotsHtml}
@@ -3695,19 +3880,20 @@
                 const key = dateKey(currentDay);
                 const note = dayNotes[key];
                 const dayType = getDayType(currentDay);
+                const noSchool = isNoSchoolDay(currentDay);
                 const externalEvents = getExternalEventsForDate(currentDay);
-                if (!dayType && !note && !externalEvents.length) continue;
+                if (!dayType && !noSchool && !note && !externalEvents.length) continue;
 
-                const titleHtml = note && note.title ? `<p class="font-semibold text-sm">${escapeHtml(note.title)}</p>` : (dayType ? `<p class="font-semibold text-sm">${dayType}-Day</p>` : '<p class="font-semibold text-sm">Scheduled</p>');
-                const notesHtml = note && note.notes ? `<p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">${escapeHtml(note.notes)}</p>` : '';
+                const titleHtml = note && note.title ? `<p class="mini-upcoming-title">${escapeHtml(note.title)}</p>` : (dayType ? `<p class="mini-upcoming-title">${dayType}-Day</p>` : noSchool ? `<p class="mini-upcoming-title">No School</p>` : '<p class="mini-upcoming-title">Scheduled</p>');
+                const notesHtml = note && note.notes ? `<p class="mini-upcoming-sub line-clamp-2">${escapeHtml(note.notes)}</p>` : '';
                 const classesToday = getClassesForDate(currentDay);
-                const classesHtml = classesToday.length ? `<p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1 truncate">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>` : '';
-                const externalHtml = externalEvents.length ? `<div class="mt-1 space-y-1">${externalEvents.slice(0, 2).map(event => `<p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">${escapeHtml(event.title)}</p>`).join('')}</div>` : '';
+                const classesHtml = classesToday.length ? `<p class="mini-upcoming-sub truncate">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>` : '';
+                const externalHtml = externalEvents.length ? `<div class="mt-1 space-y-1">${externalEvents.slice(0, 2).map(event => `<p class="mini-upcoming-sub truncate">${escapeHtml(event.title)}</p>`).join('')}</div>` : '';
                 upcomingItems.push(`
-                    <div class="rounded-xl border border-gray-200/70 dark:border-gray-700/70 p-3">
+                    <div class="mini-upcoming-card">
                         <div class="flex items-center justify-between gap-2">
-                            <span class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">${currentDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                            ${dayType ? `<span class="text-[10px] font-semibold px-2 py-1 rounded-full ${dayType === 'A' ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300' : 'bg-amber-500/15 text-amber-600 dark:text-amber-300'}">${dayType}-Day</span>` : ''}
+                            <span class="mini-upcoming-date">${currentDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                            ${dayType ? `<span class="day-badge ${dayType === 'A' ? 'badge-a' : 'badge-b'}">${dayType}-Day</span>` : noSchool ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>` : ''}
                         </div>
                         ${titleHtml}
                         ${notesHtml}
@@ -3718,17 +3904,17 @@
             }
 
             container.innerHTML = `
-                <div class="rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-slate-900/50 p-4 shadow-sm backdrop-blur-sm">
+                <div class="mini-calendar-panel">
                     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                         <div>
-                            <p class="text-sm font-semibold">Calendar</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">This month and what is coming up</p>
+                            <p class="mini-calendar-title">Calendar</p>
+                            <p class="mini-calendar-subtitle">This month and what is coming up</p>
                         </div>
-                        <button type="button" class="px-3 py-2 rounded-full text-sm font-semibold border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-slate-800 transition" onclick="switchAppView('calendar')">Open full calendar</button>
+                        <button type="button" class="mini-calendar-open-btn" onclick="switchAppView('calendar')">Open full calendar</button>
                     </div>
                     <div class="grid grid-cols-7 gap-1 mb-3">${weekdayHeaders}</div>
                     <div class="grid grid-cols-7 gap-1">${cells}</div>
-                    <div class="mt-4 space-y-2">${upcomingItems.length ? upcomingItems.join('') : '<p class="text-sm text-gray-500 dark:text-gray-400">No notes or special dates are scheduled in the next week.</p>'}</div>
+                    <div class="mt-4 space-y-2">${upcomingItems.length ? upcomingItems.join('') : '<p class="mini-empty-state">No notes or special dates are scheduled in the next week.</p>'}</div>
                 </div>
             `;
         }
@@ -3883,7 +4069,7 @@
                 const note = getNote(cursor);
                 const externalEvents = getExternalEventsForDate(cursor);
                 const classesToday = getClassesForDate(cursor);
-                const badgeHtml = dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}-Day</span>` : '';
+                const badgeHtml = dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}-Day</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>` : '';
                 const titleHtml = note && note.title ? `<p class="text-xs mt-1 truncate font-medium">${escapeHtml(note.title)}</p>` : '';
                 const dotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
                 const externalDotsHtml = externalEvents.length ? `
@@ -3928,9 +4114,10 @@
                 const note = getNote(d);
                 const externalEvents = getExternalEventsForDate(d);
                 const classesToday = getClassesForDate(d);
-                const badgeLabel = dayType ? `${dayType}-Day` : note && (note.title || note.notes) ? 'Event' : '';
-                const badgeClass = dayType ? `day-badge badge-${dayType.toLowerCase()}` : note && (note.title || note.notes) ? 'day-badge bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-200' : '';
-                const badgeHtml = badgeLabel ? `<span class="${badgeClass}">${badgeLabel}</span>` : '';
+                const isNoSchool = isNoSchoolDay(d);
+                const badgeLabel = dayType ? `${dayType}-Day` : isNoSchool ? 'No School' : note && (note.title || note.notes) ? 'Event' : '';
+                const badgeClass = dayType ? `day-badge badge-${dayType.toLowerCase()}` : isNoSchool ? 'day-badge badge-none' : note && (note.title || note.notes) ? 'day-badge bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-200' : '';
+                const badgeHtml = badgeLabel ? `<span class="${badgeClass}">${isNoSchool ? NO_SCHOOL_ICON : ''}${badgeLabel}</span>` : '';
                 const titleHtml = note && note.title ? `<p class="text-sm mt-2 font-semibold">${escapeHtml(note.title)}</p>` : '';
                 const notesHtml = note && note.notes ? `<p class="text-xs mt-1 text-gray-500 dark:text-gray-400 line-clamp-4">${escapeHtml(note.notes)}</p>` : '';
                 const externalHtml = externalEvents.length ? `
@@ -3967,9 +4154,11 @@
             const classesToday = getClassesForDate(currentDate);
             const badgeHtml = dayType
                 ? `<span class="day-badge badge-${dayType.toLowerCase()} text-sm px-3 py-1">${dayType}-Day</span>`
-                : note.title || note.notes
-                    ? `<span class="day-badge bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-200 text-sm px-3 py-1">Event</span>`
-                    : `<span class="text-sm text-gray-500 dark:text-gray-400">No school scheduled</span>`;
+                : isNoSchoolDay(currentDate)
+                    ? `<span class="day-badge badge-none text-sm px-3 py-1">${NO_SCHOOL_ICON}No School</span>`
+                    : note.title || note.notes
+                        ? `<span class="day-badge bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-200 text-sm px-3 py-1">Event</span>`
+                        : `<span class="text-sm text-gray-500 dark:text-gray-400">No school scheduled</span>`;
             const classesHtml = classesToday.length ? `
                 <div class="day-classes-section">
                     <p class="text-sm font-semibold mb-2">Today's Classes</p>
@@ -4064,6 +4253,7 @@
             const dateMap = new Map();
             userADaysCal.forEach(k => dateMap.set(k, { date: parseDateKey(k), type: 'A' }));
             userBDaysCal.forEach(k => dateMap.set(k, { date: parseDateKey(k), type: 'B' }));
+            userNoSchoolDaysCal.forEach(k => { if (!dateMap.has(k)) dateMap.set(k, { date: parseDateKey(k), type: null }); });
             Object.keys(externalEventsByDate).forEach(k => {
                 if (!dateMap.has(k)) dateMap.set(k, { date: parseDateKey(k), type: null });
             });
@@ -4087,10 +4277,11 @@
                 if (entry.date < windowStart || entry.date > windowEnd) return;
                 const key = dateKey(entry.date);
                 const dayType = getDayType(entry.date);
+                const noSchool = isNoSchoolDay(entry.date);
                 const note = dayNotes[key];
                 const externalEvents = getExternalEventsForDate(entry.date);
                 const hasNote = note && (note.title || note.notes);
-                const hasEntries = dayType || hasNote || externalEvents.length;
+                const hasEntries = dayType || noSchool || hasNote || externalEvents.length;
                 if (!hasEntries) return;
 
                 const monthLabel = entry.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -4102,17 +4293,21 @@
                 const isToday = isSameDay(entry.date, today);
                 const badgeHtml = dayType
                     ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}-Day</span>`
-                    : hasNote
-                        ? `<span class="day-badge bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-200">Event</span>`
-                        : `<span class="day-badge bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">Calendar</span>`;
+                    : noSchool
+                        ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>`
+                        : hasNote
+                            ? `<span class="day-badge bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-200">Event</span>`
+                            : `<span class="day-badge bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">Calendar</span>`;
 
                 const titleText = note && note.title
                     ? note.title
                     : dayType
                         ? `${dayType}-Day`
-                        : externalEvents.length
-                            ? externalEvents[0].title
-                            : 'Scheduled Event';
+                        : noSchool
+                            ? 'No School'
+                            : externalEvents.length
+                                ? externalEvents[0].title
+                                : 'Scheduled Event';
                 const titleHtml = `<span class="font-semibold">${escapeHtml(titleText)}</span>`;
                 const notesHtml = note && note.notes
                     ? `<p class="text-xs mt-1 text-gray-500 dark:text-gray-400 whitespace-pre-wrap">${escapeHtml(note.notes)}</p>`
@@ -4951,7 +5146,9 @@
 
             allDateKeys.forEach(key => {
                 const note = dayNotes[key];
-                const dayType = userADays.includes(key) ? 'A' : userBDays.includes(key) ? 'B' : null;
+                // A no-school day never counts as an A/B day for the synced calendar, but a note
+                // explicitly left on that date (e.g. "Teacher In-Service Day") still syncs.
+                const dayType = isNoSchoolDay(parseDateKey(key)) ? null : (userADays.includes(key) ? 'A' : userBDays.includes(key) ? 'B' : null);
                 if (!note && !dayType) return;
 
                 const date = parseDateKey(key);
@@ -5241,6 +5438,7 @@
             refreshExternalFeeds(false);
             renderClassesCalendarPreview();
             applyGoogleCalendarPrefs();
+            checkNoSchoolToast();
 
             displayTime();
             setInterval(displayTime, 1000);
@@ -5252,8 +5450,6 @@
             setupBackgroundBlobs();
             setupCursorGlow();
             setupClickEffects();
-            setupSidebarScrollHide();
-            setupHubPeek();
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
                 if (currentThemeState === 'system') applyTheme('system');
             });
