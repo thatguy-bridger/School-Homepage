@@ -1320,7 +1320,13 @@
                         <button type="button" class="modal-footer-button bg-indigo-600" onclick="copyGistSyncUrl()">Copy</button>
                     </div>
                 </div>
-                <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="syncNotesToGist(true)">Sync Now</button>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="syncNotesToGist(true)">Sync Now</button>
+                    <button type="button" class="modal-footer-button bg-red-600" onclick="confirmResetGistSync()">Reset Sync</button>
+                </div>
+                <p class="text-xs text-gray-600 dark:text-gray-300 mt-2">
+                    If your calendar app stops picking up new changes, use Reset Sync — it deletes the old feed and creates a fresh one. You'll need to re-subscribe with the new URL afterward; the old link stops working.
+                </p>
             </div>
 
             <div>
@@ -4185,10 +4191,9 @@
                     lines.push(foldIcsLine(`UID:${key}-day@pick-a-class-school-calendar`));
                     lines.push(`DTSTAMP:${dtstamp}`);
 
-// Always make the day event an all-day event
+                    // A/B Day events are always all-day, regardless of when classes actually run.
                     const nextDate = new Date(date);
                     nextDate.setDate(nextDate.getDate() + 1);
-
                     lines.push(`DTSTART;VALUE=DATE:${formatIcsDate(date)}`);
                     lines.push(`DTEND;VALUE=DATE:${formatIcsDate(nextDate)}`);
 
@@ -4239,6 +4244,19 @@
             if (!localStorage.getItem('githubGistToken')) return;
             clearTimeout(gistSyncTimer);
             gistSyncTimer = setTimeout(() => syncNotesToGist(false), 2000);
+        }
+
+        // GitHub's API hands back a raw_url pinned to the exact revision just created
+        // (.../raw/<commit-sha>/<filename>) -- a calendar subscribed to THAT url is frozen
+        // at that revision forever, no matter how many times we sync afterward. Strip the
+        // revision so we hand out the "always latest" form instead.
+        function stableGistRawUrl(data) {
+            const owner = data.owner && data.owner.login;
+            if (owner) {
+                return `https://gist.githubusercontent.com/${owner}/${data.id}/raw/${GIST_FILENAME}`;
+            }
+            const raw = data.files[GIST_FILENAME].raw_url;
+            return raw.replace(/\/raw\/[0-9a-f]+\//, '/raw/');
         }
 
         async function syncNotesToGist(showStatus) {
@@ -4294,8 +4312,7 @@
 
                 const data = await response.json();
                 localStorage.setItem('githubGistId', data.id);
-                const rawUrl = data.files[GIST_FILENAME].raw_url;
-                localStorage.setItem('githubGistRawUrl', rawUrl);
+                localStorage.setItem('githubGistRawUrl', stableGistRawUrl(data));
 
                 if (showStatus && statusEl) statusEl.textContent = `Synced just now.`;
                 updateGistSyncUI();
@@ -4305,6 +4322,48 @@
             } finally {
                 gistSyncInFlight = false;
             }
+        }
+
+        function confirmResetGistSync() {
+            showConfirmationModal('Reset the calendar sync? This deletes the current feed and creates a brand new one — your old subscription URL will stop working, so you\'ll need to re-subscribe with the new one.', [
+                { text: 'Confirm', action: () => resetGistSync() },
+                { text: 'Cancel', action: () => {} }
+            ]);
+        }
+
+        async function resetGistSync() {
+            const token = localStorage.getItem('githubGistToken');
+            const statusEl = document.getElementById('gist-sync-status');
+            if (!token) {
+                if (statusEl) statusEl.textContent = 'Add a GitHub token above first.';
+                return;
+            }
+            if (gistSyncInFlight) return;
+            gistSyncInFlight = true;
+            if (statusEl) statusEl.textContent = 'Resetting sync...';
+
+            try {
+                const gistId = localStorage.getItem('githubGistId');
+                if (gistId) {
+                    const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' };
+                    const delResponse = await fetch(`https://api.github.com/gists/${gistId}`, { method: 'DELETE', headers });
+                    if (!delResponse.ok && delResponse.status !== 404) {
+                        throw new Error(`Failed to delete old gist (${delResponse.status})`);
+                    }
+                }
+                localStorage.removeItem('githubGistId');
+                localStorage.removeItem('githubGistRawUrl');
+            } catch (err) {
+                console.error('Gist reset failed:', err);
+                if (statusEl) statusEl.textContent = `Reset failed: ${err.message}`;
+                gistSyncInFlight = false;
+                return;
+            }
+
+            gistSyncInFlight = false;
+            await syncNotesToGist(false);
+            if (statusEl) statusEl.textContent = 'Reset complete — the old link is dead now, subscribe with the new URL below.';
+            updateGistSyncUI();
         }
 
         function updateGistSyncUI() {
@@ -4464,4 +4523,3 @@
     </script>
 </body>
 </html>
- 
