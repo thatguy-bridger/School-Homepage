@@ -791,7 +791,6 @@ body.dark-theme[data-palette="mint"] {
         }
         .ics-toggle-label strong { color: var(--text-primary); }
         .class-input-group .class-title-input,
-        .class-input-group .class-details-input,
         .class-input-group .class-url-input,
         .class-input-group .class-schedule-slot-select {
             flex-grow: 1;
@@ -799,7 +798,8 @@ body.dark-theme[data-palette="mint"] {
             min-width: 0;
         }
         .class-input-group .class-teacher-input,
-        .class-input-group .class-room-input {
+        .class-input-group .class-room-input,
+        .class-input-group .class-canvas-code-input {
             flex-grow: 1;
             flex-basis: 90px;
             min-width: 0;
@@ -1411,6 +1411,7 @@ body.dark-theme[data-palette="mint"] {
                             <h1 class="gradient-text text-5xl sm:text-6xl font-extrabold tracking-tight">School Dashboard</h1>
                             <h3 class="text-xl sm:text-2xl font-medium tracking-wide mt-1" id="Time"></h3>
                             <div id="period-countdown-chip" class="countdown-chip hidden"></div>
+                            <div id="assignment-countdown-chip" class="countdown-chip hidden"></div>
                         </div>
                         <div class="view-toolbar">
                             <button id="edit-classes-button" class="icon-btn p-3 rounded-full" onclick="toggleClassEditMode()" title="Edit Classes">
@@ -2084,7 +2085,17 @@ body.dark-theme[data-palette="mint"] {
                 buildDriftRecipes(r.width, r.height);
             }
             refreshStageGeometry();
-            window.addEventListener('resize', refreshStageGeometry);
+            // ResizeObserver (rather than window's resize event) catches every reason the bar's
+            // actual box can change size -- viewport resize, but also its own clamp()-based width
+            // responding to a browser zoom change, font-size change, etc. window resize events
+            // aren't reliably fired by every kind of viewport change, and a stale measurement here
+            // means the drift math keeps using old (too-wide) bounds and icons spill outside the
+            // pill's rounded edge.
+            if (window.ResizeObserver) {
+                new ResizeObserver(refreshStageGeometry).observe(stage);
+            } else {
+                window.addEventListener('resize', refreshStageGeometry);
+            }
 
             function positionOrbitTooltip(link) {
                 const r = link.getBoundingClientRect();
@@ -2549,33 +2560,36 @@ body.dark-theme[data-palette="mint"] {
 
         let userScheduleSlotOptions = [];
 
+        // Mock data (not blank fields) so a fresh install shows what a filled-in schedule
+        // actually looks like instead of a wall of empty "Period N" cards. All obviously
+        // placeholder -- meant to be edited/replaced with the user's real schedule.
         const defaultClassData = [
             {
                 categoryName: 'A Day',
                 classes: [
-                    { title: 'Period 1', details: 'Period 1 - Room 0000, Mr. Teacher', url: '', scheduleSlot: 'A_P1' },
-                    { title: 'Period 2', details: 'Period 2 - Room 0000, Mr. Teacher', url: '', scheduleSlot: 'A_P2' },
-                    { title: 'Period 3', details: 'Period 3 - Room 0000, Mr. Teacher', url: '', scheduleSlot: 'A_P3' },
-                    { title: 'Period 4', details: 'Period 4 - Room 0000, Mr. Teacher', url: '', scheduleSlot: 'A_P4' }
+                    { title: 'Algebra II', url: '', scheduleSlot: 'A_P1', room: '204', teacher: 'Mrs. Johnson' },
+                    { title: 'English Literature', url: '', scheduleSlot: 'A_P2', room: '118', teacher: 'Mr. Davis' },
+                    { title: 'Biology', url: '', scheduleSlot: 'A_P3', room: '302', teacher: 'Ms. Chen' },
+                    { title: 'World History', url: '', scheduleSlot: 'A_P4', room: '210', teacher: 'Mr. Patel' }
                 ],
                 isSideStacked: true
             },
             {
                 categoryName: 'B Day',
                 classes: [
-                    { title: 'Period 5', details: 'Period 5 - Room 0000, Mr. Teacher', url: '', scheduleSlot: 'B_P5' },
-                    { title: 'Period 6', details: 'Period 6 - Room 0000, Mr. Teacher', url: '', scheduleSlot: 'B_P6' },
-                    { title: 'Period 7', details: 'Period 7 - Room 0000, Mr. Teacher', url: '', scheduleSlot: 'B_P7' },
-                    { title: 'Period 8', details: 'Period 8 - Room 0000, Mr. Teacher', url: '', scheduleSlot: 'B_P8' }
+                    { title: 'Spanish II', url: '', scheduleSlot: 'B_P5', room: '115', teacher: 'Sra. Lopez' },
+                    { title: 'Physical Education', url: '', scheduleSlot: 'B_P6', room: 'Gymnasium', teacher: 'Coach Williams' },
+                    { title: 'Chemistry', url: '', scheduleSlot: 'B_P7', room: '305', teacher: 'Dr. Martinez' },
+                    { title: 'Art Studio', url: '', scheduleSlot: 'B_P8', room: '402', teacher: 'Ms. Rivera' }
                 ],
                 isSideStacked: true
             },
             {
                 categoryName: 'Other',
                 classes: [
-                    { title: 'Advisory', details: 'Advisory - Room 0000, Mr. Teacher', url: '', scheduleSlot: 'ADVISORY' },
-                    { title: 'Online Courses', details: '-', url: '', scheduleSlot: '' },
-                    { title: 'Dashboard', details: 'Class Dashboard', url: '', scheduleSlot: '' }
+                    { title: 'Advisory', url: '', scheduleSlot: 'ADVISORY', room: '118', teacher: 'Mr. Davis' },
+                    { title: 'Online Courses', url: '', scheduleSlot: '' },
+                    { title: 'Dashboard', url: '', scheduleSlot: '' }
                 ],
                 isSideStacked: false
             }
@@ -2714,10 +2728,35 @@ body.dark-theme[data-palette="mint"] {
             `;
         }
 
+        // Builds the "Period 6 - B Day - Room 0000, Mr. Teacher" line shown on each class card
+        // from the schedule slot's own label plus the room/teacher fields, instead of a
+        // manually-typed details string that falls out of sync whenever those change.
+        // Normalizes a schedule-slot label like "B Day - Period 6" or "Period 6 - B Day" to
+        // "Period 6 - B" -- period first, and drop the word "Day" entirely -- regardless of which
+        // order the label happens to be stored in.
+        function formatPeriodLabel(rawLabel) {
+            const label = rawLabel || '';
+            const periodMatch = /period\s*(\d+)/i.exec(label);
+            if (periodMatch) return `Period ${periodMatch[1]}`;
+            return label.replace(/\bday\b/gi, '').replace(/\s{2,}/g, ' ').trim().replace(/^-\s*|\s*-$/g, '').trim();
+        }
+
+        function getClassSubtitle(classItem) {
+            const slotOption = userScheduleSlotOptions.find(o => o.value === classItem.scheduleSlot);
+            const parts = [];
+            if (slotOption && slotOption.label) parts.push(formatPeriodLabel(slotOption.label));
+            const roomTeacher = [];
+            if (classItem.room) roomTeacher.push(`Room ${classItem.room}`);
+            if (classItem.teacher) roomTeacher.push(classItem.teacher);
+            if (roomTeacher.length) parts.push(roomTeacher.join(', '));
+            return parts.join(' - ');
+        }
+
         function createClassCardHTML(classItem) {
             const noteId = classItem.noteId || '';
             const noteValue = classNotes[noteId] || '';
             const hasNote = !!noteValue;
+            const subtitle = getClassSubtitle(classItem);
             return `
                 <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}
                      onclick="window.location.href='${classItem.url}'">
@@ -2727,7 +2766,7 @@ body.dark-theme[data-palette="mint"] {
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         </button>
                     </div>
-                    <p class="text-sm mb-4" title="${classItem.details}">${classItem.details}</p>
+                    <p class="text-sm mb-4" title="${escapeAttr(subtitle)}">${escapeHtml(subtitle)}</p>
                     <div class="class-note-box ${hasNote ? '' : 'hidden'}" id="note-box-${noteId}" onclick="event.stopPropagation()">
                         <textarea class="class-note-textarea" placeholder="Quick note..." onchange="saveClassNote('${noteId}', this.value)">${escapeHtml(noteValue)}</textarea>
                     </div>
@@ -2919,9 +2958,9 @@ body.dark-theme[data-palette="mint"] {
                     </span>
                     <button type="button" class="class-color-swatch-btn ${classItem.color ? '' : 'is-empty'}" data-category-index="${categoryIndex}" data-class-index="${classIndex}" style="background:${classItem.color || 'transparent'}" title="Class color" onclick="event.stopPropagation(); openClassColorPicker(this, ${categoryIndex}, ${classIndex})"></button>
                     <input type="text" value="${classItem.title}" placeholder="Class Title" class="class-title-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'title', this.value)">
-                    <input type="text" value="${classItem.details}" placeholder="Details (Room, Time)" class="class-details-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'details', this.value)">
                     <input type="text" value="${classItem.teacher || ''}" placeholder="Teacher" class="class-teacher-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'teacher', this.value)">
                     <input type="text" value="${classItem.room || ''}" placeholder="Room" class="class-room-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'room', this.value)">
+                    <input type="text" value="${classItem.canvasCourseCode || ''}" placeholder="Canvas Course Code" title="Matches this class to Canvas assignments, e.g. the [BIO-101] tag Canvas puts on due dates" class="class-canvas-code-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'canvasCourseCode', this.value)">
                     <select class="class-schedule-slot-select form-select" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'scheduleSlot', this.value)">
                         ${scheduleOptionsHtml}
                     </select>
@@ -2970,7 +3009,7 @@ body.dark-theme[data-palette="mint"] {
                 console.error("Invalid categoryIndex:", categoryIndex);
                 return;
             }
-            classData[categoryIndex].classes.push({ title: '', details: '', url: '', scheduleSlot: '', color: '', teacher: '', room: '' });
+            classData[categoryIndex].classes.push({ title: '', url: '', scheduleSlot: '', color: '', teacher: '', room: '', canvasCourseCode: '' });
             renderClassEditor(document.getElementById('class-links-container'));
             saveToLocalStorage();
         }
@@ -3100,17 +3139,26 @@ body.dark-theme[data-palette="mint"] {
                 const classInputsInThisCategory = groupEl.querySelectorAll('.class-inputs-container .class-input-group');
                 classInputsInThisCategory.forEach(classEl => {
                     const titleInput = classEl.querySelector('.class-title-input');
-                    const detailsInput = classEl.querySelector('.class-details-input');
                     const urlInput = classEl.querySelector('.class-url-input');
                     const scheduleSlotSelect = classEl.querySelector('.class-schedule-slot-select');
+                    const teacherInput = classEl.querySelector('.class-teacher-input');
+                    const roomInput = classEl.querySelector('.class-room-input');
+                    const canvasCodeInput = classEl.querySelector('.class-canvas-code-input');
 
                     const title = titleInput ? titleInput.value.trim() : '';
-                    const details = detailsInput ? detailsInput.value.trim() : '';
                     const url = urlInput ? urlInput.value.trim() : '';
                     const scheduleSlot = scheduleSlotSelect ? scheduleSlotSelect.value.trim() : '';
+                    const teacher = teacherInput ? teacherInput.value.trim() : '';
+                    const room = roomInput ? roomInput.value.trim() : '';
+                    const canvasCourseCode = canvasCodeInput ? canvasCodeInput.value.trim() : '';
+                    // color has no visible input (set via the swatch popover) -- carry the existing
+                    // value over by matching this element back to its original classData entry.
+                    const origCategoryIndex = parseInt(classEl.dataset.categoryIndex, 10);
+                    const origClassIndex = parseInt(classEl.dataset.classIndex, 10);
+                    const orig = (classData[origCategoryIndex] && classData[origCategoryIndex].classes[origClassIndex]) || {};
 
-                    if (title || details || url || scheduleSlot) {
-                        updatedCategory.classes.push({ title, details, url, scheduleSlot });
+                    if (title || url || scheduleSlot || teacher || room) {
+                        updatedCategory.classes.push({ title, url, scheduleSlot, teacher, room, canvasCourseCode, color: orig.color || '' });
                     }
                 });
                 newClassData.push(updatedCategory);
@@ -3417,22 +3465,8 @@ body.dark-theme[data-palette="mint"] {
             document.querySelectorAll('.category-group').forEach(item => item.classList.remove('drag-over'));
             draggedCategoryItem = null;
             draggedCategoryOriginalIndex = null;
-
-            const newClassDataOrder = [];
-            document.querySelectorAll('#categories-form-container .category-group').forEach(groupEl => {
-                const categoryName = groupEl.querySelector('.category-name-input').value.trim();
-                const isSideStacked = groupEl.dataset.isSideStacked === 'true';
-                const classesInDom = Array.from(groupEl.querySelectorAll('.class-inputs-container .class-input-group')).map(classEl => {
-                    return {
-                        title: classEl.querySelector('.class-title-input').value.trim(),
-                        details: classEl.querySelector('.class-details-input').value.trim(),
-                        url: classEl.querySelector('.class-url-input').value.trim(),
-                        scheduleSlot: classEl.querySelector('.class-schedule-slot-select').value.trim()
-                    };
-                });
-                newClassDataOrder.push({ categoryName, classes: classesInDom, isSideStacked });
-            });
-            classData = newClassDataOrder;
+            // saveClassSettings() already rebuilds classData from the DOM in its current (now
+            // reordered) order, reading every field -- no need to duplicate that here too.
             saveClassSettings();
         }
 
@@ -3530,6 +3564,8 @@ body.dark-theme[data-palette="mint"] {
             updateCountdownChip(info);
             updateCurrentClassHighlight(info);
             checkScheduledClassPrompt(info);
+            updateAssignmentCountdownChip();
+            checkAssignmentDueSoonPrompt();
         }
 
         // --- PERIOD COUNTDOWN CHIP ---
@@ -3628,6 +3664,85 @@ body.dark-theme[data-palette="mint"] {
             chip.classList.toggle('is-next', info.status === 'next');
             const verb = info.status === 'current' ? 'ends in' : 'starts in';
             chip.innerHTML = `<span class="countdown-dot"></span><span>${escapeHtml(info.label)} ${verb} <strong>${timeStr}</strong></span>`;
+        }
+
+        // --- ASSIGNMENT DUE-DATE COUNTDOWN (Canvas sync) ---
+        function formatDueCountdown(ms) {
+            const totalSeconds = Math.max(0, Math.round(ms / 1000));
+            const days = Math.floor(totalSeconds / 86400);
+            const hours = Math.floor((totalSeconds % 86400) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            if (days > 0) return `${days}d ${hours}h`;
+            if (hours > 0) return `${hours}h ${minutes}m`;
+            if (minutes > 0) return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+            return `${seconds}s`;
+        }
+
+        // Only surface something due within the next 3 days -- a due date a week out isn't
+        // "countdown" material yet and would just be visual noise on the dashboard.
+        const ASSIGNMENT_COUNTDOWN_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+
+        function updateAssignmentCountdownChip() {
+            const chip = document.getElementById('assignment-countdown-chip');
+            if (!chip) return;
+            const next = getNextDueAssignment();
+            if (!next) {
+                chip.classList.add('hidden');
+                return;
+            }
+            const msLeft = next.dueAt - Date.now();
+            if (msLeft > ASSIGNMENT_COUNTDOWN_WINDOW_MS) {
+                chip.classList.add('hidden');
+                return;
+            }
+            chip.classList.remove('hidden');
+            const isUrgent = msLeft <= 60 * 60 * 1000; // due within an hour
+            chip.classList.toggle('is-current', isUrgent);
+            chip.classList.toggle('is-next', !isUrgent);
+            const courseSuffix = next.courseCode ? ` (${escapeHtml(next.courseCode)})` : '';
+            chip.innerHTML = `<span class="countdown-dot"></span><span>${escapeHtml(next.title)}${courseSuffix} due in <strong>${formatDueCountdown(msLeft)}</strong></span>`;
+        }
+
+        // --- "ASSIGNMENT DUE SOON, OPEN THE CLASS?" PROMPT ---
+        // Matches an assignment's Canvas course code (from its "[COURSE-CODE]" tag) against each
+        // class's optional canvasCourseCode field, set in the class editor.
+        function findClassByCanvasCourseCode(courseCode) {
+            if (!courseCode) return null;
+            const target = courseCode.trim().toLowerCase();
+            for (const category of classData) {
+                for (const classItem of category.classes) {
+                    if ((classItem.canvasCourseCode || '').trim().toLowerCase() === target) return classItem;
+                }
+            }
+            return null;
+        }
+
+        // Suggest opening the class once a matched assignment is due within this window. Each
+        // assignment (by title+due time) is only ever prompted once per page session.
+        const ASSIGNMENT_PROMPT_WINDOW_MS = 30 * 60 * 1000;
+        let promptedAssignmentKeys = new Set();
+
+        function checkAssignmentDueSoonPrompt() {
+            const next = getNextDueAssignment();
+            if (!next || !next.courseCode) return;
+            const msLeft = next.dueAt - Date.now();
+            if (msLeft > ASSIGNMENT_PROMPT_WINDOW_MS) return;
+
+            const key = next.rawTitle + '|' + next.dueAt;
+            if (promptedAssignmentKeys.has(key)) return;
+
+            const matchedClass = findClassByCanvasCourseCode(next.courseCode);
+            if (!matchedClass || !matchedClass.url || matchedClass.url === '#') return;
+
+            const modal = document.getElementById('confirmation-modal');
+            if (modal && !modal.classList.contains('hidden')) return;
+
+            promptedAssignmentKeys.add(key);
+            showConfirmationModal(`"${next.title}" is due soon for ${matchedClass.title}. Open the class now?`, [
+                { text: 'Continue', action: () => { window.location.href = matchedClass.url; } },
+                { text: 'Cancel', action: () => {} }
+            ]);
         }
 
         // --- "OPEN CURRENT CLASS?" PROMPT (re-checked every tick, not just at page load) ---
@@ -4745,13 +4860,21 @@ body.dark-theme[data-palette="mint"] {
         let externalFeeds = [];
         let externalEventsByDate = {};
 
+        // Canvas's personal calendar feed URL always lives under an *.instructure.com domain
+        // (e.g. https://canyons.instructure.com/feeds/calendars/user_xxx.ics), so that's a safe,
+        // host-agnostic way to recognize one regardless of which school's Canvas instance it is.
+        function isCanvasFeedUrl(url) {
+            return /instructure\.com/i.test(url || '');
+        }
+
         function normalizeExternalFeed(feed, index) {
             return {
                 id: feed.id || `feed-${Date.now()}`,
                 label: feed.label || feed.url || 'Untitled Feed',
                 url: feed.url || '',
                 color: feed.color || EXTERNAL_FEED_COLORS[index % EXTERNAL_FEED_COLORS.length],
-                enabled: typeof feed.enabled === 'boolean' ? feed.enabled : true
+                enabled: typeof feed.enabled === 'boolean' ? feed.enabled : true,
+                isCanvas: typeof feed.isCanvas === 'boolean' ? feed.isCanvas : isCanvasFeedUrl(feed.url)
             };
         }
 
@@ -4782,7 +4905,8 @@ body.dark-theme[data-palette="mint"] {
             const label = labelInput.value.trim();
             const url = urlInput.value.trim();
             if (!url) return;
-            externalFeeds.push({ id: 'feed-' + Date.now(), label: label || url, url, color: EXTERNAL_FEED_COLORS[externalFeeds.length % EXTERNAL_FEED_COLORS.length], enabled: true });
+            const isCanvas = isCanvasFeedUrl(url);
+            externalFeeds.push({ id: 'feed-' + Date.now(), label: label || (isCanvas ? 'Canvas' : url), url, color: EXTERNAL_FEED_COLORS[externalFeeds.length % EXTERNAL_FEED_COLORS.length], enabled: true, isCanvas });
             saveExternalFeeds();
             labelInput.value = '';
             urlInput.value = '';
@@ -4843,7 +4967,10 @@ body.dark-theme[data-palette="mint"] {
                     <input id="feed-color-${feed.id}" type="color" class="hidden" value="${escapeAttr(feed.color || feedColor(feed, i))}" onchange="updateExternalFeedColor('${feed.id}', this.value)">
 
                     <div class="min-w-0">
-                        <div class="font-semibold truncate">${escapeHtml(feed.label)}</div>
+                        <div class="font-semibold truncate flex items-center gap-1.5">
+                            ${escapeHtml(feed.label)}
+                            ${feed.isCanvas ? '<span class="day-badge badge-a" title="Assignment due dates from this feed power the countdown chip and open-class prompt">Canvas</span>' : ''}
+                        </div>
                         <div class="text-xs text-gray-500 dark:text-gray-400 truncate">${escapeHtml(feed.url)}</div>
                     </div>
 
@@ -5009,7 +5136,7 @@ body.dark-theme[data-palette="mint"] {
                     ? expandRecurrence(ev.start, ev.rrule, windowStart, windowEnd)
                     : (ev.start >= windowStart && ev.start <= windowEnd ? [ev.start] : []);
                 occurrences.forEach(occDate => {
-                    expanded.push({ title: ev.summary || '(No title)', description: ev.description, date: occDate });
+                    expanded.push({ title: ev.summary || '(No title)', description: ev.description, date: occDate, allDay: ev.allDay });
                 });
             });
             return expanded;
@@ -5035,7 +5162,7 @@ body.dark-theme[data-palette="mint"] {
                     const events = parseIcsToEvents(icsText, windowStart, windowEnd);
                     cache[feed.id] = {
                         fetchedAt: now,
-                        events: events.map(e => ({ title: e.title, description: e.description, date: dateKey(e.date) }))
+                        events: events.map(e => ({ title: e.title, description: e.description, date: dateKey(e.date), timestamp: e.date.getTime(), allDay: !!e.allDay }))
                     };
                 } catch (err) {
                     console.error('Failed to fetch external feed', feed.label, err);
@@ -5060,10 +5187,54 @@ body.dark-theme[data-palette="mint"] {
                     externalEventsByDate[ev.date].push({ title: ev.title, feedLabel: feed.label, color: feed.color || feedColor(feed, i) });
                 });
             });
+            rebuildCanvasAssignmentsIndex();
         }
 
         function getExternalEventsForDate(date) {
             return externalEventsByDate[dateKey(date)] || [];
+        }
+
+        // ===================== CANVAS ASSIGNMENT SYNC =====================
+        // Canvas's calendar feed labels each assignment/quiz event "<Title> [<Course Code>]" --
+        // split that back into the two parts so due dates can be attributed to a specific course.
+        function parseCanvasAssignmentTitle(rawTitle) {
+            const m = /^(.*)\s+\[([^\]]+)\]\s*$/.exec(rawTitle || '');
+            if (m) return { title: m[1].trim(), courseCode: m[2].trim() };
+            return { title: (rawTitle || '').trim(), courseCode: null };
+        }
+
+        // Flat, time-sorted list of every assignment/event coming from feeds flagged as Canvas
+        // (see isCanvasFeedUrl). Rebuilt any time the external feed cache changes.
+        let canvasAssignments = [];
+        function rebuildCanvasAssignmentsIndex() {
+            const cache = getExternalFeedCache();
+            const list = [];
+            externalFeeds.forEach(feed => {
+                if (!feed.enabled || !feed.isCanvas) return;
+                const entry = cache[feed.id];
+                if (!entry) return;
+                entry.events.forEach(ev => {
+                    if (typeof ev.timestamp !== 'number') return;
+                    const parsed = parseCanvasAssignmentTitle(ev.title);
+                    list.push({
+                        title: parsed.title,
+                        courseCode: parsed.courseCode,
+                        rawTitle: ev.title,
+                        description: ev.description,
+                        dueAt: ev.timestamp,
+                        allDay: !!ev.allDay,
+                        feedLabel: feed.label
+                    });
+                });
+            });
+            list.sort((a, b) => a.dueAt - b.dueAt);
+            canvasAssignments = list;
+        }
+
+        // The next assignment due at or after now, if any (canvasAssignments is kept sorted).
+        function getNextDueAssignment() {
+            const now = Date.now();
+            return canvasAssignments.find(a => a.dueAt >= now) || null;
         }
 
         // --- CALENDAR SETTINGS MODAL ---
