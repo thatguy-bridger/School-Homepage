@@ -62,6 +62,12 @@
         body[data-palette="sunset"]  { --accent-1: #f59e0b; --accent-2: #f97316; --accent-3: #ef4444; --accent-grad: linear-gradient(135deg, #f59e0b, #f97316, #ef4444); --glow-accent: rgba(249, 115, 22, 0.32); --scrollbar-thumb: rgba(251, 146, 60, 0.4); }
         body[data-palette="ocean"]   { --accent-1: #0ea5e9; --accent-2: #06b6d4; --accent-3: #22d3ee; --accent-grad: linear-gradient(135deg, #0ea5e9, #06b6d4, #22d3ee); --glow-accent: rgba(14, 165, 233, 0.32); --scrollbar-thumb: rgba(56, 189, 248, 0.4); }
         body[data-palette="slate"]   { --accent-1: #64748b; --accent-2: #475569; --accent-3: #94a3b8; --accent-grad: linear-gradient(135deg, #64748b, #475569, #94a3b8); --glow-accent: rgba(100, 116, 139, 0.28); --scrollbar-thumb: rgba(148, 163, 184, 0.4); }
+        body[data-palette="crimson"] { --accent-1: #dc2626; --accent-2: #ef4444; --accent-3: #f87171; --accent-grad: linear-gradient(135deg, #dc2626, #ef4444, #f87171); --glow-accent: rgba(220, 38, 38, 0.34); --scrollbar-thumb: rgba(248, 113, 113, 0.4); }
+        body[data-palette="teal"]    { --accent-1: #0d9488; --accent-2: #2dd4bf; --accent-3: #5eead4; --accent-grad: linear-gradient(135deg, #0d9488, #2dd4bf, #5eead4); --glow-accent: rgba(13, 148, 136, 0.32); --scrollbar-thumb: rgba(45, 212, 191, 0.4); }
+        body[data-palette="amber"]   { --accent-1: #d97706; --accent-2: #fbbf24; --accent-3: #fde047; --accent-grad: linear-gradient(135deg, #d97706, #fbbf24, #fde047); --glow-accent: rgba(217, 119, 6, 0.32); --scrollbar-thumb: rgba(251, 191, 36, 0.4); }
+        body[data-palette="fuchsia"] { --accent-1: #c026d3; --accent-2: #e879f9; --accent-3: #f0abfc; --accent-grad: linear-gradient(135deg, #c026d3, #e879f9, #f0abfc); --glow-accent: rgba(192, 38, 211, 0.34); --scrollbar-thumb: rgba(232, 121, 249, 0.4); }
+        body[data-palette="lime"]    { --accent-1: #65a30d; --accent-2: #a3e635; --accent-3: #bef264; --accent-grad: linear-gradient(135deg, #65a30d, #a3e635, #bef264); --glow-accent: rgba(101, 163, 13, 0.32); --scrollbar-thumb: rgba(163, 230, 53, 0.4); }
+        body[data-palette="sky"]     { --accent-1: #0284c7; --accent-2: #38bdf8; --accent-3: #7dd3fc; --accent-grad: linear-gradient(135deg, #0284c7, #38bdf8, #7dd3fc); --glow-accent: rgba(2, 132, 199, 0.32); --scrollbar-thumb: rgba(56, 189, 248, 0.4); }
 
         body.dark-theme[data-palette="violet"]  { --glow-accent: rgba(167, 139, 250, 0.55); --scrollbar-thumb: rgba(196, 181, 253, 0.5); }
         body.dark-theme[data-palette="emerald"] { --glow-accent: rgba(52, 211, 153, 0.5); --scrollbar-thumb: rgba(110, 231, 183, 0.5); }
@@ -69,6 +75,12 @@
         body.dark-theme[data-palette="sunset"]  { --glow-accent: rgba(251, 146, 60, 0.5); --scrollbar-thumb: rgba(253, 186, 116, 0.5); }
         body.dark-theme[data-palette="ocean"]   { --glow-accent: rgba(56, 189, 248, 0.5); --scrollbar-thumb: rgba(125, 211, 252, 0.5); }
         body.dark-theme[data-palette="slate"]   { --glow-accent: rgba(148, 163, 184, 0.45); --scrollbar-thumb: rgba(203, 213, 225, 0.45); }
+        body.dark-theme[data-palette="crimson"] { --glow-accent: rgba(248, 113, 113, 0.55); --scrollbar-thumb: rgba(252, 165, 165, 0.5); }
+        body.dark-theme[data-palette="teal"]    { --glow-accent: rgba(45, 212, 191, 0.5); --scrollbar-thumb: rgba(94, 234, 212, 0.5); }
+        body.dark-theme[data-palette="amber"]   { --glow-accent: rgba(251, 191, 36, 0.55); --scrollbar-thumb: rgba(253, 224, 71, 0.5); }
+        body.dark-theme[data-palette="fuchsia"] { --glow-accent: rgba(232, 121, 249, 0.55); --scrollbar-thumb: rgba(240, 171, 252, 0.5); }
+        body.dark-theme[data-palette="lime"]    { --glow-accent: rgba(163, 230, 53, 0.5); --scrollbar-thumb: rgba(190, 242, 100, 0.45); }
+        body.dark-theme[data-palette="sky"]     { --glow-accent: rgba(56, 189, 248, 0.5); --scrollbar-thumb: rgba(125, 211, 252, 0.5); }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'Inter', sans-serif;
@@ -265,12 +277,12 @@
             color: var(--text-muted);
             margin: 0 0 0.5rem;
         }
-        .theme-mode-row {
+        .theme-mode-row, .motion-mode-row {
             display: flex;
             gap: 0.4rem;
             margin-bottom: 1.1rem;
         }
-        .theme-mode-btn {
+        .theme-mode-btn, .motion-mode-btn {
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -287,9 +299,9 @@
             cursor: pointer;
             transition: all 0.2s ease-in-out;
         }
-        .theme-mode-btn svg { width: 1.1rem; height: 1.1rem; }
-        .theme-mode-btn:hover { color: var(--text-primary); }
-        .theme-mode-btn.active {
+        .theme-mode-btn svg, .motion-mode-btn svg { width: 1.1rem; height: 1.1rem; }
+        .theme-mode-btn:hover, .motion-mode-btn:hover { color: var(--text-primary); }
+        .theme-mode-btn.active, .motion-mode-btn.active {
             background: var(--accent-grad);
             color: white;
             border-color: transparent;
@@ -1051,7 +1063,7 @@
            (equal specificity, later rule wins) -- gives every clickable control a quick
            tactile "squish" on press instead of just snapping straight to its hover state. */
         .icon-btn:active, #today-button:active, #export-button:active, #import-button:active,
-        .sidebar-link:active, .theme-mode-btn:active, .theme-palette-swatch:active,
+        .sidebar-link:active, .theme-mode-btn:active, .motion-mode-btn:active, .theme-palette-swatch:active,
         .class-color-swatch-btn:active, .class-color-swatch:active, .view-tab:active,
         .nav-arrow-btn:active, .class-note-toggle:active, .remove-class-btn:active,
         .duplicate-class-btn:active, .duplicate-category-btn:active, .toggle-layout-button:active,
@@ -1130,6 +1142,23 @@
         @keyframes click-ripple-expand {
             from { transform: scale(0.5); opacity: 0.35; }
             to { transform: scale(9.1); opacity: 0; }
+        }
+
+        /* ===================== Reduced motion ===================== */
+        /* Crushes every CSS animation/transition to effectively instant (not literally 0, so
+           transitionend still reliably fires -- some of this app's logic, like closing modals,
+           depends on that event actually firing). JS-driven rAF loops (blob wander/impulse,
+           cursor glow, click-detach push) are separately gated via isReducedMotion() checks, and
+           document.startViewTransition calls are skipped in favor of an instant DOM swap. */
+        body.reduce-motion *,
+        body.reduce-motion *::before,
+        body.reduce-motion *::after {
+            animation-duration: 1ms !important;
+            animation-delay: 0ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 1ms !important;
+            transition-delay: 0ms !important;
+            scroll-behavior: auto !important;
         }
     </style>
 </head>
@@ -1300,6 +1329,27 @@
             <button type="button" class="theme-palette-swatch" data-palette="sunset" style="--sw1:#f59e0b;--sw2:#f97316;--sw3:#ef4444" onclick="applyPalette('sunset')" title="Sunset"><span class="sr-only">Sunset</span></button>
             <button type="button" class="theme-palette-swatch" data-palette="ocean" style="--sw1:#0ea5e9;--sw2:#06b6d4;--sw3:#22d3ee" onclick="applyPalette('ocean')" title="Ocean"><span class="sr-only">Ocean</span></button>
             <button type="button" class="theme-palette-swatch" data-palette="slate" style="--sw1:#64748b;--sw2:#475569;--sw3:#94a3b8" onclick="applyPalette('slate')" title="Slate"><span class="sr-only">Slate</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="crimson" style="--sw1:#dc2626;--sw2:#ef4444;--sw3:#f87171" onclick="applyPalette('crimson')" title="Crimson"><span class="sr-only">Crimson</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="teal" style="--sw1:#0d9488;--sw2:#2dd4bf;--sw3:#5eead4" onclick="applyPalette('teal')" title="Teal"><span class="sr-only">Teal</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="amber" style="--sw1:#d97706;--sw2:#fbbf24;--sw3:#fde047" onclick="applyPalette('amber')" title="Amber"><span class="sr-only">Amber</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="fuchsia" style="--sw1:#c026d3;--sw2:#e879f9;--sw3:#f0abfc" onclick="applyPalette('fuchsia')" title="Fuchsia"><span class="sr-only">Fuchsia</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="lime" style="--sw1:#65a30d;--sw2:#a3e635;--sw3:#bef264" onclick="applyPalette('lime')" title="Lime"><span class="sr-only">Lime</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="sky" style="--sw1:#0284c7;--sw2:#38bdf8;--sw3:#7dd3fc" onclick="applyPalette('sky')" title="Sky"><span class="sr-only">Sky</span></button>
+        </div>
+        <p class="theme-popover-label" style="margin-top: 1rem;">Motion</p>
+        <div class="motion-mode-row">
+            <button type="button" class="motion-mode-btn" data-motion="auto" onclick="applyMotionPref('auto')" title="Follow your system's reduced motion setting">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13V7a2 2 0 012-2h14a2 2 0 012 2v6m-2 8H5a2 2 0 01-2-2v-6a2 2 0 012-2h14a2 2 0 012 2v6a2 2 0 01-2 2z"></path></svg>
+                <span>Auto</span>
+            </button>
+            <button type="button" class="motion-mode-btn" data-motion="full" onclick="applyMotionPref('full')" title="Full animation">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <span>Full</span>
+            </button>
+            <button type="button" class="motion-mode-btn" data-motion="reduced" onclick="applyMotionPref('reduced')" title="Reduce motion">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke-width="2"></circle><path stroke-linecap="round" stroke-width="2" d="M8 12h8"></path></svg>
+                <span>Reduced</span>
+            </button>
         </div>
     </div>
 
@@ -1496,7 +1546,7 @@
                     history.replaceState(null, '', view === 'calendar' ? '#calendar' : '#classes');
                 }
             };
-            if (document.startViewTransition) {
+            if (document.startViewTransition && !isReducedMotion()) {
                 document.startViewTransition(doSwitch);
             } else {
                 doSwitch();
@@ -1520,6 +1570,19 @@
         // ===================== THEME (shared) =====================
         let currentThemeState = localStorage.getItem('theme') || 'system';
         let currentPaletteState = localStorage.getItem('themePalette') || 'indigo';
+        let currentMotionState = localStorage.getItem('motionPref') || 'auto';
+
+        function isReducedMotion() {
+            return document.body.classList.contains('reduce-motion');
+        }
+
+        function applyMotionPref(pref) {
+            const isReduced = pref === 'reduced' || (pref === 'auto' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+            document.body.classList.toggle('reduce-motion', isReduced);
+            localStorage.setItem('motionPref', pref);
+            currentMotionState = pref;
+            document.querySelectorAll('.motion-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.motion === pref));
+        }
 
         function applyTheme(theme) {
             const bodyElement = document.body;
@@ -1789,6 +1852,7 @@
             const BLOB_IMPULSE_DURATION = 1400;
             const impulses = [];
             document.addEventListener('app:click-ripple', (e) => {
+                if (isReducedMotion()) return;
                 const { x: clickX, y: clickY } = e.detail;
                 const now = performance.now();
                 state.forEach((s, i) => {
@@ -1814,6 +1878,10 @@
             });
 
             function frame(now) {
+                if (isReducedMotion()) {
+                    requestAnimationFrame(frame);
+                    return;
+                }
                 const impulseTotals = blobs.map(() => ({ dx: 0, dy: 0 }));
                 for (let i = impulses.length - 1; i >= 0; i--) {
                     const imp = impulses[i];
@@ -1886,6 +1954,11 @@
 
             const CYCLE_LEG_MS = 9000;
             function frame(now) {
+                if (isReducedMotion()) {
+                    glow.classList.remove('is-active');
+                    requestAnimationFrame(frame);
+                    return;
+                }
                 // Lags behind the real pointer with a soft spring-ish ease, so it reads as a
                 // trailing glow rather than a rigid 1:1 cursor replacement.
                 x += (targetX - x) * 0.084;
@@ -2025,6 +2098,7 @@
 
             document.addEventListener('click', (e) => {
                 spawnRipple(e.clientX, e.clientY);
+                if (isReducedMotion()) return;
                 triggerDetach(e.clientX, e.clientY);
                 document.dispatchEvent(new CustomEvent('app:click-ripple', { detail: { x: e.clientX, y: e.clientY } }));
             });
@@ -3481,7 +3555,7 @@
             options = options || {};
             const direction = options.direction || 0; // -1, 0, or 1
             const distance = options.distance || 46;
-            if (!container || !container.firstChild) { updateFn(); return; }
+            if (!container || !container.firstChild || isReducedMotion()) { updateFn(); return; }
 
             const parent = container.parentElement;
             const parentPosition = getComputedStyle(parent).position;
@@ -4985,6 +5059,7 @@
 
             applyTheme(currentThemeState);
             applyPalette(currentPaletteState);
+            applyMotionPref(currentMotionState);
             setupSidebarDock();
             setupBackgroundBlobs();
             setupCursorGlow();
@@ -4993,6 +5068,9 @@
             setupHubPeek();
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
                 if (currentThemeState === 'system') applyTheme('system');
+            });
+            window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', () => {
+                if (currentMotionState === 'auto') applyMotionPref('auto');
             });
 
             const style = document.createElement('style');
