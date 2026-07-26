@@ -286,6 +286,56 @@ body.dark-theme[data-palette="mint"] {
             transform: translate(-50%, calc(-100% - 8px)) scale(1);
         }
 
+        /* Hover popup for month/week calendar cells: full day details on demand */
+        .day-hover-tooltip {
+            position: fixed;
+            z-index: 500;
+            width: 300px;
+            max-width: calc(100vw - 16px);
+            max-height: 70vh;
+            overflow-y: auto;
+            padding: 0.9rem 1.05rem;
+            border-radius: 1rem;
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+            box-shadow: var(--glass-shadow);
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(4px) scale(0.97);
+            transition: opacity 0.12s ease-in-out, transform 0.12s ease-in-out;
+        }
+        .day-hover-tooltip.visible { opacity: 1; transform: translateY(0) scale(1); }
+        .day-hover-tooltip-date {
+            font-weight: 800;
+            font-size: 0.92rem;
+            margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+        .day-hover-tooltip-section { margin-top: 0.6rem; }
+        .day-hover-tooltip-section-title {
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--text-muted);
+            margin-bottom: 0.3rem;
+        }
+        .day-hover-tooltip-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.45rem;
+            margin-bottom: 0.4rem;
+            line-height: 1.35;
+        }
+        .day-hover-tooltip-empty { color: var(--text-muted); font-size: 0.78rem; margin-top: 0.4rem; }
+
         /* ===================== Theme Popover ===================== */
         .theme-popover {
             position: fixed;
@@ -442,6 +492,50 @@ body.dark-theme[data-palette="mint"] {
             background: var(--accent-grad);
             color: white;
             border: none;
+        }
+
+        .feed-reorder-btn {
+            width: 1.35rem;
+            height: 1.15rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.3rem;
+            color: var(--text-muted);
+            background: transparent;
+            transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+        }
+        .feed-reorder-btn:hover:not(:disabled) {
+            background: var(--glass-bg-strong);
+            color: var(--text-primary);
+        }
+        .feed-reorder-btn:disabled {
+            opacity: 0.25;
+            cursor: default;
+        }
+        .feed-edit-input {
+            display: block;
+            width: 100%;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-primary);
+            border-radius: 0.4rem;
+            padding: 0.1rem 0.35rem;
+            margin: 0 -0.35rem;
+            font-size: inherit;
+            font-family: inherit;
+        }
+        .feed-edit-input.feed-edit-url {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+        .feed-edit-input:hover {
+            border-color: var(--glass-border);
+        }
+        .feed-edit-input:focus {
+            outline: none;
+            border-color: var(--accent-2);
+            background: var(--glass-bg-strong);
         }
 
         .category-filter-chip {
@@ -1557,6 +1651,8 @@ body.dark-theme[data-palette="mint"] {
                             <div id="home-upcoming-content"></div>
                         </div>
                     </div>
+
+                    <div class="mt-6" id="home-calendar-preview"></div>
                 </div>
             </section>
 
@@ -1640,6 +1736,7 @@ body.dark-theme[data-palette="mint"] {
     </div>
 
     <div id="orbit-tooltip" class="orbit-tooltip" aria-hidden="true"></div>
+    <div id="day-hover-tooltip" class="day-hover-tooltip" aria-hidden="true"></div>
 
     <div id="class-color-popover" class="class-color-popover hidden" onclick="event.stopPropagation()">
         <div class="class-color-swatch-grid" id="class-color-swatch-grid"></div>
@@ -2334,6 +2431,19 @@ body.dark-theme[data-palette="mint"] {
             return Math.max(0, 1 - (t - attack) / (1 - attack));
         }
 
+        // Envelope for the DETACH (UI element) push only: same fast attack, but the settle isn't
+        // a straight glide back to rest -- it's a decaying oscillation, like the element is
+        // rocking over a wave that gets smaller each pass, so it eases back through its resting
+        // spot a couple of times before finally coming to stop.
+        function pushWobbleEnvelope(t) {
+            const attack = 0.12;
+            if (t < attack) return Math.sin((t / attack) * Math.PI / 2);
+            const r = (t - attack) / (1 - attack);
+            const decay = Math.exp(-r * 3.2);
+            const wave = Math.cos(r * Math.PI * 2.5);
+            return decay * wave;
+        }
+
         // ===================== AMBIENT BACKGROUND BLOBS: free-roaming random wander =====================
         function setupBackgroundBlobs() {
             const blobs = Array.from(document.querySelectorAll('.bg-blob'));
@@ -2561,9 +2671,14 @@ body.dark-theme[data-palette="mint"] {
             // .style.transform.
             const DETACH_SELECTOR = '.main-container, .class-card, .day-cell, .week-day-col, .agenda-row, ' +
                 '.icon-btn, #today-button, #export-button, #import-button, .nav-arrow-btn, .view-tab, ' +
-                'h1.gradient-text, h2, .countdown-chip';
+                'h1.gradient-text, h2, .countdown-chip, ' +
+                '.home-widget, .home-list-item, .category-filter-chip, ' +
+                '.mini-calendar-panel, .mini-day-cell, .mini-upcoming-card, ' +
+                '.day-class-row, .week-class-row, .day-badge, .main-category-item, ' +
+                '.agenda-month-header, .weekday-header, .mini-weekday-label, ' +
+                '.class-color-custom-row, .theme-mode-row, .motion-mode-row, .ics-toggle-row';
 
-            const DETACH_DURATION = 950; // fixed (not randomized) so every element settles at the same pace
+            const DETACH_DURATION = 1900; // fixed (not randomized) so every element settles at the same pace -- long enough for the wobble envelope's decaying oscillation to fully play out
 
             const activeImpulses = [];
             let animatedEls = new Set();
@@ -2584,7 +2699,7 @@ body.dark-theme[data-palette="mint"] {
                     }
                     // Fast burst up to full strength, then a linear (constant-speed) glide back
                     // to rest -- see pushEnvelope.
-                    const envelope = pushEnvelope(t);
+                    const envelope = pushWobbleEnvelope(t);
                     const dx = imp.dirX * imp.mag * envelope;
                     const dy = imp.dirY * imp.mag * envelope;
                     const cur = totals.get(imp.el) || { dx: 0, dy: 0 };
@@ -2609,6 +2724,11 @@ body.dark-theme[data-palette="mint"] {
                 }
             }
 
+            // Elements whose center falls within this radius of the click are left alone entirely
+            // -- otherwise the very button you just clicked (or its neighbors, like the calendar's
+            // prev/next arrows) shoves itself out from under a second quick click.
+            const DETACH_EXCLUSION_RADIUS = 56;
+
             function triggerDetach(clickX, clickY) {
                 const maxDist = Math.max(window.innerWidth, window.innerHeight);
                 const now = performance.now();
@@ -2619,7 +2739,7 @@ body.dark-theme[data-palette="mint"] {
                     const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
                     let dx = cx - clickX, dy = cy - clickY;
                     let dist = Math.hypot(dx, dy);
-                    if (dist < 10) { const a = Math.random() * Math.PI * 2; dx = Math.cos(a); dy = Math.sin(a); dist = 1; }
+                    if (dist < DETACH_EXCLUSION_RADIUS) return;
                     // Steep power curve: the far-edge floor (0.12) and point-blank ceiling (1)
                     // stay anchored, but the curve is convex (exponent > 1) so the extra push is
                     // concentrated on elements close to the click rather than spread evenly.
@@ -3751,6 +3871,7 @@ body.dark-theme[data-palette="mint"] {
             renderHomeNextClass();
             renderHomeDueSoon();
             renderHomeUpcoming();
+            renderMiniCalendarPreviewInto('home-calendar-preview');
         }
 
         function renderHomeNextClass() {
@@ -4314,7 +4435,12 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function renderClassesCalendarPreview() {
-            const container = document.getElementById('classes-calendar-preview');
+            renderMiniCalendarPreviewInto('classes-calendar-preview');
+            renderMiniCalendarPreviewInto('home-calendar-preview');
+        }
+
+        function renderMiniCalendarPreviewInto(containerId) {
+            const container = document.getElementById(containerId);
             if (!container) return;
 
             const previewDate = new Date();
@@ -4340,7 +4466,10 @@ body.dark-theme[data-palette="mint"] {
                 const externalEvents = getExternalEventsForDate(cursor);
                 const badgeHtml = dayType ? `<span class="day-badge ${dayType === 'A' ? 'badge-a' : 'badge-b'}">${dayType}</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none" title="No School">${NO_SCHOOL_ICON}</span>` : '';
                 const noteDotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
-                const externalDotsHtml = externalEvents.length ? `<div class="mini-external-dots">${externalEvents.slice(0, 2).map(event => `<span class="mini-external-dot" style="background:${event.color}"></span>`).join('')}</div>` : '';
+                const externalDotsHtml = externalEvents.length ? `<div class="mini-external-dots">${externalEvents.slice(0, 2).map(event => {
+                    const size = (3.5 + eventUrgencyT(event.category, cursor, today) * 4.5).toFixed(1);
+                    return `<span class="mini-external-dot" style="width:${size}px;height:${size}px;background:${event.color}" title="${escapeHtml(event.title)} — ${escapeHtml(categoryLabel(event.category))}"></span>`;
+                }).join('')}</div>` : '';
 
                 cells += `
                     <div class="mini-day-cell ${isOutside ? 'is-outside' : ''} ${isToday ? 'is-today' : ''}">
@@ -4553,13 +4682,16 @@ body.dark-theme[data-palette="mint"] {
                 const titleHtml = note && note.title ? `<p class="text-xs mt-1 truncate font-medium">${escapeHtml(note.title)}</p>` : '';
                 const dotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
                 const externalDotsHtml = externalEvents.length ? `
-                    <div class="flex gap-1 mt-1">
-                        ${externalEvents.slice(0, 4).map(e => `<span class="w-1.5 h-1.5 rounded-full" style="background:${e.color}" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}"></span>`).join('')}
+                    <div class="flex items-end gap-1 mt-1">
+                        ${externalEvents.slice(0, 4).map(e => {
+                            const size = (5 + eventUrgencyT(e.category, cursor, today) * 6).toFixed(1);
+                            return `<span class="rounded-full flex-shrink-0" style="width:${size}px;height:${size}px;background:${e.color}" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}"></span>`;
+                        }).join('')}
                     </div>
                 ` : '';
                 const classesPreviewHtml = classesToday.length ? `<p class="day-classes-preview">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>` : '';
                 cells += `
-                    <div class="day-cell p-2 rounded-lg border ${isOutside ? 'outside-month' : ''} ${isToday ? 'is-today' : ''}" onclick="openDay('${dateKey(cursor)}')">
+                    <div class="day-cell p-2 rounded-lg border ${isOutside ? 'outside-month' : ''} ${isToday ? 'is-today' : ''}" data-date="${dateKey(cursor)}" onclick="openDay('${dateKey(cursor)}')">
                         <div class="flex justify-between items-center">
                             <span class="text-sm font-semibold">${cursor.getDate()}</span>
                             ${badgeHtml}
@@ -4611,7 +4743,7 @@ body.dark-theme[data-palette="mint"] {
                     </div>
                 ` : '';
                 cols += `
-                    <div class="week-day-col p-3 rounded-lg border ${isToday ? 'is-today' : ''}" onclick="openDay('${dateKey(d)}')">
+                    <div class="week-day-col p-3 rounded-lg border ${isToday ? 'is-today' : ''}" data-date="${dateKey(d)}" onclick="openDay('${dateKey(d)}')">
                         <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">${d.toLocaleDateString('en-US', { weekday: 'short' })}</p>
                         <div class="flex justify-between items-center mt-1">
                             <span class="text-lg font-bold">${d.getDate()}</span>
@@ -5215,15 +5347,43 @@ body.dark-theme[data-palette="mint"] {
             };
         }
 
+        // The default feed set every install starts with. Google's "Canvas Assignments" mirror
+        // lives on calendar.google.com rather than *.instructure.com, so it can't be auto-detected
+        // as Canvas by domain -- isCanvas is forced true here instead of left to isCanvasFeedUrl.
+        const DEFAULT_EXTERNAL_FEEDS = [
+            { id: 'altahawks', label: 'Alta Events', url: 'https://www.calendarwiz.com/CalendarWiz_iCal.php?crd=altahawks' },
+            { id: 'agilixbuzz', label: 'CVA Assignments', url: 'https://api.agilixbuzz.com/ical/~0~prObHCX.wEg28NaXxE2J3.VuXpEWjdZzfVNB4mDxpG8!/calendar.ics' },
+            { id: 'google-club-events', label: 'Club Events', url: 'https://calendar.google.com/calendar/ical/bb37592a14924e19337340b54b98ca59cf368f9cf3af9613168fc4b5da63637a%40group.calendar.google.com/public/basic.ics' },
+            { id: 'google-service-events', label: 'Service Events', url: 'https://calendar.google.com/calendar/ical/5734fae784efc819593817e7f624470144feec4343e329c0f4488cc6d088c50d%40group.calendar.google.com/public/basic.ics' },
+            { id: 'google-canvas-assignments', label: 'Canvas Assignments', url: 'https://calendar.google.com/calendar/ical/7stkhs6ht7m5e4mt2d3b0mi1karkss4c%40import.calendar.google.com/public/basic.ics', isCanvas: true },
+            { id: 'google-holidays', label: 'Holiday Events', url: 'https://calendar.google.com/calendar/ical/en.usa%23holiday%40group.v.calendar.google.com/public/basic.ics' }
+        ];
+
+        // Old installs may already have these two feeds saved under their previous labels; keep
+        // their saved settings (color, enabled, id) but bring the label in line with the rename.
+        const LEGACY_LABEL_RENAMES = { 'Alta Hawks Athletics': 'Alta Events', 'Online Courses': 'CVA Assignments' };
+
         function loadExternalFeeds() {
             const saved = localStorage.getItem('externalIcsFeeds');
             if (saved) {
                 externalFeeds = JSON.parse(saved).map(normalizeExternalFeed);
+                let changed = false;
+                externalFeeds.forEach(feed => {
+                    if (LEGACY_LABEL_RENAMES[feed.label]) {
+                        feed.label = LEGACY_LABEL_RENAMES[feed.label];
+                        changed = true;
+                    }
+                });
+                const existingUrls = new Set(externalFeeds.map(f => f.url));
+                DEFAULT_EXTERNAL_FEEDS.forEach(defaultFeed => {
+                    if (!existingUrls.has(defaultFeed.url)) {
+                        externalFeeds.push(normalizeExternalFeed(defaultFeed, externalFeeds.length));
+                        changed = true;
+                    }
+                });
+                if (changed) saveExternalFeeds();
             } else {
-                externalFeeds = [
-                    { id: 'altahawks', label: 'Alta Hawks Athletics', url: 'https://www.calendarwiz.com/CalendarWiz_iCal.php?crd=altahawks' },
-                    { id: 'agilixbuzz', label: 'Online Courses', url: 'https://api.agilixbuzz.com/ical/~0~prObHCX.wEg28NaXxE2J3.VuXpEWjdZzfVNB4mDxpG8!/calendar.ics' }
-                ].map(normalizeExternalFeed);
+                externalFeeds = DEFAULT_EXTERNAL_FEEDS.map(normalizeExternalFeed);
                 saveExternalFeeds();
             }
         }
@@ -5301,17 +5461,22 @@ body.dark-theme[data-palette="mint"] {
                 return;
             }
             container.innerHTML = externalFeeds.map((feed, i) => `
-                <div class="grid grid-cols-[40px_1fr_auto] items-center gap-3 text-sm py-2">
+                <div class="grid grid-cols-[22px_40px_1fr_auto] items-center gap-3 text-sm py-2">
+                    <div class="flex flex-col gap-0.5">
+                        <button type="button" class="feed-reorder-btn" onclick="moveExternalFeed('${feed.id}', -1)" title="Move up" ${i === 0 ? 'disabled' : ''}>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7"></path></svg>
+                        </button>
+                        <button type="button" class="feed-reorder-btn" onclick="moveExternalFeed('${feed.id}', 1)" title="Move down" ${i === externalFeeds.length - 1 ? 'disabled' : ''}>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                    </div>
+
                     <button type="button" class="w-9 h-9 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" style="background:${escapeAttr(feed.color || feedColor(feed, i))};" onclick="document.getElementById('feed-color-${feed.id}').click()" title="Change feed color"></button>
                     <input id="feed-color-${feed.id}" type="color" class="hidden" value="${escapeAttr(feed.color || feedColor(feed, i))}" onchange="updateExternalFeedColor('${feed.id}', this.value)">
 
                     <div class="min-w-0">
-                        <div class="font-semibold truncate flex items-center gap-1.5">
-                            ${escapeHtml(feed.label)}
-                            ${feed.isCanvas ? '<span class="day-badge badge-a" title="Assignment due dates from this feed power the countdown chip and open-class prompt">Canvas</span>' : ''}
-                            ${feed.isBuzz ? '<span class="day-badge badge-b" title="Assignment due dates from this feed power the countdown chip and open-class prompt">CVA</span>' : ''}
-                        </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 truncate">${escapeHtml(feed.url)}</div>
+                        <input type="text" class="feed-edit-input font-semibold" value="${escapeAttr(feed.label)}" onchange="updateExternalFeedLabel('${feed.id}', this.value)" title="Rename this calendar">
+                        <input type="url" class="feed-edit-input feed-edit-url" value="${escapeAttr(feed.url)}" onchange="updateExternalFeedUrl('${feed.id}', this.value)" title="Update this calendar's feed link">
                     </div>
 
                     <div class="flex items-center gap-2 justify-end">
@@ -5324,6 +5489,48 @@ body.dark-theme[data-palette="mint"] {
                     </div>
                 </div>
             `).join('');
+        }
+
+        function updateExternalFeedLabel(id, value) {
+            const feed = externalFeeds.find(f => f.id === id);
+            if (!feed) return;
+            const label = value.trim();
+            if (!label) { renderExternalFeedsList(); return; }
+            feed.label = label;
+            saveExternalFeeds();
+            rebuildExternalEventsIndex();
+            renderCalendar();
+            if (activeAppView === 'home') renderHomeDashboard();
+        }
+
+        function updateExternalFeedUrl(id, value) {
+            const feed = externalFeeds.find(f => f.id === id);
+            if (!feed) return;
+            const url = value.trim();
+            if (!url || url === feed.url) { renderExternalFeedsList(); return; }
+            feed.url = url;
+            feed.isCanvas = isCanvasFeedUrl(url);
+            feed.isBuzz = isBuzzFeedUrl(url);
+            saveExternalFeeds();
+            const cache = getExternalFeedCache();
+            delete cache[feed.id];
+            saveExternalFeedCache(cache);
+            renderExternalFeedsList();
+            refreshExternalFeeds(true);
+        }
+
+        function moveExternalFeed(id, direction) {
+            const idx = externalFeeds.findIndex(f => f.id === id);
+            if (idx === -1) return;
+            const newIdx = idx + direction;
+            if (newIdx < 0 || newIdx >= externalFeeds.length) return;
+            const [feed] = externalFeeds.splice(idx, 1);
+            externalFeeds.splice(newIdx, 0, feed);
+            saveExternalFeeds();
+            renderExternalFeedsList();
+            rebuildExternalEventsIndex();
+            renderCalendar();
+            if (activeAppView === 'home') renderHomeDashboard();
         }
 
         function getExternalFeedCache() {
@@ -5507,6 +5714,19 @@ body.dark-theme[data-palette="mint"] {
         const CATEGORY_LABELS = { assignment: 'Assignment', 'canvas-event': 'Event', sports: 'Sports', 'school-event': 'School Event' };
         function categoryLabel(category) {
             return CATEGORY_LABELS[category] || 'Event';
+        }
+
+        // Normalized 0-1 "urgency" for a dot on a given calendar cell: assignments ramp up over a
+        // 5-day window (matching the Due Soon countdown), everything else ramps over 14 days
+        // (matching the Home Upcoming Events window). A cell in the past is clamped to full size --
+        // still worth noticing, not shrinking back down.
+        function eventUrgencyT(category, cellDate, today) {
+            const msPerDay = 86400000;
+            const cellMidnight = new Date(cellDate.getFullYear(), cellDate.getMonth(), cellDate.getDate());
+            const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const daysUntil = Math.round((cellMidnight - todayMidnight) / msPerDay);
+            const cap = category === 'assignment' ? 5 : 14;
+            return Math.max(0, Math.min(1, 1 - daysUntil / cap));
         }
 
         async function refreshExternalFeeds(force) {
@@ -6000,6 +6220,116 @@ body.dark-theme[data-palette="mint"] {
 
             selectedDayKey = dateKey(currentDate);
             switchView(calendarView);
+            setupDayHoverTooltip();
+        }
+
+        // --- HOVER TOOLTIP (Month / Week views): full day details on demand ---
+        function buildDayTooltipHtml(dateStr) {
+            const date = parseDateKey(dateStr);
+            const dayType = getDayType(date);
+            const noSchool = isNoSchoolDay(date);
+            const note = getNote(date);
+            const classesToday = getClassesForDate(date);
+            const events = getFilteredExternalEventsForDate(date);
+            const dateLabel = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+            const badgeHtml = dayType
+                ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}-Day</span>`
+                : noSchool
+                    ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>`
+                    : '';
+
+            const noteHasContent = note && (note.title || note.notes);
+            const noteHtml = noteHasContent ? `
+                <div class="day-hover-tooltip-section">
+                    <p class="day-hover-tooltip-section-title">Note</p>
+                    ${note.title ? `<p class="day-hover-tooltip-item">${escapeHtml(note.title)}</p>` : ''}
+                    ${note.notes ? `<p class="day-hover-tooltip-item" style="color:var(--text-muted);">${escapeHtml(note.notes)}</p>` : ''}
+                </div>
+            ` : '';
+
+            const classesHtml = classesToday.length ? `
+                <div class="day-hover-tooltip-section">
+                    <p class="day-hover-tooltip-section-title">Classes</p>
+                    ${classesToday.map(c => `
+                        <div class="day-hover-tooltip-item">
+                            ${classDotHtml(c.classItem)}
+                            <span>${classNameHtml(c.classItem)}${c.timeRange ? ` <span style="color:var(--text-muted);">— ${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>` : ''}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : '';
+
+            const eventsHtml = events.length ? `
+                <div class="day-hover-tooltip-section">
+                    <p class="day-hover-tooltip-section-title">Events &amp; Assignments</p>
+                    ${events.map(e => `
+                        <div class="day-hover-tooltip-item">
+                            <span class="home-dot" style="background:${e.color}; margin-top:0.3rem;"></span>
+                            <span class="min-w-0">
+                                <span style="font-weight:700;">${escapeHtml(e.title)}</span>
+                                <span class="category-badge" style="background:${e.color}33; color:${e.color}; margin-left:0.3rem;">${escapeHtml(categoryLabel(e.category))}</span>
+                                <br><span style="color:var(--text-muted); font-size:0.72rem;">${escapeHtml(e.feedLabel || '')}</span>
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : '';
+
+            const nothingHtml = !noteHasContent && !classesToday.length && !events.length && !dayType && !noSchool
+                ? `<p class="day-hover-tooltip-empty">Nothing scheduled.</p>` : '';
+
+            return `
+                <p class="day-hover-tooltip-date">${escapeHtml(dateLabel)} ${badgeHtml}</p>
+                ${noteHtml}${classesHtml}${eventsHtml}${nothingHtml}
+            `;
+        }
+
+        function setupDayHoverTooltip() {
+            const tooltip = document.getElementById('day-hover-tooltip');
+            const content = document.getElementById('view-content');
+            if (!tooltip || !content || content.dataset.hoverTooltipBound) return;
+            content.dataset.hoverTooltipBound = 'true';
+
+            let currentDate = null;
+
+            function position(x, y) {
+                const rect = tooltip.getBoundingClientRect();
+                const margin = 16;
+                let left = x + margin;
+                let top = y + margin;
+                if (left + rect.width > window.innerWidth - 8) left = x - rect.width - margin;
+                if (top + rect.height > window.innerHeight - 8) top = y - rect.height - margin;
+                tooltip.style.left = Math.max(8, left) + 'px';
+                tooltip.style.top = Math.max(8, top) + 'px';
+            }
+
+            content.addEventListener('mouseover', (e) => {
+                const cell = e.target.closest('.day-cell, .week-day-col');
+                if (!cell || !content.contains(cell)) return;
+                const date = cell.dataset.date;
+                if (!date) return;
+                if (date !== currentDate) {
+                    currentDate = date;
+                    tooltip.innerHTML = buildDayTooltipHtml(date);
+                }
+                tooltip.classList.add('visible');
+                position(e.clientX, e.clientY);
+            });
+
+            content.addEventListener('mousemove', (e) => {
+                if (!tooltip.classList.contains('visible')) return;
+                if (!e.target.closest('.day-cell, .week-day-col')) return;
+                position(e.clientX, e.clientY);
+            });
+
+            content.addEventListener('mouseout', (e) => {
+                const cell = e.target.closest('.day-cell, .week-day-col');
+                if (!cell) return;
+                if (cell.contains(e.relatedTarget)) return;
+                tooltip.classList.remove('visible');
+                currentDate = null;
+            });
         }
 
         // =====================================================================================
