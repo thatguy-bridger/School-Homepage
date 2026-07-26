@@ -444,6 +444,129 @@ body.dark-theme[data-palette="mint"] {
             border: none;
         }
 
+        .category-filter-chip {
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-strong);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.8rem;
+            opacity: 0.55;
+            transition: all 0.2s ease-in-out;
+        }
+        .category-filter-chip.active {
+            opacity: 1;
+            color: var(--text-primary);
+            border-color: var(--accent-2);
+            box-shadow: 0 4px 14px var(--glow-accent);
+        }
+        .category-badge {
+            display: inline-block;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            padding: 0.05rem 0.4rem;
+            border-radius: 9999px;
+            flex-shrink: 0;
+        }
+
+        .home-widget-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem;
+        }
+        .home-widget {
+            background: var(--glass-bg);
+            border-color: var(--glass-border) !important;
+            backdrop-filter: blur(16px) saturate(160%);
+            -webkit-backdrop-filter: blur(16px) saturate(160%);
+            box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06) !important;
+            transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+        }
+        body.dark-theme .home-widget {
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3) !important;
+        }
+        .home-widget h2 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .home-widget-empty {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .home-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        #home-widget-upcoming {
+            grid-column: span 2;
+        }
+        .home-list-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.6rem 0.75rem;
+            border-radius: 0.75rem;
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+        }
+        .home-list-item.has-countdown {
+            justify-content: space-between;
+        }
+        .home-due-group + .home-due-group {
+            margin-top: 1rem;
+        }
+        .home-due-date-header {
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        .home-due-item-main {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            min-width: 0;
+        }
+        .home-due-countdown {
+            font-weight: 800;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+            margin-left: 0.5rem;
+        }
+        .home-list-item .home-dot {
+            width: 0.6rem;
+            height: 0.6rem;
+            border-radius: 50%;
+            margin-top: 0.35rem;
+            flex-shrink: 0;
+        }
+        .home-list-item .home-item-title {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .home-list-item .home-item-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .home-next-class-big {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
         .class-card {
             background: var(--glass-bg);
             border-color: var(--glass-border) !important;
@@ -1367,7 +1490,14 @@ body.dark-theme[data-palette="mint"] {
         <div class="topbar-logo" aria-hidden="true"><img src="Resources/logo.svg" alt="" class="orbit-hub-logo"></div>
         <div class="orbit-stage" id="orbit-stage">
             <div class="orbit-item">
-                <a href="#classes" data-view="classes" class="sidebar-link active" onclick="event.preventDefault(); switchAppView('classes')" title="Classes">
+                <a href="#home" data-view="home" class="sidebar-link active" onclick="event.preventDefault(); switchAppView('home')" title="Home">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    <span class="sr-only">Home</span>
+                </a>
+            </div>
+
+            <div class="orbit-item">
+                <a href="#classes" data-view="classes" class="sidebar-link" onclick="event.preventDefault(); switchAppView('classes')" title="Classes">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path></svg>
                     <span class="sr-only">Classes</span>
                 </a>
@@ -1403,8 +1533,35 @@ body.dark-theme[data-palette="mint"] {
     <div class="app-shell">
         <!-- Main content: swappable views -->
         <main class="app-main">
+            <!-- ===================== HOME VIEW ===================== -->
+            <section id="view-home" class="app-view">
+                <div class="main-container rounded-3xl p-6 sm:p-10 border relative">
+                    <div class="flex flex-wrap justify-between items-start gap-6 mb-10">
+                        <div>
+                            <h1 class="gradient-text text-5xl sm:text-6xl font-extrabold tracking-tight">Home</h1>
+                            <h3 class="text-xl sm:text-2xl font-medium tracking-wide mt-1" id="home-time"></h3>
+                        </div>
+                    </div>
+
+                    <div class="home-widget-grid">
+                        <div class="home-widget" id="home-widget-next-class">
+                            <h2>Next Class</h2>
+                            <div id="home-next-class-content"></div>
+                        </div>
+                        <div class="home-widget" id="home-widget-due-soon">
+                            <h2>Due Soon</h2>
+                            <div id="home-due-soon-content"></div>
+                        </div>
+                        <div class="home-widget" id="home-widget-upcoming">
+                            <h2>Upcoming Events</h2>
+                            <div id="home-upcoming-content"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- ===================== CLASSES VIEW ===================== -->
-            <section id="view-classes" class="app-view">
+            <section id="view-classes" class="app-view hidden">
                 <div class="main-container rounded-3xl p-6 sm:p-10 border relative">
                     <div class="flex flex-wrap justify-between items-start gap-6 mb-10">
                         <div>
@@ -1456,6 +1613,12 @@ body.dark-theme[data-palette="mint"] {
                         <button class="view-tab px-4 py-2 rounded-lg border font-semibold text-sm" data-view="week">Week</button>
                         <button class="view-tab px-4 py-2 rounded-lg border font-semibold text-sm" data-view="day">Day</button>
                         <button class="view-tab px-4 py-2 rounded-lg border font-semibold text-sm" data-view="agenda">Agenda</button>
+                    </div>
+
+                    <!-- Assignments / Events Filter -->
+                    <div class="flex flex-wrap gap-2 mb-6" id="calendar-category-filters">
+                        <button type="button" class="category-filter-chip active" data-group="assignment" onclick="toggleCalendarCategoryFilter('assignment')">Assignments</button>
+                        <button type="button" class="category-filter-chip active" data-group="event" onclick="toggleCalendarCategoryFilter('event')">Events</button>
                     </div>
 
                     <!-- Nav Row (hidden for agenda) -->
@@ -1769,16 +1932,18 @@ body.dark-theme[data-palette="mint"] {
         function switchAppView(view) {
             const doSwitch = () => {
                 activeAppView = view;
+                document.getElementById('view-home').classList.toggle('hidden', view !== 'home');
                 document.getElementById('view-classes').classList.toggle('hidden', view !== 'classes');
                 document.getElementById('view-calendar').classList.toggle('hidden', view !== 'calendar');
                 document.querySelectorAll('.sidebar-link').forEach(a => a.classList.toggle('active', a.dataset.view === view));
-                document.title = view === 'calendar' ? 'School Calendar' : 'School Dashboard';
+                document.title = view === 'calendar' ? 'School Calendar' : view === 'home' ? 'Home' : 'School Dashboard';
                 if (view === 'calendar' && !calendarInitialized) {
                     calendarInitialized = true;
                     initCalendar();
                 }
+                if (view === 'home') renderHomeDashboard();
                 if (location.hash.replace('#', '') !== view) {
-                    history.replaceState(null, '', view === 'calendar' ? '#calendar' : '#classes');
+                    history.replaceState(null, '', '#' + view);
                 }
             };
             if (document.startViewTransition && !isReducedMotion()) {
@@ -1789,7 +1954,8 @@ body.dark-theme[data-palette="mint"] {
         }
 
         window.addEventListener('hashchange', () => {
-            const view = location.hash.replace('#', '') === 'calendar' ? 'calendar' : 'classes';
+            const hashView = location.hash.replace('#', '');
+            const view = hashView === 'calendar' || hashView === 'classes' ? hashView : 'home';
             if (view !== activeAppView) switchAppView(view);
         });
 
@@ -3566,6 +3732,140 @@ body.dark-theme[data-palette="mint"] {
             checkScheduledClassPrompt(info);
             updateAssignmentCountdownChip();
             checkAssignmentDueSoonPrompt();
+            if (activeAppView === 'home') {
+                renderHomeNextClass();
+                renderHomeDueSoon();
+            }
+        }
+
+        // --- HOME DASHBOARD ---
+        function renderHomeDashboard() {
+            const timeEl = document.getElementById('home-time');
+            if (timeEl) {
+                const date = new Date();
+                const hour12 = (localStorage.getItem('timeFormat') || '12') === '12';
+                const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12 });
+                const formattedDate = `${date.getMonth() + 1}.${date.getDate()}.${date.getFullYear()}`;
+                timeEl.textContent = `Time: ${time} | Date: ${formattedDate}`;
+            }
+            renderHomeNextClass();
+            renderHomeDueSoon();
+            renderHomeUpcoming();
+        }
+
+        function renderHomeNextClass() {
+            const container = document.getElementById('home-next-class-content');
+            if (!container) return;
+            const info = getCurrentOrNextPeriodInfo();
+            if (!info) {
+                container.innerHTML = `<p class="home-widget-empty">No classes scheduled right now.</p>`;
+                return;
+            }
+            const totalSeconds = Math.max(0, Math.round(info.secondsLeft));
+            const mm = Math.floor(totalSeconds / 60);
+            const ss = totalSeconds % 60;
+            const timeStr = mm > 0 ? `${mm}m ${String(ss).padStart(2, '0')}s` : `${ss}s`;
+            const verb = info.status === 'current' ? 'ends in' : 'starts in';
+            const statusLabel = info.status === 'current' ? 'In session' : 'Up next';
+            container.innerHTML = `
+                <p class="home-widget-empty" style="margin-bottom:0.4rem;">${statusLabel}</p>
+                <p class="home-next-class-big">${escapeHtml(info.label)}</p>
+                <p class="home-item-sub" style="margin-top:0.4rem;">${verb} ${timeStr}</p>
+            `;
+        }
+
+        // Starts at the active theme's accent color and blends toward red as the due date closes
+        // in, capped at 5 days out, so it reads as "on-brand" until it actually needs urgency.
+        function dueUrgencyColor(msLeft) {
+            const day = 24 * 60 * 60 * 1000;
+            const t = Math.max(0, Math.min(1, 1 - msLeft / (5 * day)));
+            return `color-mix(in srgb, #ef4444 ${Math.round(t * 100)}%, var(--accent-1) ${Math.round((1 - t) * 100)}%)`;
+        }
+
+        function renderHomeDueSoon() {
+            const container = document.getElementById('home-due-soon-content');
+            if (!container) return;
+            const now = Date.now();
+            const upcoming = canvasAssignments.filter(a => a.dueAt >= now).slice(0, 8);
+            if (!upcoming.length) {
+                container.innerHTML = `<p class="home-widget-empty">Nothing due soon.</p>`;
+                return;
+            }
+
+            const groups = [];
+            let lastKey = null;
+            upcoming.forEach(a => {
+                const due = new Date(a.dueAt);
+                const key = dateKey(due);
+                if (key !== lastKey) {
+                    groups.push({ key, date: due, items: [] });
+                    lastKey = key;
+                }
+                groups[groups.length - 1].items.push(a);
+            });
+
+            const todayKey = dateKey(new Date());
+            const tomorrowDate = new Date();
+            tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+            const tomorrowKey = dateKey(tomorrowDate);
+
+            container.innerHTML = groups.map(g => {
+                const label = g.key === todayKey ? 'Today' : g.key === tomorrowKey ? 'Tomorrow' :
+                    g.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+                const itemsHtml = g.items.map(a => {
+                    const msLeft = a.dueAt - now;
+                    const color = dueUrgencyColor(msLeft);
+                    const timeStr = a.allDay ? '' : new Date(a.dueAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    return `
+                        <div class="home-list-item has-countdown" style="border-color:${color};">
+                            <div class="home-due-item-main">
+                                <span class="home-dot" style="background:${color};"></span>
+                                <div class="min-w-0">
+                                    <p class="home-item-title">${escapeHtml(a.title)}</p>
+                                    <p class="home-item-sub">${a.courseCode ? escapeHtml(a.courseCode) + ' · ' : ''}${timeStr}</p>
+                                </div>
+                            </div>
+                            <span class="home-due-countdown" style="color:${color};">${formatDueCountdown(msLeft)}</span>
+                        </div>
+                    `;
+                }).join('');
+                return `
+                    <div class="home-due-group">
+                        <p class="home-due-date-header">${label}</p>
+                        <div class="home-list">${itemsHtml}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderHomeUpcoming() {
+            const container = document.getElementById('home-upcoming-content');
+            if (!container) return;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const items = [];
+            for (let i = 0; i < 14 && items.length < 5; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() + i);
+                getExternalEventsForDate(d).filter(event => event.category !== 'assignment').forEach(event => items.push({ date: d, event }));
+            }
+            const trimmed = items.slice(0, 5);
+            if (!trimmed.length) {
+                container.innerHTML = `<p class="home-widget-empty">No upcoming events.</p>`;
+                return;
+            }
+            container.innerHTML = `<div class="home-list">${trimmed.map(({ date, event }) => {
+                const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                return `
+                    <div class="home-list-item">
+                        <span class="home-dot" style="background:${event.color || 'var(--accent-2)'};"></span>
+                        <div>
+                            <p class="home-item-title">${escapeHtml(event.title)}</p>
+                            <p class="home-item-sub">${dateStr}${event.feedLabel ? ' · ' + escapeHtml(event.feedLabel) : ''}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('')}</div>`;
         }
 
         // --- PERIOD COUNTDOWN CHIP ---
@@ -3849,6 +4149,34 @@ body.dark-theme[data-palette="mint"] {
         let calendarView = localStorage.getItem('calendarView') || 'month';
         let currentDate = new Date();
         let selectedDayKey = null;
+
+        // --- ASSIGNMENTS / EVENTS FILTER (calendar page) ---
+        let calendarCategoryFilter = { assignment: true, event: true };
+        function loadCalendarCategoryFilter() {
+            const saved = localStorage.getItem('calendarCategoryFilter');
+            if (saved) {
+                try { calendarCategoryFilter = Object.assign({ assignment: true, event: true }, JSON.parse(saved)); } catch (e) {}
+            }
+        }
+        function saveCalendarCategoryFilter() {
+            localStorage.setItem('calendarCategoryFilter', JSON.stringify(calendarCategoryFilter));
+        }
+        function toggleCalendarCategoryFilter(group) {
+            calendarCategoryFilter[group] = !calendarCategoryFilter[group];
+            saveCalendarCategoryFilter();
+            renderCalendarCategoryFilterChips();
+            renderCalendar();
+        }
+        function renderCalendarCategoryFilterChips() {
+            const container = document.getElementById('calendar-category-filters');
+            if (!container) return;
+            container.querySelectorAll('.category-filter-chip').forEach(chip => {
+                chip.classList.toggle('active', !!calendarCategoryFilter[chip.dataset.group]);
+            });
+        }
+        function getFilteredExternalEventsForDate(date) {
+            return getExternalEventsForDate(date).filter(e => calendarCategoryFilter[categoryGroup(e.category)]);
+        }
         let userADaysCal = [];
         let userBDaysCal = [];
         let userNoSchoolDaysCal = [];
@@ -4219,14 +4547,14 @@ body.dark-theme[data-palette="mint"] {
                 const isToday = isSameDay(cursor, today);
                 const dayType = getDayType(cursor);
                 const note = getNote(cursor);
-                const externalEvents = getExternalEventsForDate(cursor);
+                const externalEvents = getFilteredExternalEventsForDate(cursor);
                 const classesToday = getClassesForDate(cursor);
                 const badgeHtml = dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}-Day</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>` : '';
                 const titleHtml = note && note.title ? `<p class="text-xs mt-1 truncate font-medium">${escapeHtml(note.title)}</p>` : '';
                 const dotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
                 const externalDotsHtml = externalEvents.length ? `
                     <div class="flex gap-1 mt-1">
-                        ${externalEvents.slice(0, 4).map(e => `<span class="w-1.5 h-1.5 rounded-full" style="background:${e.color}" title="${escapeHtml(e.title)} — ${escapeHtml(e.feedLabel)}"></span>`).join('')}
+                        ${externalEvents.slice(0, 4).map(e => `<span class="w-1.5 h-1.5 rounded-full" style="background:${e.color}" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}"></span>`).join('')}
                     </div>
                 ` : '';
                 const classesPreviewHtml = classesToday.length ? `<p class="day-classes-preview">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>` : '';
@@ -4264,7 +4592,7 @@ body.dark-theme[data-palette="mint"] {
                 const isToday = isSameDay(d, today);
                 const dayType = getDayType(d);
                 const note = getNote(d);
-                const externalEvents = getExternalEventsForDate(d);
+                const externalEvents = getFilteredExternalEventsForDate(d);
                 const classesToday = getClassesForDate(d);
                 const isNoSchool = isNoSchoolDay(d);
                 const badgeLabel = dayType ? `${dayType}-Day` : isNoSchool ? 'No School' : note && (note.title || note.notes) ? 'Event' : '';
@@ -4274,7 +4602,7 @@ body.dark-theme[data-palette="mint"] {
                 const notesHtml = note && note.notes ? `<p class="text-xs mt-1 text-gray-500 dark:text-gray-400 line-clamp-4">${escapeHtml(note.notes)}</p>` : '';
                 const externalHtml = externalEvents.length ? `
                     <div class="mt-2 space-y-0.5">
-                        ${externalEvents.slice(0, 3).map(e => `<p class="text-xs truncate flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:${e.color}"></span>${escapeHtml(e.title)}</p>`).join('')}
+                        ${externalEvents.slice(0, 3).map(e => `<p class="text-xs truncate flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:${e.color}"></span><span class="truncate">${escapeHtml(e.title)}</span></p>`).join('')}
                     </div>
                 ` : '';
                 const classesHtml = classesToday.length ? `
@@ -4302,7 +4630,7 @@ body.dark-theme[data-palette="mint"] {
         function renderDayView() {
             const dayType = getDayType(currentDate);
             const note = getNote(currentDate) || { title: '', notes: '' };
-            const externalEvents = getExternalEventsForDate(currentDate);
+            const externalEvents = getFilteredExternalEventsForDate(currentDate);
             const classesToday = getClassesForDate(currentDate);
             const badgeHtml = dayType
                 ? `<span class="day-badge badge-${dayType.toLowerCase()} text-sm px-3 py-1">${dayType}-Day</span>`
@@ -4332,6 +4660,7 @@ body.dark-theme[data-palette="mint"] {
                             <div class="flex items-center gap-2 text-sm">
                                 <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${e.color}"></span>
                                 <span>${escapeHtml(e.title)}</span>
+                                <span class="category-badge" style="background:${e.color}33; color:${e.color};">${escapeHtml(categoryLabel(e.category))}</span>
                                 <span class="text-xs text-gray-500 dark:text-gray-400">(${escapeHtml(e.feedLabel)})</span>
                             </div>
                         `).join('')}
@@ -4431,7 +4760,7 @@ body.dark-theme[data-palette="mint"] {
                 const dayType = getDayType(entry.date);
                 const noSchool = isNoSchoolDay(entry.date);
                 const note = dayNotes[key];
-                const externalEvents = getExternalEventsForDate(entry.date);
+                const externalEvents = getFilteredExternalEventsForDate(entry.date);
                 const hasNote = note && (note.title || note.notes);
                 const hasEntries = dayType || noSchool || hasNote || externalEvents.length;
                 if (!hasEntries) return;
@@ -4473,8 +4802,8 @@ body.dark-theme[data-palette="mint"] {
                         ${externalEvents.map(e => `
                             <div class="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300">
                                 <span class="w-2 h-2 rounded-full flex-shrink-0 mt-1" style="background:${e.color}"></span>
-                                <div>
-                                    <p class="font-medium">${escapeHtml(e.title)}</p>
+                                <div class="min-w-0">
+                                    <p class="font-medium flex items-center gap-1.5 flex-wrap">${escapeHtml(e.title)}<span class="category-badge" style="background:${e.color}33; color:${e.color};">${escapeHtml(categoryLabel(e.category))}</span></p>
                                     <p class="text-[11px] text-gray-500 dark:text-gray-400">${escapeHtml(e.feedLabel || '')}</p>
                                 </div>
                             </div>
@@ -4867,6 +5196,13 @@ body.dark-theme[data-palette="mint"] {
             return /instructure\.com/i.test(url || '');
         }
 
+        // CVA's (Canyons Virtual Academy) courses run through Agilix Buzz, whose personal ICS
+        // feed always lives under api.agilixbuzz.com -- same idea as the Canvas detection above,
+        // just a different LMS domain.
+        function isBuzzFeedUrl(url) {
+            return /agilixbuzz\.com/i.test(url || '');
+        }
+
         function normalizeExternalFeed(feed, index) {
             return {
                 id: feed.id || `feed-${Date.now()}`,
@@ -4874,7 +5210,8 @@ body.dark-theme[data-palette="mint"] {
                 url: feed.url || '',
                 color: feed.color || EXTERNAL_FEED_COLORS[index % EXTERNAL_FEED_COLORS.length],
                 enabled: typeof feed.enabled === 'boolean' ? feed.enabled : true,
-                isCanvas: typeof feed.isCanvas === 'boolean' ? feed.isCanvas : isCanvasFeedUrl(feed.url)
+                isCanvas: typeof feed.isCanvas === 'boolean' ? feed.isCanvas : isCanvasFeedUrl(feed.url),
+                isBuzz: typeof feed.isBuzz === 'boolean' ? feed.isBuzz : isBuzzFeedUrl(feed.url)
             };
         }
 
@@ -4906,7 +5243,9 @@ body.dark-theme[data-palette="mint"] {
             const url = urlInput.value.trim();
             if (!url) return;
             const isCanvas = isCanvasFeedUrl(url);
-            externalFeeds.push({ id: 'feed-' + Date.now(), label: label || (isCanvas ? 'Canvas' : url), url, color: EXTERNAL_FEED_COLORS[externalFeeds.length % EXTERNAL_FEED_COLORS.length], enabled: true, isCanvas });
+            const isBuzz = isBuzzFeedUrl(url);
+            const defaultLabel = isCanvas ? 'Canvas' : isBuzz ? 'CVA' : url;
+            externalFeeds.push({ id: 'feed-' + Date.now(), label: label || defaultLabel, url, color: EXTERNAL_FEED_COLORS[externalFeeds.length % EXTERNAL_FEED_COLORS.length], enabled: true, isCanvas, isBuzz });
             saveExternalFeeds();
             labelInput.value = '';
             urlInput.value = '';
@@ -4970,6 +5309,7 @@ body.dark-theme[data-palette="mint"] {
                         <div class="font-semibold truncate flex items-center gap-1.5">
                             ${escapeHtml(feed.label)}
                             ${feed.isCanvas ? '<span class="day-badge badge-a" title="Assignment due dates from this feed power the countdown chip and open-class prompt">Canvas</span>' : ''}
+                            ${feed.isBuzz ? '<span class="day-badge badge-b" title="Assignment due dates from this feed power the countdown chip and open-class prompt">CVA</span>' : ''}
                         </div>
                         <div class="text-xs text-gray-500 dark:text-gray-400 truncate">${escapeHtml(feed.url)}</div>
                     </div>
@@ -5109,7 +5449,7 @@ body.dark-theme[data-palette="mint"] {
             lines.forEach(rawLine => {
                 const line = rawLine.trim();
                 if (line === 'BEGIN:VEVENT') {
-                    current = { summary: '', description: '', start: null, allDay: false, rrule: null };
+                    current = { summary: '', description: '', start: null, allDay: false, rrule: null, uid: '' };
                 } else if (line === 'END:VEVENT') {
                     if (current && current.start) events.push(current);
                     current = null;
@@ -5126,6 +5466,8 @@ body.dark-theme[data-palette="mint"] {
                         current.allDay = parsed.allDay || prop.params.some(p => p.toUpperCase() === 'VALUE=DATE');
                     } else if (prop.name === 'RRULE') {
                         current.rrule = prop.value;
+                    } else if (prop.name === 'UID') {
+                        current.uid = prop.value;
                     }
                 }
             });
@@ -5136,10 +5478,35 @@ body.dark-theme[data-palette="mint"] {
                     ? expandRecurrence(ev.start, ev.rrule, windowStart, windowEnd)
                     : (ev.start >= windowStart && ev.start <= windowEnd ? [ev.start] : []);
                 occurrences.forEach(occDate => {
-                    expanded.push({ title: ev.summary || '(No title)', description: ev.description, date: occDate, allDay: ev.allDay });
+                    expanded.push({ title: ev.summary || '(No title)', description: ev.description, date: occDate, allDay: ev.allDay, uid: ev.uid });
                 });
             });
             return expanded;
+        }
+
+        // Canvas's ICS UIDs give away what kind of item an entry is: assignments/quizzes read
+        // like "event-assignment-<id>@instructure.com" or "event-quiz-<id>@...", while a real
+        // calendar event (office hours, a class the teacher scheduled by hand, etc.) reads like
+        // "event-calendar-event-<id>@...". Buzz doesn't expose that distinction and, per how CVA
+        // uses it, everything it publishes is coursework -- so it's always "assignment".
+        // Non-LMS feeds (athletics schedules, district calendars, etc.) don't tag a type at all,
+        // so those get split on a game-vs-not keyword heuristic into "sports" / "school-event".
+        const SPORTS_TITLE_PATTERN = /\b(vs\.?|@|game|match|tournament|meet|scrimmage|playoff|championship|invitational|jv|varsity)\b/i;
+        function categorizeFeedEvent(feed, uid, title) {
+            if (feed.isBuzz) return 'assignment';
+            if (feed.isCanvas) return /calendar-event/i.test(uid || '') ? 'canvas-event' : 'assignment';
+            return SPORTS_TITLE_PATTERN.test(title || '') ? 'sports' : 'school-event';
+        }
+
+        // Every non-assignment category folds into the "Events" bucket for the calendar's
+        // Assignments/Events filter; only "assignment" is its own group.
+        function categoryGroup(category) {
+            return category === 'assignment' ? 'assignment' : 'event';
+        }
+
+        const CATEGORY_LABELS = { assignment: 'Assignment', 'canvas-event': 'Event', sports: 'Sports', 'school-event': 'School Event' };
+        function categoryLabel(category) {
+            return CATEGORY_LABELS[category] || 'Event';
         }
 
         async function refreshExternalFeeds(force) {
@@ -5162,7 +5529,7 @@ body.dark-theme[data-palette="mint"] {
                     const events = parseIcsToEvents(icsText, windowStart, windowEnd);
                     cache[feed.id] = {
                         fetchedAt: now,
-                        events: events.map(e => ({ title: e.title, description: e.description, date: dateKey(e.date), timestamp: e.date.getTime(), allDay: !!e.allDay }))
+                        events: events.map(e => ({ title: e.title, description: e.description, date: dateKey(e.date), timestamp: e.date.getTime(), allDay: !!e.allDay, uid: e.uid || '' }))
                     };
                 } catch (err) {
                     console.error('Failed to fetch external feed', feed.label, err);
@@ -5173,6 +5540,7 @@ body.dark-theme[data-palette="mint"] {
             rebuildExternalEventsIndex();
             if (statusEl) statusEl.textContent = `Last refreshed ${new Date(now).toLocaleTimeString()}.`;
             renderCalendar();
+            if (activeAppView === 'home') renderHomeDashboard();
         }
 
         function rebuildExternalEventsIndex() {
@@ -5184,7 +5552,7 @@ body.dark-theme[data-palette="mint"] {
                 if (!entry) return;
                 entry.events.forEach(ev => {
                     if (!externalEventsByDate[ev.date]) externalEventsByDate[ev.date] = [];
-                    externalEventsByDate[ev.date].push({ title: ev.title, feedLabel: feed.label, color: feed.color || feedColor(feed, i) });
+                    externalEventsByDate[ev.date].push({ title: ev.title, feedLabel: feed.label, color: feed.color || feedColor(feed, i), category: categorizeFeedEvent(feed, ev.uid, ev.title) });
                 });
             });
             rebuildCanvasAssignmentsIndex();
@@ -5194,9 +5562,10 @@ body.dark-theme[data-palette="mint"] {
             return externalEventsByDate[dateKey(date)] || [];
         }
 
-        // ===================== CANVAS ASSIGNMENT SYNC =====================
+        // ===================== ASSIGNMENT SYNC (Canvas + CVA/Agilix Buzz) =====================
         // Canvas's calendar feed labels each assignment/quiz event "<Title> [<Course Code>]" --
         // split that back into the two parts so due dates can be attributed to a specific course.
+        // Buzz doesn't tag a course code onto the title, so it just falls through with courseCode: null.
         function parseCanvasAssignmentTitle(rawTitle) {
             const m = /^(.*)\s+\[([^\]]+)\]\s*$/.exec(rawTitle || '');
             if (m) return { title: m[1].trim(), courseCode: m[2].trim() };
@@ -5204,17 +5573,19 @@ body.dark-theme[data-palette="mint"] {
         }
 
         // Flat, time-sorted list of every assignment/event coming from feeds flagged as Canvas
-        // (see isCanvasFeedUrl). Rebuilt any time the external feed cache changes.
+        // or CVA/Buzz (see isCanvasFeedUrl / isBuzzFeedUrl). Rebuilt any time the external feed
+        // cache changes.
         let canvasAssignments = [];
         function rebuildCanvasAssignmentsIndex() {
             const cache = getExternalFeedCache();
             const list = [];
             externalFeeds.forEach(feed => {
-                if (!feed.enabled || !feed.isCanvas) return;
+                if (!feed.enabled || !(feed.isCanvas || feed.isBuzz)) return;
                 const entry = cache[feed.id];
                 if (!entry) return;
                 entry.events.forEach(ev => {
                     if (typeof ev.timestamp !== 'number') return;
+                    if (categorizeFeedEvent(feed, ev.uid, ev.title) !== 'assignment') return;
                     const parsed = parseCanvasAssignmentTitle(ev.title);
                     list.push({
                         title: parsed.title,
@@ -5607,12 +5978,14 @@ body.dark-theme[data-palette="mint"] {
             loadScheduleDatesForCalendar();
             loadDayNotes();
             loadExternalFeeds();
+            loadCalendarCategoryFilter();
             rebuildExternalEventsIndex();
             refreshExternalFeeds(false);
 
             document.querySelectorAll('.view-tab').forEach(tab => {
                 tab.addEventListener('click', () => switchView(tab.dataset.view));
             });
+            renderCalendarCategoryFilterChips();
             document.getElementById('prev-btn').addEventListener('click', () => navigate(-1));
             document.getElementById('next-btn').addEventListener('click', () => navigate(1));
             document.getElementById('today-button').addEventListener('click', goToday);
@@ -5697,16 +6070,19 @@ body.dark-theme[data-palette="mint"] {
             document.head.appendChild(style);
 
             // Determine initial view from URL hash (supports deep-linking / bookmarks)
-            const initialView = location.hash.replace('#', '') === 'calendar' ? 'calendar' : 'classes';
+            const initialHash = location.hash.replace('#', '');
+            const initialView = initialHash === 'calendar' || initialHash === 'classes' ? initialHash : 'home';
             activeAppView = initialView;
+            document.getElementById('view-home').classList.toggle('hidden', initialView !== 'home');
             document.getElementById('view-classes').classList.toggle('hidden', initialView !== 'classes');
             document.getElementById('view-calendar').classList.toggle('hidden', initialView !== 'calendar');
             document.querySelectorAll('.sidebar-link').forEach(a => a.classList.toggle('active', a.dataset.view === initialView));
-            document.title = initialView === 'calendar' ? 'School Calendar' : 'School Dashboard';
+            document.title = initialView === 'calendar' ? 'School Calendar' : initialView === 'home' ? 'Home' : 'School Dashboard';
             if (initialView === 'calendar') {
                 calendarInitialized = true;
                 initCalendar();
             }
+            if (initialView === 'home') renderHomeDashboard();
 
             // Note: the "Open Current Class?" prompt is handled by checkScheduledClassPrompt(),
             // called every tick from displayTime() above -- not just once here at load -- so it
