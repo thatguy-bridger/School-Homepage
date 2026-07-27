@@ -1463,6 +1463,17 @@ body.dark-theme[data-palette="mint"] {
         .mini-upcoming-date { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-muted); }
         .mini-upcoming-title { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
         .mini-upcoming-sub { font-size: 0.72rem; color: var(--text-secondary); margin-top: 0.15rem; }
+        .mini-upcoming-category-group .mini-upcoming-sub { padding-left: 1.1rem; margin-top: 0.1rem; }
+        .mini-upcoming-category-label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            color: var(--text-muted);
+        }
         .mini-empty-state { font-size: 0.85rem; color: var(--text-muted); }
 
         .day-classes-section { margin-bottom: 1.5rem; }
@@ -2270,16 +2281,20 @@ body.dark-theme[data-palette="mint"] {
             saveUserScheduleDates();
             saveUserScheduleSlotOptions();
             closeAllSettingsModal();
-            getScheduledClassUrl();
         }
 
         // ===================== EXPORT / IMPORT ALL DATA =====================
-        // The complete, authoritative set of localStorage keys this app owns.
+        // The complete, authoritative set of localStorage keys this app owns. Both Export/Import
+        // All Data and "Reset Everything" (see confirmResetEverything) key off this single list --
+        // it used to be duplicated by hand in both places and had quietly drifted out of sync
+        // (missing noSchoolDaysV1 entirely, so No School Days silently survived a "reset
+        // everything" and never made it into a backup).
         const ALL_DATA_KEYS = [
-            'classDataV3', 'userADays', 'userBDays', 'userScheduleSlotOptionsV2',
+            'classDataV3', 'userADays', 'userBDays', 'noSchoolDaysV1', 'userScheduleSlotOptionsV2',
             'dayNotesV1', 'classNotesV1',
             'theme', 'themePalette', 'motionPref', 'timeFormat',
-            'calendarView', 'weekStart',
+            'calendarView', 'weekStart', 'calendarCategoryFilter', 'recentCalendarSearches',
+            'dismissedDailyDigestDate', 'dismissedWeeklyDigestKey',
             'showGoogleCalendar', 'googleCalendarEmbedUrl',
             'icsIncludeDayEvents', 'icsIncludeClassEvents',
             'externalIcsFeeds', 'externalIcsCache',
@@ -2827,7 +2842,9 @@ body.dark-theme[data-palette="mint"] {
                 '.mini-calendar-panel, .mini-day-cell, .mini-upcoming-card, ' +
                 '.day-class-row, .week-class-row, .day-badge, .main-category-item, ' +
                 '.agenda-month-header, .weekday-header, .mini-weekday-label, ' +
-                '.class-color-custom-row, .theme-mode-row, .motion-mode-row, .ics-toggle-row';
+                '.class-color-custom-row, .theme-mode-row, .motion-mode-row, .ics-toggle-row, ' +
+                '.calendar-legend-row, .calendar-search-result-item, .calendar-search-suggestion-chip, ' +
+                '.digest-banner, .digest-item, .home-due-group, .category-badge';
 
             const DETACH_DURATION = 1900; // fixed (not randomized) so every element settles at the same pace -- long enough for the wobble envelope's decaying oscillation to fully play out
 
@@ -3148,7 +3165,7 @@ body.dark-theme[data-palette="mint"] {
                 const classCardsHTML = category.classes.map(createClassCardHTML).join('');
                 return `
                     <div class="main-category-item ${widthClass}">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 text-center">${category.categoryName}</h2>
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 text-center">${escapeHtml(category.categoryName)}</h2>
                         <div class="grid grid-cols-1 gap-4">
                             ${classCardsHTML}
                         </div>
@@ -3162,7 +3179,7 @@ body.dark-theme[data-palette="mint"] {
             const classCardsHTML = category.classes.map(createClassCardHTML).join('');
             return `
                 <div class="main-category-item full-width">
-                    <h2 class="text-3xl sm:text-4xl font-bold mb-6 text-center">${category.categoryName}</h2>
+                    <h2 class="text-3xl sm:text-4xl font-bold mb-6 text-center">${escapeHtml(category.categoryName)}</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${classCardsHTML}
                     </div>
@@ -3201,9 +3218,9 @@ body.dark-theme[data-palette="mint"] {
             const subtitle = getClassSubtitle(classItem);
             return `
                 <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}
-                     onclick="window.location.href='${classItem.url}'">
+                     onclick="window.location.href='${escapeJsAttr(classItem.url)}'">
                     <div class="flex items-start justify-between gap-2 mb-2 pr-8">
-                        <h4 class="text-xl font-bold">${classItem.title}</h4>
+                        <h4 class="text-xl font-bold">${escapeHtml(classItem.title)}</h4>
                         <button class="class-note-toggle ${hasNote ? 'has-note' : ''}" data-note-id="${noteId}" onclick="event.stopPropagation(); toggleClassNote('${noteId}')" title="Quick note">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         </button>
@@ -3212,10 +3229,10 @@ body.dark-theme[data-palette="mint"] {
                     <div class="class-note-box ${hasNote ? '' : 'hidden'}" id="note-box-${noteId}" onclick="event.stopPropagation()">
                         <textarea class="class-note-textarea" placeholder="Quick note..." onchange="saveClassNote('${noteId}', this.value)">${escapeHtml(noteValue)}</textarea>
                     </div>
-                    <button class="new-tab-button" onclick="event.stopPropagation(); window.open('${classItem.url}', '_blank');" title="Open in new tab">
+                    <button class="new-tab-button" onclick="event.stopPropagation(); window.open('${escapeJsAttr(classItem.url)}', '_blank');" title="Open in new tab">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     </button>
-                    <div class="class-url-display" title="${classItem.url}">${classItem.url}</div>
+                    <div class="class-url-display" title="${escapeAttr(classItem.url)}">${escapeHtml(classItem.url)}</div>
                 </div>
             `;
         }
@@ -3286,7 +3303,7 @@ body.dark-theme[data-palette="mint"] {
                                 <span class="drag-handle mr-3 p-1 rounded-md transition" title="Drag to reorder">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                                 </span>
-                                <input type="text" value="${category.categoryName}" placeholder="Category Name"
+                                <input type="text" value="${escapeAttr(category.categoryName)}" placeholder="Category Name"
                                        class="category-name-input text-2xl font-bold bg-transparent focus:rounded p-2 -ml-2 w-full"
                                        data-category-index="${categoryIndex}"
                                        onchange="updateCategoryName(${categoryIndex}, this.value)">
@@ -3345,7 +3362,7 @@ body.dark-theme[data-palette="mint"] {
                             <span class="drag-handle mr-3 p-1 rounded-md transition" title="Drag to reorder">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                             </span>
-                            <input type="text" value="${category.categoryName}" placeholder="Category Name"
+                            <input type="text" value="${escapeAttr(category.categoryName)}" placeholder="Category Name"
                                    class="category-name-input text-2xl font-bold bg-transparent focus:rounded p-2 -ml-2 w-full"
                                    data-category-index="${categoryIndex}"
                                    onchange="updateCategoryName(${categoryIndex}, this.value)">
@@ -3399,15 +3416,15 @@ body.dark-theme[data-palette="mint"] {
                         </svg>
                     </span>
                     <button type="button" class="class-color-swatch-btn ${classItem.color ? '' : 'is-empty'}" data-category-index="${categoryIndex}" data-class-index="${classIndex}" style="background:${classItem.color || 'transparent'}" title="Class color" onclick="event.stopPropagation(); openClassColorPicker(this, ${categoryIndex}, ${classIndex})"></button>
-                    <input type="text" value="${classItem.title}" placeholder="Class Title" class="class-title-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'title', this.value)">
-                    <input type="text" value="${classItem.teacher || ''}" placeholder="Teacher" class="class-teacher-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'teacher', this.value)">
-                    <input type="text" value="${classItem.room || ''}" placeholder="Room" class="class-room-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'room', this.value)">
-                    <input type="text" value="${classItem.canvasCourseCode || ''}" placeholder="Canvas Course Code" title="Matches this class to Canvas assignments, e.g. the [BIO-101] tag Canvas puts on due dates" class="class-canvas-code-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'canvasCourseCode', this.value)">
+                    <input type="text" value="${escapeAttr(classItem.title)}" placeholder="Class Title" class="class-title-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'title', this.value)">
+                    <input type="text" value="${escapeAttr(classItem.teacher || '')}" placeholder="Teacher" class="class-teacher-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'teacher', this.value)">
+                    <input type="text" value="${escapeAttr(classItem.room || '')}" placeholder="Room" class="class-room-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'room', this.value)">
+                    <input type="text" value="${escapeAttr(classItem.canvasCourseCode || '')}" placeholder="Canvas Course Code" title="Matches this class to Canvas assignments, e.g. the [BIO-101] tag Canvas puts on due dates" class="class-canvas-code-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'canvasCourseCode', this.value)">
                     <select class="class-schedule-slot-select form-select" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'scheduleSlot', this.value)">
                         ${scheduleOptionsHtml}
                     </select>
                     <div class="flex items-center gap-2">
-                        <input type="url" value="${classItem.url}" placeholder="URL" class="class-url-input form-input flex-grow" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'url', this.value)">
+                        <input type="url" value="${escapeAttr(classItem.url)}" placeholder="URL" class="class-url-input form-input flex-grow" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'url', this.value)">
                         <button type="button" class="duplicate-class-btn p-2" onclick="duplicateClass(${categoryIndex}, ${classIndex})" title="Duplicate Class">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">  <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
                         </button>
@@ -3609,6 +3626,10 @@ body.dark-theme[data-palette="mint"] {
             classData = newClassData;
             saveToLocalStorage();
             renderClassLinks();
+            // The mini calendar preview's "upcoming" cards list each day's scheduled classes by
+            // name (see getClassesForDate) -- without this, a class rename/re-slot wouldn't show
+            // up there until the user happened to visit the Calendar page for an unrelated reason.
+            renderClassesCalendarPreview();
         }
 
         // --- SETTINGS MODAL FUNCTIONS (Classes) ---
@@ -3817,7 +3838,7 @@ body.dark-theme[data-palette="mint"] {
         function confirmResetEverything() {
             showConfirmationModal('Reset EVERYTHING — classes, schedule dates, calendar notes, and preferences? This cannot be undone.', [
                 { text: 'Confirm', action: () => {
-                    ['classDataV3', 'userADays', 'userBDays', 'userScheduleSlotOptionsV2', 'dayNotesV1', 'classNotesV1', 'theme', 'calendarView', 'timeFormat', 'showGoogleCalendar', 'googleCalendarEmbedUrl', 'weekStart', 'githubGistToken', 'githubGistId', 'githubGistRawUrl', 'externalIcsFeeds', 'externalIcsCache'].forEach(k => localStorage.removeItem(k));
+                    ALL_DATA_KEYS.forEach(k => localStorage.removeItem(k));
                     window.location.reload();
                 }},
                 { text: 'Cancel', action: () => {} }
@@ -3854,7 +3875,6 @@ body.dark-theme[data-palette="mint"] {
             saveUserScheduleDates();
             saveUserScheduleSlotOptions();
             closeSchedulingSettingsModal();
-            getScheduledClassUrl();
         }
 
         // --- DRAG AND DROP: CATEGORIES ---
@@ -3996,6 +4016,7 @@ body.dark-theme[data-palette="mint"] {
         }
 
         // --- TIME & DATE DISPLAY ---
+        let lastHomeDueSoonMinuteBucket = -1;
         function displayTime() {
             const date = new Date();
             const hour12 = (localStorage.getItem('timeFormat') || '12') === '12';
@@ -4010,7 +4031,18 @@ body.dark-theme[data-palette="mint"] {
             checkAssignmentDueSoonPrompt();
             if (activeAppView === 'home') {
                 renderHomeNextClass();
-                renderHomeDueSoon();
+                // Due Soon's countdowns only ever display minute/hour/day granularity (see
+                // formatDueCountdown) except in the final 60 seconds before something is due, so
+                // rebuilding its whole list every single tick is 59/60 wasted work. Skip re-render
+                // unless the displayed minute would actually change, or something is imminent
+                // enough that formatDueCountdown is showing live seconds.
+                const nextDue = getNextDueAssignment();
+                const isImminent = nextDue && (nextDue.dueAt - Date.now()) < 60000;
+                const minuteBucket = Math.floor(Date.now() / 60000);
+                if (isImminent || minuteBucket !== lastHomeDueSoonMinuteBucket) {
+                    lastHomeDueSoonMinuteBucket = minuteBucket;
+                    renderHomeDueSoon();
+                }
             }
         }
 
@@ -4335,25 +4367,21 @@ body.dark-theme[data-palette="mint"] {
             const modal = document.getElementById('confirmation-modal');
             if (modal && !modal.classList.contains('hidden')) return;
 
-            const scheduledUrlResult = getScheduledClassUrl();
-            if (scheduledUrlResult === undefined) return;
+            const scheduled = getScheduledClassUrl();
+            if (!scheduled) return;
             lastPromptedScheduleSlot = info.scheduleSlot;
 
-            const URLParts = scheduledUrlResult.split("(");
-            const myInterval = setInterval(() => {
-                window.open(URLParts[1]);
-                clearInterval(myInterval);
-            }, 3000);
-
-            showConfirmationModal(`Open Current Class: ${scheduledUrlResult}?`, [
+            showConfirmationModal(`Open ${scheduled.title} now?`, [
                 { text: 'Continue', action: () => {
-                    window.location.href = URLParts[1];
+                    window.location.href = scheduled.url;
                 }},
                 { text: 'Cancel', action: () => {} }
             ]);
         }
 
         // --- SCHEDULE REDIRECTION LOGIC ---
+        // Returns { title, url } for the class in session right now, or null if there isn't one
+        // (no school today, between periods, or the matched class has no URL set).
         function getScheduledClassUrl() {
             const now = new Date();
             const year = now.getFullYear();
@@ -4371,8 +4399,7 @@ body.dark-theme[data-palette="mint"] {
             const isHalfDay = (dotw === 5);
 
             if (isNoSchoolDay(now) || (!isADay && !isBDay)) {
-                console.log("Not a scheduled A or B day. Staying on current page.");
-                return;
+                return null;
             }
 
             for (const slotOption of userScheduleSlotOptions) {
@@ -4411,14 +4438,12 @@ body.dark-theme[data-palette="mint"] {
                 for (const category of classData) {
                     for (const classItem of category.classes) {
                         if (classItem.scheduleSlot === scheduleSlotToFind && classItem.url && classItem.url !== '#') {
-                            console.log(`Redirecting to scheduled class: ${classItem.title} (${classItem.scheduleSlot})`);
-                            return `${classItem.title}
-                            (${classItem.url}`;
+                            return { title: classItem.title, url: classItem.url };
                         }
                     }
                 }
             }
-            console.log("No class in session or no matching schedule slot found. Staying on current page.");
+            return null;
         }
 
         // =====================================================================================
@@ -4654,7 +4679,34 @@ body.dark-theme[data-palette="mint"] {
                 const notesHtml = note && note.notes ? `<p class="mini-upcoming-sub line-clamp-2">${escapeHtml(note.notes)}</p>` : '';
                 const classesToday = getClassesForDate(currentDay);
                 const classesHtml = classesToday.length ? `<p class="mini-upcoming-sub truncate">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>` : '';
-                const externalHtml = externalEvents.length ? `<div class="mt-1 space-y-1">${externalEvents.slice(0, 2).map(event => `<p class="mini-upcoming-sub truncate">${escapeHtml(event.title)}</p>`).join('')}</div>` : '';
+                // When more than one category is happening that day, group by category (each with
+                // its own icon+label) instead of a flat list -- otherwise a single "Assignment"
+                // dot per line is enough to tell items apart without a group header.
+                const categoriesToday = new Set(externalEvents.map(e => e.category));
+                let externalHtml = '';
+                if (categoriesToday.size > 1) {
+                    const groups = new Map();
+                    externalEvents.forEach(e => {
+                        if (!groups.has(e.category)) groups.set(e.category, []);
+                        groups.get(e.category).push(e);
+                    });
+                    externalHtml = `<div class="mt-1 space-y-1.5">${Array.from(groups.entries()).map(([cat, items]) => `
+                        <div class="mini-upcoming-category-group">
+                            <p class="mini-upcoming-category-label">
+                                <span class="home-dot" style="width:0.75rem; height:0.75rem; background:${items[0].color};">${categoryIconSvg(cat, 12)}</span>
+                                ${escapeHtml(categoryLabel(cat))}
+                            </p>
+                            ${items.slice(0, 3).map(e => `<p class="mini-upcoming-sub truncate">${escapeHtml(e.title)}</p>`).join('')}
+                        </div>
+                    `).join('')}</div>`;
+                } else if (externalEvents.length) {
+                    externalHtml = `<div class="mt-1 space-y-1">${externalEvents.slice(0, 2).map(event => `
+                        <p class="mini-upcoming-sub truncate flex items-center gap-1.5">
+                            <span class="home-dot" style="width:0.7rem; height:0.7rem; background:${event.color};">${categoryIconSvg(event.category, 11)}</span>
+                            <span class="truncate">${escapeHtml(event.title)}</span>
+                        </p>
+                    `).join('')}</div>`;
+                }
                 upcomingItems.push(`
                     <div class="mini-upcoming-card">
                         <div class="flex items-center justify-between gap-2">
@@ -4839,9 +4891,9 @@ body.dark-theme[data-palette="mint"] {
                 const titleHtml = note && note.title ? `<p class="text-xs mt-1 truncate font-medium">${escapeHtml(note.title)}</p>` : '';
                 const dotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
                 const externalDotsHtml = externalEvents.length ? `
-                    <div class="flex items-end gap-1 mt-1">
+                    <div class="flex items-end flex-wrap gap-1.5 mt-1">
                         ${externalEvents.slice(0, 4).map((e, idx) => {
-                            const size = (10 + eventUrgencyT(e.category, cursor, today) * 7).toFixed(1);
+                            const size = (7 + eventUrgencyT(e.category, cursor, today) * 5).toFixed(1);
                             return `<span class="rounded-full flex-shrink-0 flex items-center justify-center calendar-event-dot" style="width:${size}px;height:${size}px;background:${e.color};cursor:pointer;overflow:hidden;" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx}, true)">${categoryIconSvg(e.category, size)}</span>`;
                         }).join('')}
                     </div>
@@ -4933,7 +4985,7 @@ body.dark-theme[data-palette="mint"] {
                     <p class="text-sm font-semibold mb-2">Today's Classes</p>
                     <div class="space-y-2">
                         ${classesToday.map(c => `
-                            <a class="day-class-row" style="${c.classItem.color ? `border-left: 3px solid ${escapeAttr(c.classItem.color)};` : ''}" href="${c.classItem.url || '#'}" onclick="${c.classItem.url ? '' : 'return false;'}">
+                            <a class="day-class-row" style="${c.classItem.color ? `border-left: 3px solid ${escapeAttr(c.classItem.color)};` : ''}" href="${escapeAttr(c.classItem.url || '#')}" onclick="${c.classItem.url ? '' : 'return false;'}">
                                 <span class="flex items-center gap-2 font-medium">${classDotHtml(c.classItem)}${classNameHtml(c.classItem)}</span>
                                 ${c.timeRange ? `<span class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>` : ''}
                             </a>
@@ -5571,7 +5623,10 @@ body.dark-theme[data-palette="mint"] {
             const isCanvas = isCanvasFeedUrl(url);
             const isBuzz = isBuzzFeedUrl(url);
             const defaultLabel = isCanvas ? 'Canvas' : isBuzz ? 'CVA' : url;
-            externalFeeds.push({ id: 'feed-' + Date.now(), label: label || defaultLabel, url, color: EXTERNAL_FEED_COLORS[externalFeeds.length % EXTERNAL_FEED_COLORS.length], enabled: true, isCanvas, isBuzz });
+            // Routed through normalizeExternalFeed rather than a hand-built object literal so
+            // every detection flag (isCanvas/isBuzz/isHoliday/...) is guaranteed to be filled in
+            // -- a manually-added feed used to silently skip isHoliday until the next page load.
+            externalFeeds.push(normalizeExternalFeed({ id: 'feed-' + Date.now(), label: label || defaultLabel, url, enabled: true }, externalFeeds.length));
             saveExternalFeeds();
             labelInput.value = '';
             urlInput.value = '';
@@ -5677,6 +5732,7 @@ body.dark-theme[data-palette="mint"] {
             feed.url = url;
             feed.isCanvas = isCanvasFeedUrl(url);
             feed.isBuzz = isBuzzFeedUrl(url);
+            feed.isHoliday = isHolidayFeedUrl(url);
             saveExternalFeeds();
             const cache = getExternalFeedCache();
             delete cache[feed.id];
@@ -5894,7 +5950,7 @@ body.dark-theme[data-palette="mint"] {
         };
         const CATEGORY_ICON_DEFAULT = '<rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="white" stroke-width="2"/><path d="M8 3v4M16 3v4M4 10h16" stroke="white" stroke-width="2" stroke-linecap="round"/>';
         function categoryIconSvg(category, dotSizePx) {
-            const s = Math.max(7, Math.round((dotSizePx || 16) * 0.62));
+            const s = Math.max(5, Math.round((dotSizePx || 16) * 0.62));
             const inner = CATEGORY_ICON_PATHS[category] || CATEGORY_ICON_DEFAULT;
             return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="pointer-events:none; flex-shrink:0;" aria-hidden="true">${inner}</svg>`;
         }
@@ -5958,7 +6014,10 @@ body.dark-theme[data-palette="mint"] {
                     externalEventsByDate[ev.date].push({ title: ev.title, feedLabel: feed.label, color: feed.color || feedColor(feed, i), category: categorizeFeedEvent(feed, ev.uid, ev.title), description: ev.description, timestamp: ev.timestamp, allDay: !!ev.allDay });
                 });
             });
-            rebuildCanvasAssignmentsIndex();
+            // Pass the cache along rather than having rebuildCanvasAssignmentsIndex re-read and
+            // re-JSON.parse the same (potentially large, a full school year of assignments)
+            // localStorage blob a second time on every single rebuild.
+            rebuildCanvasAssignmentsIndex(cache);
         }
 
         function getExternalEventsForDate(date) {
@@ -5979,8 +6038,8 @@ body.dark-theme[data-palette="mint"] {
         // or CVA/Buzz (see isCanvasFeedUrl / isBuzzFeedUrl). Rebuilt any time the external feed
         // cache changes.
         let canvasAssignments = [];
-        function rebuildCanvasAssignmentsIndex() {
-            const cache = getExternalFeedCache();
+        function rebuildCanvasAssignmentsIndex(cache) {
+            if (!cache) cache = getExternalFeedCache();
             const list = [];
             externalFeeds.forEach(feed => {
                 if (!feed.enabled || !(feed.isCanvas || feed.isBuzz)) return;
@@ -6376,6 +6435,16 @@ body.dark-theme[data-palette="mint"] {
         function escapeAttr(str) {
             return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
+        // For free-form text embedded as a single-quoted JS string literal inside an inline
+        // onclick="..." attribute, e.g. onclick="foo('${escapeJsAttr(userText)}')". Two nested
+        // contexts need escaping: the JS string itself (backslash, single quote) and, after that,
+        // the surrounding HTML attribute (&, ", <, >) that plain escapeAttr handles on its own --
+        // escapeAttr alone leaves a literal "'" free to close the JS string early and corrupt the
+        // handler (and everything rendered after it), which arbitrary user text (search queries,
+        // pasted URLs, etc.) can easily contain.
+        function escapeJsAttr(str) {
+            return escapeAttr((str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+        }
 
         function initCalendar() {
             loadScheduleDatesForCalendar();
@@ -6475,7 +6544,10 @@ body.dark-theme[data-palette="mint"] {
             if (!tooltip || !content || content.dataset.hoverTooltipBound) return;
             content.dataset.hoverTooltipBound = 'true';
 
-            let currentDate = null;
+            // Deliberately NOT named currentDate -- that's the global Date object driving which
+            // month/week/day the calendar is showing. This is just a date-key string tracking
+            // which cell the tooltip is currently rendered for.
+            let hoveredDateKey = null;
 
             function position(x, y) {
                 const rect = tooltip.getBoundingClientRect();
@@ -6491,11 +6563,11 @@ body.dark-theme[data-palette="mint"] {
             content.addEventListener('mouseover', (e) => {
                 const cell = e.target.closest('.day-cell, .week-day-col');
                 if (!cell || !content.contains(cell)) return;
-                const date = cell.dataset.date;
-                if (!date) return;
-                if (date !== currentDate) {
-                    currentDate = date;
-                    tooltip.innerHTML = buildDayTooltipHtml(date);
+                const dateStr = cell.dataset.date;
+                if (!dateStr) return;
+                if (dateStr !== hoveredDateKey) {
+                    hoveredDateKey = dateStr;
+                    tooltip.innerHTML = buildDayTooltipHtml(dateStr);
                 }
                 tooltip.classList.add('visible');
                 position(e.clientX, e.clientY);
@@ -6512,7 +6584,7 @@ body.dark-theme[data-palette="mint"] {
                 if (!cell) return;
                 if (cell.contains(e.relatedTarget)) return;
                 tooltip.classList.remove('visible');
-                currentDate = null;
+                hoveredDateKey = null;
             });
         }
 
@@ -6622,14 +6694,14 @@ body.dark-theme[data-palette="mint"] {
                             <button type="button" class="calendar-search-clear-btn" onclick="clearRecentCalendarSearches()">Clear</button>
                         </div>
                         <div class="calendar-search-suggestions">
-                            ${recentCalendarSearches.map(term => `<button type="button" class="calendar-search-suggestion-chip" onclick="applyCalendarSearchSuggestion('${escapeAttr(term)}')">${escapeHtml(term)}</button>`).join('')}
+                            ${recentCalendarSearches.map(term => `<button type="button" class="calendar-search-suggestion-chip" onclick="applyCalendarSearchSuggestion('${escapeJsAttr(term)}')">${escapeHtml(term)}</button>`).join('')}
                         </div>
                     `;
                 } else {
                     resultsEl.innerHTML = `
                         <p class="calendar-search-suggestions-label">Try searching for…</p>
                         <div class="calendar-search-suggestions">
-                            ${CALENDAR_SEARCH_SUGGESTIONS.map(term => `<button type="button" class="calendar-search-suggestion-chip" onclick="applyCalendarSearchSuggestion('${escapeAttr(term)}')">${escapeHtml(term)}</button>`).join('')}
+                            ${CALENDAR_SEARCH_SUGGESTIONS.map(term => `<button type="button" class="calendar-search-suggestion-chip" onclick="applyCalendarSearchSuggestion('${escapeJsAttr(term)}')">${escapeHtml(term)}</button>`).join('')}
                         </div>
                     `;
                 }
@@ -6781,7 +6853,6 @@ body.dark-theme[data-palette="mint"] {
             }
 
             if (!dailyDismissed) {
-                const now = Date.now();
                 const dueToday = canvasAssignments.filter(a => dateKey(new Date(a.dueAt)) === todayKey);
                 const eventsToday = getExternalEventsForDate(new Date()).filter(ev => ev.category !== 'assignment');
                 const hasAny = dueToday.length || eventsToday.length;
