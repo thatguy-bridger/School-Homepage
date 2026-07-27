@@ -538,6 +538,83 @@ body.dark-theme[data-palette="mint"] {
             background: var(--glass-bg-strong);
         }
 
+        .calendar-search-wrap { position: relative; max-width: 360px; }
+        .calendar-search-input { padding: 0.6rem 0.9rem; border-radius: 0.75rem; }
+        .calendar-search-results {
+            position: absolute;
+            top: calc(100% + 0.4rem);
+            left: 0;
+            right: 0;
+            z-index: 40;
+            max-height: 320px;
+            overflow-y: auto;
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.9rem;
+            box-shadow: var(--glass-shadow);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            padding: 0.4rem;
+        }
+        .calendar-search-result-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            width: 100%;
+            text-align: left;
+            padding: 0.5rem 0.6rem;
+            border-radius: 0.6rem;
+            color: var(--text-primary);
+        }
+        .calendar-search-result-item:hover { background: var(--glass-bg); }
+        .calendar-search-result-item .home-dot, .calendar-search-result-item > span:first-child { margin-top: 0.35rem; }
+        .calendar-search-empty { padding: 0.6rem; font-size: 0.8rem; color: var(--text-muted); }
+
+        .calendar-legend-panel {
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.9rem;
+            padding: 0.85rem 1rem;
+            margin-bottom: 1.25rem;
+            font-size: 0.8rem;
+        }
+        .calendar-legend-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.45rem; }
+        .calendar-legend-note { color: var(--text-muted); font-size: 0.72rem; margin-top: 0.5rem; }
+
+        .digest-banner {
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 0.9rem 1.1rem;
+            margin-bottom: 1rem;
+        }
+        .digest-banner-header { display: flex; justify-content: space-between; align-items: center; }
+        .digest-banner-title { font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--accent-2); }
+        .digest-banner-summary { font-size: 0.9rem; margin-top: 0.3rem; }
+        .digest-items { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
+        .digest-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
+        .digest-dismiss-btn {
+            width: 1.6rem;
+            height: 1.6rem;
+            border-radius: 50%;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .digest-dismiss-btn:hover { background: var(--glass-bg); color: var(--text-primary); }
+        .digest-recall-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+        .digest-recall-btn {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.4rem 0.8rem;
+            border-radius: 9999px;
+            background: var(--glass-bg-strong);
+            border: 1px dashed var(--glass-border);
+            color: var(--text-muted);
+        }
+        .digest-recall-btn:hover { color: var(--text-primary); border-color: var(--accent-2); }
+
         .category-filter-chip {
             padding: 0.5rem 1rem;
             border-radius: 9999px;
@@ -1637,6 +1714,8 @@ body.dark-theme[data-palette="mint"] {
                         </div>
                     </div>
 
+                    <div id="digest-banner-container"></div>
+
                     <div class="home-widget-grid">
                         <div class="home-widget" id="home-widget-next-class">
                             <h2>Next Class</h2>
@@ -1711,10 +1790,18 @@ body.dark-theme[data-palette="mint"] {
                         <button class="view-tab px-4 py-2 rounded-lg border font-semibold text-sm" data-view="agenda">Agenda</button>
                     </div>
 
-                    <!-- Assignments / Events Filter -->
-                    <div class="flex flex-wrap gap-2 mb-6" id="calendar-category-filters">
+                    <!-- Assignments / Events Filter + Legend toggle -->
+                    <div class="flex flex-wrap items-center gap-2 mb-4" id="calendar-category-filters">
                         <button type="button" class="category-filter-chip active" data-group="assignment" onclick="toggleCalendarCategoryFilter('assignment')">Assignments</button>
                         <button type="button" class="category-filter-chip active" data-group="event" onclick="toggleCalendarCategoryFilter('event')">Events</button>
+                        <button type="button" class="category-filter-chip" id="calendar-legend-toggle-btn" onclick="toggleCalendarLegend()">Legend</button>
+                    </div>
+                    <div id="calendar-legend-panel" class="calendar-legend-panel hidden"></div>
+
+                    <!-- Search -->
+                    <div class="calendar-search-wrap mb-6">
+                        <input type="text" id="calendar-search-input" class="form-input calendar-search-input" placeholder="Search assignments &amp; events..." oninput="handleCalendarSearchInput(this.value)" onfocus="handleCalendarSearchInput(this.value)">
+                        <div id="calendar-search-results" class="calendar-search-results hidden"></div>
                     </div>
 
                     <!-- Nav Row (hidden for agenda) -->
@@ -2018,6 +2105,17 @@ body.dark-theme[data-palette="mint"] {
             <h3 class="text-2xl font-bold mb-4">Confirm Action</h3>
             <p class="text-gray-700 mb-6" id="confirmation-message"></p>
             <div class="flex justify-end gap-4" id="confirmation-buttons"></div>
+        </div>
+    </div>
+
+    <!-- Event Detail Modal (opened by clicking a calendar dot or a search result) -->
+    <div id="event-detail-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="hideEventDetailModal(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-8 border" onclick="event.stopPropagation()">
+            <div id="event-detail-modal-content"></div>
+            <div class="flex justify-end gap-4 mt-6">
+                <button type="button" class="modal-footer-button is-secondary" onclick="hideEventDetailModal()">Close</button>
+                <button type="button" class="modal-footer-button bg-indigo-600" id="event-detail-jump-btn">Open Day</button>
+            </div>
         </div>
     </div>
 
@@ -3872,6 +3970,7 @@ body.dark-theme[data-palette="mint"] {
             renderHomeDueSoon();
             renderHomeUpcoming();
             renderMiniCalendarPreviewInto('home-calendar-preview');
+            renderDigestBanner();
         }
 
         function renderHomeNextClass() {
@@ -4466,9 +4565,9 @@ body.dark-theme[data-palette="mint"] {
                 const externalEvents = getExternalEventsForDate(cursor);
                 const badgeHtml = dayType ? `<span class="day-badge ${dayType === 'A' ? 'badge-a' : 'badge-b'}">${dayType}</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none" title="No School">${NO_SCHOOL_ICON}</span>` : '';
                 const noteDotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
-                const externalDotsHtml = externalEvents.length ? `<div class="mini-external-dots">${externalEvents.slice(0, 2).map(event => {
+                const externalDotsHtml = externalEvents.length ? `<div class="mini-external-dots">${externalEvents.slice(0, 2).map((event, idx) => {
                     const size = (3.5 + eventUrgencyT(event.category, cursor, today) * 4.5).toFixed(1);
-                    return `<span class="mini-external-dot" style="width:${size}px;height:${size}px;background:${event.color}" title="${escapeHtml(event.title)} — ${escapeHtml(categoryLabel(event.category))}"></span>`;
+                    return `<span class="mini-external-dot" style="width:${size}px;height:${size}px;background:${event.color};cursor:pointer;" title="${escapeHtml(event.title)} — ${escapeHtml(categoryLabel(event.category))}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx})"></span>`;
                 }).join('')}</div>` : '';
 
                 cells += `
@@ -4683,9 +4782,9 @@ body.dark-theme[data-palette="mint"] {
                 const dotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
                 const externalDotsHtml = externalEvents.length ? `
                     <div class="flex items-end gap-1 mt-1">
-                        ${externalEvents.slice(0, 4).map(e => {
+                        ${externalEvents.slice(0, 4).map((e, idx) => {
                             const size = (5 + eventUrgencyT(e.category, cursor, today) * 6).toFixed(1);
-                            return `<span class="rounded-full flex-shrink-0" style="width:${size}px;height:${size}px;background:${e.color}" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}"></span>`;
+                            return `<span class="rounded-full flex-shrink-0" style="width:${size}px;height:${size}px;background:${e.color};cursor:pointer;" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx}, true)"></span>`;
                         }).join('')}
                     </div>
                 ` : '';
@@ -5335,6 +5434,14 @@ body.dark-theme[data-palette="mint"] {
             return /agilixbuzz\.com/i.test(url || '');
         }
 
+        // Google's public holiday calendars all live at "...#holiday@group.v.calendar.google.com"
+        // regardless of country (en.usa#holiday@..., en.canadian#holiday@..., etc.) -- a holiday
+        // isn't a school event, so these get their own flag rather than falling into the generic
+        // "school-event" bucket every other non-LMS feed defaults to.
+        function isHolidayFeedUrl(url) {
+            return /%23holiday%40group\.v\.calendar\.google\.com/i.test(url || '') || /#holiday@group\.v\.calendar\.google\.com/i.test(url || '');
+        }
+
         function normalizeExternalFeed(feed, index) {
             return {
                 id: feed.id || `feed-${Date.now()}`,
@@ -5343,7 +5450,8 @@ body.dark-theme[data-palette="mint"] {
                 color: feed.color || EXTERNAL_FEED_COLORS[index % EXTERNAL_FEED_COLORS.length],
                 enabled: typeof feed.enabled === 'boolean' ? feed.enabled : true,
                 isCanvas: typeof feed.isCanvas === 'boolean' ? feed.isCanvas : isCanvasFeedUrl(feed.url),
-                isBuzz: typeof feed.isBuzz === 'boolean' ? feed.isBuzz : isBuzzFeedUrl(feed.url)
+                isBuzz: typeof feed.isBuzz === 'boolean' ? feed.isBuzz : isBuzzFeedUrl(feed.url),
+                isHoliday: typeof feed.isHoliday === 'boolean' ? feed.isHoliday : isHolidayFeedUrl(feed.url)
             };
         }
 
@@ -5702,6 +5810,7 @@ body.dark-theme[data-palette="mint"] {
         function categorizeFeedEvent(feed, uid, title) {
             if (feed.isBuzz) return 'assignment';
             if (feed.isCanvas) return /calendar-event/i.test(uid || '') ? 'canvas-event' : 'assignment';
+            if (feed.isHoliday) return 'event';
             return SPORTS_TITLE_PATTERN.test(title || '') ? 'sports' : 'school-event';
         }
 
@@ -5711,7 +5820,7 @@ body.dark-theme[data-palette="mint"] {
             return category === 'assignment' ? 'assignment' : 'event';
         }
 
-        const CATEGORY_LABELS = { assignment: 'Assignment', 'canvas-event': 'Event', sports: 'Sports', 'school-event': 'School Event' };
+        const CATEGORY_LABELS = { assignment: 'Assignment', 'canvas-event': 'Event', event: 'Event', sports: 'Sports', 'school-event': 'School Event' };
         function categoryLabel(category) {
             return CATEGORY_LABELS[category] || 'Event';
         }
@@ -5772,7 +5881,7 @@ body.dark-theme[data-palette="mint"] {
                 if (!entry) return;
                 entry.events.forEach(ev => {
                     if (!externalEventsByDate[ev.date]) externalEventsByDate[ev.date] = [];
-                    externalEventsByDate[ev.date].push({ title: ev.title, feedLabel: feed.label, color: feed.color || feedColor(feed, i), category: categorizeFeedEvent(feed, ev.uid, ev.title) });
+                    externalEventsByDate[ev.date].push({ title: ev.title, feedLabel: feed.label, color: feed.color || feedColor(feed, i), category: categorizeFeedEvent(feed, ev.uid, ev.title), description: ev.description, timestamp: ev.timestamp, allDay: !!ev.allDay });
                 });
             });
             rebuildCanvasAssignmentsIndex();
@@ -6332,6 +6441,235 @@ body.dark-theme[data-palette="mint"] {
             });
         }
 
+        // --- EVENT DETAIL MODAL (opened by clicking a dot or a search result) ---
+        function openEventDetailModal(dateStr, index, useFilter) {
+            const date = parseDateKey(dateStr);
+            const events = useFilter ? getFilteredExternalEventsForDate(date) : getExternalEventsForDate(date);
+            const ev = events[index];
+            if (!ev) return;
+
+            const dateLabel = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+            const timeLabel = (!ev.allDay && typeof ev.timestamp === 'number')
+                ? new Date(ev.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                : 'All day';
+
+            document.getElementById('event-detail-modal-content').innerHTML = `
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:${ev.color};"></span>
+                    <span class="category-badge" style="background:${ev.color}33; color:${ev.color};">${escapeHtml(categoryLabel(ev.category))}</span>
+                </div>
+                <h3 class="text-xl font-bold mb-2">${escapeHtml(ev.title)}</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">${escapeHtml(dateLabel)} — ${escapeHtml(timeLabel)}</p>
+                ${ev.feedLabel ? `<p class="text-sm text-gray-500 dark:text-gray-400 mb-3">${escapeHtml(ev.feedLabel)}</p>` : ''}
+                ${ev.description ? `<p class="text-sm whitespace-pre-wrap">${escapeHtml(ev.description)}</p>` : ''}
+            `;
+
+            const jumpBtn = document.getElementById('event-detail-jump-btn');
+            jumpBtn.onclick = () => { hideEventDetailModal(); openDay(dateStr); };
+
+            const modal = document.getElementById('event-detail-modal');
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('show');
+            });
+        }
+
+        function hideEventDetailModal(event) {
+            if (event && event.target.id !== 'event-detail-modal') return;
+            const modal = document.getElementById('event-detail-modal');
+            modal.classList.add('opacity-0');
+            modal.classList.remove('show');
+            modal.addEventListener('transitionend', () => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, { once: true });
+        }
+
+        // --- CALENDAR SEARCH ---
+        function getAllCalendarEventsFlat() {
+            const list = [];
+            Object.keys(externalEventsByDate).forEach(dateKeyStr => {
+                externalEventsByDate[dateKeyStr].forEach((ev, idx) => {
+                    list.push(Object.assign({ dateKeyStr, idx }, ev));
+                });
+            });
+            return list;
+        }
+
+        function handleCalendarSearchInput(value) {
+            const resultsEl = document.getElementById('calendar-search-results');
+            if (!resultsEl) return;
+            const query = value.trim().toLowerCase();
+            if (!query) { resultsEl.classList.add('hidden'); resultsEl.innerHTML = ''; return; }
+
+            const matches = getAllCalendarEventsFlat()
+                .filter(ev => ev.title.toLowerCase().includes(query))
+                .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
+                .slice(0, 15);
+
+            if (!matches.length) {
+                resultsEl.innerHTML = `<p class="calendar-search-empty">No matches.</p>`;
+                resultsEl.classList.remove('hidden');
+                return;
+            }
+
+            resultsEl.innerHTML = matches.map(ev => {
+                const d = parseDateKey(ev.dateKeyStr);
+                const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                return `
+                    <button type="button" class="calendar-search-result-item" onclick="hideCalendarSearchResults(); openEventDetailModal('${ev.dateKeyStr}', ${ev.idx})">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${ev.color};"></span>
+                        <span class="min-w-0">
+                            <span class="font-semibold truncate block">${escapeHtml(ev.title)}</span>
+                            <span class="text-xs" style="color:var(--text-muted);">${escapeHtml(dateLabel)} · ${escapeHtml(categoryLabel(ev.category))}</span>
+                        </span>
+                    </button>
+                `;
+            }).join('');
+            resultsEl.classList.remove('hidden');
+        }
+
+        function hideCalendarSearchResults() {
+            const resultsEl = document.getElementById('calendar-search-results');
+            if (resultsEl) { resultsEl.classList.add('hidden'); resultsEl.innerHTML = ''; }
+            const input = document.getElementById('calendar-search-input');
+            if (input) input.value = '';
+        }
+
+        function setupCalendarSearchDismiss() {
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.calendar-search-wrap')) hideCalendarSearchResults();
+            });
+        }
+
+        // --- LEGEND ---
+        function toggleCalendarLegend() {
+            const panel = document.getElementById('calendar-legend-panel');
+            const btn = document.getElementById('calendar-legend-toggle-btn');
+            if (!panel) return;
+            const nowHidden = !panel.classList.toggle('hidden');
+            if (btn) btn.classList.toggle('active', nowHidden);
+            if (nowHidden) renderCalendarLegend();
+        }
+
+        function renderCalendarLegend() {
+            const panel = document.getElementById('calendar-legend-panel');
+            if (!panel) return;
+            panel.innerHTML = `
+                <div class="calendar-legend-row"><span class="home-dot" style="background:#ef4444;"></span> <strong>Assignment</strong> &nbsp;— from Canvas or CVA/Buzz</div>
+                <div class="calendar-legend-row"><span class="home-dot" style="background:#f97316;"></span> <strong>Sports</strong> &nbsp;— games/matches from an athletics feed</div>
+                <div class="calendar-legend-row"><span class="home-dot" style="background:#a3e635;"></span> <strong>School Event</strong> &nbsp;— clubs, service, non-game athletics items, etc.</div>
+                <div class="calendar-legend-row"><span class="home-dot" style="background:#38bdf8;"></span> <strong>Event</strong> &nbsp;— not school-specific: a real Canvas calendar event, a holiday, etc.</div>
+                <p class="calendar-legend-note">Dot size and color intensity ramp up as the date gets closer. Click a dot for full details; hover a day for everything on it.</p>
+            `;
+        }
+
+        // --- DAILY / WEEKLY DIGEST BANNER (Home page) ---
+        function getWeekMondayKey(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diffToMonday = day === 0 ? -6 : 1 - day;
+            d.setDate(d.getDate() + diffToMonday);
+            d.setHours(0, 0, 0, 0);
+            return dateKey(d);
+        }
+
+        function dismissDailyDigest() {
+            localStorage.setItem('dismissedDailyDigestDate', dateKey(new Date()));
+            renderDigestBanner();
+        }
+        function dismissWeeklyDigest() {
+            localStorage.setItem('dismissedWeeklyDigestKey', getWeekMondayKey(new Date()));
+            renderDigestBanner();
+        }
+        function restoreDailyDigest() {
+            localStorage.removeItem('dismissedDailyDigestDate');
+            renderDigestBanner();
+        }
+        function restoreWeeklyDigest() {
+            localStorage.removeItem('dismissedWeeklyDigestKey');
+            renderDigestBanner();
+        }
+
+        function buildWeeklyDigestData() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let dueCount = 0, eventCount = 0;
+            const items = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() + i);
+                getExternalEventsForDate(d).forEach(ev => {
+                    if (ev.category === 'assignment') dueCount++; else eventCount++;
+                    items.push({ date: d, event: ev });
+                });
+            }
+            return { dueCount, eventCount, items };
+        }
+
+        function renderDigestBanner() {
+            const container = document.getElementById('digest-banner-container');
+            if (!container) return;
+
+            const todayKey = dateKey(new Date());
+            const weekKey = getWeekMondayKey(new Date());
+            const isMonday = new Date().getDay() === 1;
+            const dailyDismissed = localStorage.getItem('dismissedDailyDigestDate') === todayKey;
+            const weeklyDismissed = localStorage.getItem('dismissedWeeklyDigestKey') === weekKey;
+
+            let html = '';
+
+            if (isMonday && !weeklyDismissed) {
+                const { dueCount, eventCount, items } = buildWeeklyDigestData();
+                const preview = items.slice(0, 4).map(({ date, event }) => `
+                    <div class="digest-item">
+                        <span class="home-dot" style="background:${event.color};"></span>
+                        <span>${escapeHtml(event.title)} <span style="color:var(--text-muted);">— ${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span></span>
+                    </div>
+                `).join('');
+                html += `
+                    <div class="digest-banner">
+                        <div class="digest-banner-header">
+                            <p class="digest-banner-title">This Week</p>
+                            <button type="button" class="digest-dismiss-btn" onclick="dismissWeeklyDigest()" title="Dismiss">&times;</button>
+                        </div>
+                        <p class="digest-banner-summary">${dueCount} assignment${dueCount === 1 ? '' : 's'} due, ${eventCount} event${eventCount === 1 ? '' : 's'} this week.</p>
+                        ${preview ? `<div class="digest-items">${preview}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            if (!dailyDismissed) {
+                const now = Date.now();
+                const dueToday = canvasAssignments.filter(a => dateKey(new Date(a.dueAt)) === todayKey);
+                const eventsToday = getExternalEventsForDate(new Date()).filter(ev => ev.category !== 'assignment');
+                const hasAny = dueToday.length || eventsToday.length;
+                const preview = [
+                    ...dueToday.map(a => `<div class="digest-item"><span class="home-dot" style="background:#ef4444;"></span><span>${escapeHtml(a.title)} <span class="category-badge" style="background:#ef444433; color:#ef4444;">Assignment</span></span></div>`),
+                    ...eventsToday.map(ev => `<div class="digest-item"><span class="home-dot" style="background:${ev.color};"></span><span>${escapeHtml(ev.title)}</span></div>`)
+                ].join('');
+                html += `
+                    <div class="digest-banner">
+                        <div class="digest-banner-header">
+                            <p class="digest-banner-title">Today</p>
+                            <button type="button" class="digest-dismiss-btn" onclick="dismissDailyDigest()" title="Dismiss">&times;</button>
+                        </div>
+                        <p class="digest-banner-summary">${hasAny ? `${dueToday.length} due, ${eventsToday.length} event${eventsToday.length === 1 ? '' : 's'} today.` : 'Nothing due or scheduled today.'}</p>
+                        ${preview ? `<div class="digest-items">${preview}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            const recalls = [];
+            if (dailyDismissed) recalls.push(`<button type="button" class="digest-recall-btn" onclick="restoreDailyDigest()">Show today's digest</button>`);
+            if (isMonday && weeklyDismissed) recalls.push(`<button type="button" class="digest-recall-btn" onclick="restoreWeeklyDigest()">Show weekly digest</button>`);
+            if (recalls.length) html += `<div class="digest-recall-row">${recalls.join('')}</div>`;
+
+            container.innerHTML = html;
+        }
+
         // =====================================================================================
         // ===================== INITIALIZATION =====================
         // =====================================================================================
@@ -6361,6 +6699,7 @@ body.dark-theme[data-palette="mint"] {
             setupBackgroundBlobs();
             setupCursorGlow();
             setupClickEffects();
+            setupCalendarSearchDismiss();
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
                 if (currentThemeState === 'system') applyTheme('system');
             });
