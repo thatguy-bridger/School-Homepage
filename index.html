@@ -538,23 +538,26 @@ body.dark-theme[data-palette="mint"] {
             background: var(--glass-bg-strong);
         }
 
-        .calendar-search-wrap { position: relative; max-width: 360px; }
-        .calendar-search-input { padding: 0.6rem 0.9rem; border-radius: 0.75rem; }
+        .calendar-search-wrap { position: relative; max-width: 450px; width: 100%; }
+        .calendar-search-input { padding: 0.9rem 1.35rem; border-radius: 0.75rem; font-size: 1.05rem; }
         .calendar-search-results {
             position: absolute;
             top: calc(100% + 0.4rem);
             left: 0;
             right: 0;
-            z-index: 40;
+            z-index: 600;
             max-height: 320px;
             overflow-y: auto;
-            background: var(--glass-bg-strong);
+            background: rgba(255, 255, 255, 0.97);
             border: 1px solid var(--glass-border);
             border-radius: 0.9rem;
-            box-shadow: var(--glass-shadow);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
             backdrop-filter: blur(20px) saturate(160%);
             -webkit-backdrop-filter: blur(20px) saturate(160%);
             padding: 0.4rem;
+        }
+        body.dark-theme .calendar-search-results {
+            background: rgba(17, 15, 28, 0.97);
         }
         .calendar-search-result-item {
             display: flex;
@@ -569,6 +572,46 @@ body.dark-theme[data-palette="mint"] {
         .calendar-search-result-item:hover { background: var(--glass-bg); }
         .calendar-search-result-item .home-dot, .calendar-search-result-item > span:first-child { margin-top: 0.35rem; }
         .calendar-search-empty { padding: 0.6rem; font-size: 0.8rem; color: var(--text-muted); }
+        .calendar-search-suggestions-label {
+            padding: 0.4rem 0.6rem 0.2rem;
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--text-muted);
+        }
+        .calendar-search-suggestions-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-right: 0.5rem;
+        }
+        .calendar-search-clear-btn {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            padding: 0.2rem 0.4rem;
+        }
+        .calendar-search-clear-btn:hover { color: var(--text-primary); }
+        .calendar-search-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            padding: 0.3rem 0.6rem 0.5rem;
+        }
+        .calendar-search-suggestion-chip {
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .calendar-search-suggestion-chip:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-2);
+        }
 
         .calendar-legend-panel {
             background: var(--glass-bg-strong);
@@ -717,12 +760,18 @@ body.dark-theme[data-palette="mint"] {
             flex-shrink: 0;
             margin-left: 0.5rem;
         }
-        .home-list-item .home-dot {
+        .home-dot {
             width: 0.6rem;
             height: 0.6rem;
             border-radius: 50%;
-            margin-top: 0.35rem;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .home-list-item .home-dot {
+            margin-top: 0.35rem;
         }
         .home-list-item .home-item-title {
             font-weight: 700;
@@ -1401,8 +1450,10 @@ body.dark-theme[data-palette="mint"] {
         .mini-day-cell.is-today .mini-day-number { color: var(--accent-2); }
         .mini-day-cell .day-badge { font-size: 0.55rem; padding: 0.05rem 0.3rem; }
         .mini-day-cell .note-dot { position: static; width: 0.3rem; height: 0.3rem; box-shadow: none; }
-        .mini-external-dots { display: flex; gap: 0.2rem; }
-        .mini-external-dot { width: 0.3rem; height: 0.3rem; border-radius: 9999px; }
+        .mini-external-dots { display: flex; gap: 0.3rem; margin-top: 0.15rem; }
+        .mini-external-dot { width: 0.3rem; height: 0.3rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .calendar-event-dot { transition: transform 0.12s var(--ease-out, ease-out); }
+        .calendar-event-dot:hover { transform: scale(1.4); }
         .mini-upcoming-card {
             border-radius: 0.85rem;
             border: 1px solid var(--glass-border);
@@ -1775,6 +1826,9 @@ body.dark-theme[data-palette="mint"] {
                             <button id="export-button" class="px-4 py-2 rounded-full text-sm font-semibold">Export</button>
                             <button id="import-button" class="px-4 py-2 rounded-full text-sm font-semibold">Import</button>
                             <input type="file" id="import-file-input" accept="application/json,.json,text/csv,.csv" class="hidden">
+                            <button type="button" id="calendar-legend-toggle-btn" class="icon-btn p-3 rounded-full" onclick="toggleCalendarLegend()" title="Legend">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </button>
                             <button id="calendar-settings-button" class="icon-btn p-3 rounded-full" onclick="openCalendarSettingsModal()" title="Settings">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             </button>
@@ -1790,19 +1844,18 @@ body.dark-theme[data-palette="mint"] {
                         <button class="view-tab px-4 py-2 rounded-lg border font-semibold text-sm" data-view="agenda">Agenda</button>
                     </div>
 
-                    <!-- Assignments / Events Filter + Legend toggle -->
-                    <div class="flex flex-wrap items-center gap-2 mb-4" id="calendar-category-filters">
-                        <button type="button" class="category-filter-chip active" data-group="assignment" onclick="toggleCalendarCategoryFilter('assignment')">Assignments</button>
-                        <button type="button" class="category-filter-chip active" data-group="event" onclick="toggleCalendarCategoryFilter('event')">Events</button>
-                        <button type="button" class="category-filter-chip" id="calendar-legend-toggle-btn" onclick="toggleCalendarLegend()">Legend</button>
+                    <!-- Assignments / Events Filter + Search -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4" id="calendar-category-filters">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" class="category-filter-chip active" data-group="assignment" onclick="toggleCalendarCategoryFilter('assignment')">Assignments</button>
+                            <button type="button" class="category-filter-chip active" data-group="event" onclick="toggleCalendarCategoryFilter('event')">Events</button>
+                        </div>
+                        <div class="calendar-search-wrap">
+                            <input type="text" id="calendar-search-input" class="form-input calendar-search-input" placeholder="Search assignments &amp; events..." oninput="handleCalendarSearchInput(this.value)" onfocus="handleCalendarSearchInput(this.value)">
+                            <div id="calendar-search-results" class="calendar-search-results hidden"></div>
+                        </div>
                     </div>
                     <div id="calendar-legend-panel" class="calendar-legend-panel hidden"></div>
-
-                    <!-- Search -->
-                    <div class="calendar-search-wrap mb-6">
-                        <input type="text" id="calendar-search-input" class="form-input calendar-search-input" placeholder="Search assignments &amp; events..." oninput="handleCalendarSearchInput(this.value)" onfocus="handleCalendarSearchInput(this.value)">
-                        <div id="calendar-search-results" class="calendar-search-results hidden"></div>
-                    </div>
 
                     <!-- Nav Row (hidden for agenda) -->
                     <div class="flex justify-between items-center mb-6" id="nav-row">
@@ -2869,6 +2922,11 @@ body.dark-theme[data-palette="mint"] {
             }
 
             document.addEventListener('click', (e) => {
+                // Skip entirely for text fields -- the ripple's post-click shove was landing
+                // right as the browser placed the text caret, so the field would visually hop
+                // out from under the click and the caret would end up somewhere other than
+                // where the user clicked instead of landing precisely between characters.
+                if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
                 spawnRipple(e.clientX, e.clientY);
                 if (isReducedMotion()) return;
                 triggerDetach(e.clientX, e.clientY);
@@ -4566,8 +4624,8 @@ body.dark-theme[data-palette="mint"] {
                 const badgeHtml = dayType ? `<span class="day-badge ${dayType === 'A' ? 'badge-a' : 'badge-b'}">${dayType}</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none" title="No School">${NO_SCHOOL_ICON}</span>` : '';
                 const noteDotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
                 const externalDotsHtml = externalEvents.length ? `<div class="mini-external-dots">${externalEvents.slice(0, 2).map((event, idx) => {
-                    const size = (3.5 + eventUrgencyT(event.category, cursor, today) * 4.5).toFixed(1);
-                    return `<span class="mini-external-dot" style="width:${size}px;height:${size}px;background:${event.color};cursor:pointer;" title="${escapeHtml(event.title)} — ${escapeHtml(categoryLabel(event.category))}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx})"></span>`;
+                    const size = (7 + eventUrgencyT(event.category, cursor, today) * 6).toFixed(1);
+                    return `<span class="mini-external-dot calendar-event-dot" style="width:${size}px;height:${size}px;background:${event.color};cursor:pointer;" title="${escapeHtml(event.title)} — ${escapeHtml(categoryLabel(event.category))}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx})">${categoryIconSvg(event.category, size)}</span>`;
                 }).join('')}</div>` : '';
 
                 cells += `
@@ -4783,8 +4841,8 @@ body.dark-theme[data-palette="mint"] {
                 const externalDotsHtml = externalEvents.length ? `
                     <div class="flex items-end gap-1 mt-1">
                         ${externalEvents.slice(0, 4).map((e, idx) => {
-                            const size = (5 + eventUrgencyT(e.category, cursor, today) * 6).toFixed(1);
-                            return `<span class="rounded-full flex-shrink-0" style="width:${size}px;height:${size}px;background:${e.color};cursor:pointer;" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx}, true)"></span>`;
+                            const size = (10 + eventUrgencyT(e.category, cursor, today) * 7).toFixed(1);
+                            return `<span class="rounded-full flex-shrink-0 flex items-center justify-center calendar-event-dot" style="width:${size}px;height:${size}px;background:${e.color};cursor:pointer;overflow:hidden;" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx}, true)">${categoryIconSvg(e.category, size)}</span>`;
                         }).join('')}
                     </div>
                 ` : '';
@@ -5825,6 +5883,22 @@ body.dark-theme[data-palette="mint"] {
             return CATEGORY_LABELS[category] || 'Event';
         }
 
+        // Small glyph shown centered inside each dot (and in the legend) so the category reads
+        // at a glance even before checking the color: a checkmark for assignments, a star for
+        // sports, a flag for school events, and a calendar for everything else (real Canvas
+        // events, holidays).
+        const CATEGORY_ICON_PATHS = {
+            assignment: '<path d="M5 13l4 4L19 7" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
+            sports: '<path d="M12 2l2.6 6.2 6.7.6-5.1 4.4 1.6 6.6L12 16.6 6.2 19.8l1.6-6.6L2.7 8.8l6.7-.6L12 2z" fill="white"/>',
+            'school-event': '<path d="M6 3v18" stroke="white" stroke-width="2.6" stroke-linecap="round"/><path d="M6 4.5h12l-2.3 3.5L18 11.5H6" fill="none" stroke="white" stroke-width="2.1" stroke-linejoin="round"/>'
+        };
+        const CATEGORY_ICON_DEFAULT = '<rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="white" stroke-width="2"/><path d="M8 3v4M16 3v4M4 10h16" stroke="white" stroke-width="2" stroke-linecap="round"/>';
+        function categoryIconSvg(category, dotSizePx) {
+            const s = Math.max(7, Math.round((dotSizePx || 16) * 0.62));
+            const inner = CATEGORY_ICON_PATHS[category] || CATEGORY_ICON_DEFAULT;
+            return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="pointer-events:none; flex-shrink:0;" aria-hidden="true">${inner}</svg>`;
+        }
+
         // Normalized 0-1 "urgency" for a dot on a given calendar cell: assignments ramp up over a
         // 5-day window (matching the Due Soon countdown), everything else ramps over 14 days
         // (matching the Home Upcoming Events window). A cell in the past is clamped to full size --
@@ -6308,6 +6382,7 @@ body.dark-theme[data-palette="mint"] {
             loadDayNotes();
             loadExternalFeeds();
             loadCalendarCategoryFilter();
+            loadRecentCalendarSearches();
             rebuildExternalEventsIndex();
             refreshExternalFeeds(false);
 
@@ -6498,11 +6573,69 @@ body.dark-theme[data-palette="mint"] {
             return list;
         }
 
+        // Generic, vague starting points shown before the user has typed anything -- not real
+        // matches, just common words worth trying so an empty box isn't a dead end.
+        const CALENDAR_SEARCH_SUGGESTIONS = ['Exam', 'Quiz', 'Assignment', 'Project', 'Discussion', 'Game', 'Meeting', 'Holiday'];
+
+        function applyCalendarSearchSuggestion(term) {
+            const input = document.getElementById('calendar-search-input');
+            if (input) { input.value = term; input.focus(); }
+            handleCalendarSearchInput(term);
+        }
+
+        // Recent searches replace the generic suggestion chips once the user actually has some;
+        // the generic list is just a cold-start fallback for a brand-new install.
+        let recentCalendarSearches = [];
+        let lastCalendarSearchQuery = '';
+
+        function loadRecentCalendarSearches() {
+            try { recentCalendarSearches = JSON.parse(localStorage.getItem('recentCalendarSearches') || '[]'); }
+            catch (e) { recentCalendarSearches = []; }
+        }
+        function saveRecentCalendarSearches() {
+            localStorage.setItem('recentCalendarSearches', JSON.stringify(recentCalendarSearches));
+        }
+        function recordCalendarSearch(term) {
+            const clean = (term || '').trim();
+            if (!clean) return;
+            recentCalendarSearches = [clean, ...recentCalendarSearches.filter(t => t.toLowerCase() !== clean.toLowerCase())].slice(0, 8);
+            saveRecentCalendarSearches();
+        }
+        function clearRecentCalendarSearches() {
+            recentCalendarSearches = [];
+            saveRecentCalendarSearches();
+            handleCalendarSearchInput('');
+        }
+
         function handleCalendarSearchInput(value) {
             const resultsEl = document.getElementById('calendar-search-results');
             if (!resultsEl) return;
-            const query = value.trim().toLowerCase();
-            if (!query) { resultsEl.classList.add('hidden'); resultsEl.innerHTML = ''; return; }
+            const rawQuery = value.trim();
+            const query = rawQuery.toLowerCase();
+            lastCalendarSearchQuery = rawQuery;
+
+            if (!query) {
+                if (recentCalendarSearches.length) {
+                    resultsEl.innerHTML = `
+                        <div class="calendar-search-suggestions-header">
+                            <p class="calendar-search-suggestions-label">Recent searches</p>
+                            <button type="button" class="calendar-search-clear-btn" onclick="clearRecentCalendarSearches()">Clear</button>
+                        </div>
+                        <div class="calendar-search-suggestions">
+                            ${recentCalendarSearches.map(term => `<button type="button" class="calendar-search-suggestion-chip" onclick="applyCalendarSearchSuggestion('${escapeAttr(term)}')">${escapeHtml(term)}</button>`).join('')}
+                        </div>
+                    `;
+                } else {
+                    resultsEl.innerHTML = `
+                        <p class="calendar-search-suggestions-label">Try searching for…</p>
+                        <div class="calendar-search-suggestions">
+                            ${CALENDAR_SEARCH_SUGGESTIONS.map(term => `<button type="button" class="calendar-search-suggestion-chip" onclick="applyCalendarSearchSuggestion('${escapeAttr(term)}')">${escapeHtml(term)}</button>`).join('')}
+                        </div>
+                    `;
+                }
+                resultsEl.classList.remove('hidden');
+                return;
+            }
 
             const matches = getAllCalendarEventsFlat()
                 .filter(ev => ev.title.toLowerCase().includes(query))
@@ -6519,7 +6652,7 @@ body.dark-theme[data-palette="mint"] {
                 const d = parseDateKey(ev.dateKeyStr);
                 const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 return `
-                    <button type="button" class="calendar-search-result-item" onclick="hideCalendarSearchResults(); openEventDetailModal('${ev.dateKeyStr}', ${ev.idx})">
+                    <button type="button" class="calendar-search-result-item" onclick="recordCalendarSearch(lastCalendarSearchQuery); hideCalendarSearchResults(); openEventDetailModal('${ev.dateKeyStr}', ${ev.idx})">
                         <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${ev.color};"></span>
                         <span class="min-w-0">
                             <span class="font-semibold truncate block">${escapeHtml(ev.title)}</span>
@@ -6550,18 +6683,24 @@ body.dark-theme[data-palette="mint"] {
             const btn = document.getElementById('calendar-legend-toggle-btn');
             if (!panel) return;
             const nowHidden = !panel.classList.toggle('hidden');
-            if (btn) btn.classList.toggle('active', nowHidden);
+            if (btn) btn.classList.toggle('is-active', nowHidden);
             if (nowHidden) renderCalendarLegend();
         }
 
         function renderCalendarLegend() {
             const panel = document.getElementById('calendar-legend-panel');
             if (!panel) return;
+            const row = (category, color, label, desc) => `
+                <div class="calendar-legend-row">
+                    <span class="home-dot" style="width:1.15rem; height:1.15rem; background:${color};">${categoryIconSvg(category, 18)}</span>
+                    <strong>${label}</strong> &nbsp;— ${desc}
+                </div>
+            `;
             panel.innerHTML = `
-                <div class="calendar-legend-row"><span class="home-dot" style="background:#ef4444;"></span> <strong>Assignment</strong> &nbsp;— from Canvas or CVA/Buzz</div>
-                <div class="calendar-legend-row"><span class="home-dot" style="background:#f97316;"></span> <strong>Sports</strong> &nbsp;— games/matches from an athletics feed</div>
-                <div class="calendar-legend-row"><span class="home-dot" style="background:#a3e635;"></span> <strong>School Event</strong> &nbsp;— clubs, service, non-game athletics items, etc.</div>
-                <div class="calendar-legend-row"><span class="home-dot" style="background:#38bdf8;"></span> <strong>Event</strong> &nbsp;— not school-specific: a real Canvas calendar event, a holiday, etc.</div>
+                ${row('assignment', '#ef4444', 'Assignment', 'from Canvas or CVA/Buzz')}
+                ${row('sports', '#f97316', 'Sports', 'games/matches from an athletics feed')}
+                ${row('school-event', '#a3e635', 'School Event', 'clubs, service, non-game athletics items, etc.')}
+                ${row('event', '#38bdf8', 'Event', 'not school-specific: a real Canvas calendar event, a holiday, etc.')}
                 <p class="calendar-legend-note">Dot size and color intensity ramp up as the date gets closer. Click a dot for full details; hover a day for everything on it.</p>
             `;
         }
