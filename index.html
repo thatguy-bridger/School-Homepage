@@ -698,6 +698,9 @@ body.dark-theme[data-palette="mint"] {
         .digest-recall-btn:hover { color: var(--text-primary); border-color: var(--accent-2); }
 
         .category-filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
             padding: 0.5rem 1rem;
             border-radius: 9999px;
             border: 1px solid var(--glass-border);
@@ -708,11 +711,19 @@ body.dark-theme[data-palette="mint"] {
             opacity: 0.55;
             transition: all 0.2s ease-in-out;
         }
+        /* Each chip tints with its own category color (--chip-color, set inline per button) once
+           active, matching the same color used for that category's dots/legend row elsewhere. */
         .category-filter-chip.active {
             opacity: 1;
             color: var(--text-primary);
-            border-color: var(--accent-2);
-            box-shadow: 0 4px 14px var(--glow-accent);
+            border-color: var(--chip-color, var(--accent-2));
+            box-shadow: 0 4px 14px color-mix(in srgb, var(--chip-color, var(--accent-2)) 45%, transparent);
+        }
+        .filter-chip-dot {
+            width: 0.55rem;
+            height: 0.55rem;
+            border-radius: 50%;
+            flex-shrink: 0;
         }
         .category-badge {
             display: inline-block;
@@ -2005,11 +2016,15 @@ body.dark-theme[data-palette="mint"] {
                         <button class="view-tab px-4 py-2 rounded-lg border font-semibold text-sm" data-view="agenda">Agenda</button>
                     </div>
 
-                    <!-- Assignments / Events Filter + Search -->
+                    <!-- Category Filter + Search -->
                     <div class="flex flex-wrap items-center justify-between gap-3 mb-4" id="calendar-category-filters">
                         <div class="flex flex-wrap items-center gap-2">
-                            <button type="button" class="category-filter-chip active" data-group="assignment" onclick="toggleCalendarCategoryFilter('assignment')">Assignments</button>
-                            <button type="button" class="category-filter-chip active" data-group="event" onclick="toggleCalendarCategoryFilter('event')">Events</button>
+                            <button type="button" class="category-filter-chip active" data-group="assignment" style="--chip-color:#ef4444;" onclick="toggleCalendarCategoryFilter('assignment')"><span class="filter-chip-dot" style="background:#ef4444;"></span>Assignments</button>
+                            <button type="button" class="category-filter-chip active" data-group="school-event" style="--chip-color:#38bdf8;" onclick="toggleCalendarCategoryFilter('school-event')"><span class="filter-chip-dot" style="background:#38bdf8;"></span>School Events</button>
+                            <button type="button" class="category-filter-chip active" data-group="club" style="--chip-color:#f97316;" onclick="toggleCalendarCategoryFilter('club')"><span class="filter-chip-dot" style="background:#f97316;"></span>Clubs</button>
+                            <button type="button" class="category-filter-chip active" data-group="sports" style="--chip-color:#a855f7;" onclick="toggleCalendarCategoryFilter('sports')"><span class="filter-chip-dot" style="background:#a855f7;"></span>Sports</button>
+                            <button type="button" class="category-filter-chip active" data-group="event" style="--chip-color:#a3e635;" onclick="toggleCalendarCategoryFilter('event')"><span class="filter-chip-dot" style="background:#a3e635;"></span>Events</button>
+                            <button type="button" class="category-filter-chip active" data-group="classes" style="--chip-color:#6366f1;" onclick="toggleCalendarClassesFilter()"><span class="filter-chip-dot" style="background:#6366f1;"></span>Classes</button>
                         </div>
                         <div class="calendar-search-wrap">
                             <input type="text" id="calendar-search-input" class="form-input calendar-search-input" placeholder="Search assignments &amp; events..." oninput="handleCalendarSearchInput(this.value)" onfocus="handleCalendarSearchInput(this.value)">
@@ -2450,7 +2465,7 @@ body.dark-theme[data-palette="mint"] {
             'classDataV3', 'userADays', 'userBDays', 'noSchoolDaysV1', 'userScheduleSlotOptionsV2',
             'dayNotesV1', 'classNotesV1',
             'theme', 'themePalette', 'motionPref', 'timeFormat',
-            'calendarView', 'weekStart', 'calendarCategoryFilter', 'recentCalendarSearches',
+            'calendarView', 'weekStart', 'calendarCategoryFilter', 'calendarShowClasses', 'recentCalendarSearches',
             'dismissedDailyDigestDate', 'dismissedWeeklyDigestKey',
             'showGoogleCalendar', 'googleCalendarEmbedUrl',
             'icsIncludeDayEvents', 'icsIncludeClassEvents',
@@ -4701,12 +4716,13 @@ body.dark-theme[data-palette="mint"] {
         let currentDate = new Date();
         let selectedDayKey = null;
 
-        // --- ASSIGNMENTS / EVENTS FILTER (calendar page) ---
-        let calendarCategoryFilter = { assignment: true, event: true };
+        // --- CATEGORY FILTER (calendar page) ---
+        const DEFAULT_CALENDAR_CATEGORY_FILTER = { assignment: true, 'school-event': true, club: true, sports: true, event: true };
+        let calendarCategoryFilter = { ...DEFAULT_CALENDAR_CATEGORY_FILTER };
         function loadCalendarCategoryFilter() {
             const saved = localStorage.getItem('calendarCategoryFilter');
             if (saved) {
-                try { calendarCategoryFilter = Object.assign({ assignment: true, event: true }, JSON.parse(saved)); } catch (e) {}
+                try { calendarCategoryFilter = Object.assign({ ...DEFAULT_CALENDAR_CATEGORY_FILTER }, JSON.parse(saved)); } catch (e) {}
             }
         }
         function saveCalendarCategoryFilter() {
@@ -4718,11 +4734,27 @@ body.dark-theme[data-palette="mint"] {
             renderCalendarCategoryFilterChips();
             renderCalendar();
         }
+        // Classes aren't an external-feed category like the others, so their on/off state lives
+        // in its own flag rather than inside calendarCategoryFilter -- but it's still just
+        // another chip in the same row, kept in sync by the same render function.
+        let calendarShowClasses = localStorage.getItem('calendarShowClasses') !== 'false';
+        function toggleCalendarClassesFilter() {
+            calendarShowClasses = !calendarShowClasses;
+            localStorage.setItem('calendarShowClasses', String(calendarShowClasses));
+            renderCalendarCategoryFilterChips();
+            renderCalendar();
+        }
+        // Every place the calendar lists a day's classes goes through this instead of calling
+        // getClassesForDate directly, so the Classes chip actually hides them everywhere at once.
+        function getClassesForDateFiltered(date) {
+            return calendarShowClasses ? getClassesForDate(date) : [];
+        }
         function renderCalendarCategoryFilterChips() {
             const container = document.getElementById('calendar-category-filters');
             if (!container) return;
             container.querySelectorAll('.category-filter-chip').forEach(chip => {
-                chip.classList.toggle('active', !!calendarCategoryFilter[chip.dataset.group]);
+                const group = chip.dataset.group;
+                chip.classList.toggle('active', group === 'classes' ? calendarShowClasses : !!calendarCategoryFilter[group]);
             });
         }
         function getFilteredExternalEventsForDate(date) {
@@ -5231,7 +5263,7 @@ body.dark-theme[data-palette="mint"] {
                 const dayType = getDayType(cursor);
                 const note = getNote(cursor);
                 const externalEvents = getFilteredExternalEventsForDate(cursor);
-                const classesToday = getClassesForDate(cursor);
+                const classesToday = getClassesForDateFiltered(cursor);
                 const badgeHtml = dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}-Day</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>` : '';
                 const titleHtml = note && note.title ? `<p class="text-xs mt-1 truncate font-medium">${escapeHtml(note.title)}</p>` : '';
                 const dotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
@@ -5279,7 +5311,7 @@ body.dark-theme[data-palette="mint"] {
                 const dayType = getDayType(d);
                 const note = getNote(d);
                 const externalEvents = getFilteredExternalEventsForDate(d);
-                const classesToday = getClassesForDate(d);
+                const classesToday = getClassesForDateFiltered(d);
                 const isNoSchool = isNoSchoolDay(d);
                 const badgeLabel = dayType ? `${dayType}-Day` : isNoSchool ? 'No School' : note && (note.title || note.notes) ? 'Event' : '';
                 const badgeClass = dayType ? `day-badge badge-${dayType.toLowerCase()}` : isNoSchool ? 'day-badge badge-none' : note && (note.title || note.notes) ? 'day-badge bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-200' : '';
@@ -5317,7 +5349,7 @@ body.dark-theme[data-palette="mint"] {
             const dayType = getDayType(currentDate);
             const note = getNote(currentDate) || { title: '', notes: '' };
             const externalEvents = getFilteredExternalEventsForDate(currentDate);
-            const classesToday = getClassesForDate(currentDate);
+            const classesToday = getClassesForDateFiltered(currentDate);
             const badgeHtml = dayType
                 ? `<span class="day-badge badge-${dayType.toLowerCase()} text-sm px-3 py-1">${dayType}-Day</span>`
                 : isNoSchoolDay(currentDate)
@@ -5484,7 +5516,7 @@ body.dark-theme[data-palette="mint"] {
                 const notesHtml = note && note.notes
                     ? `<p class="text-xs mt-1 text-gray-500 dark:text-gray-400 whitespace-pre-wrap">${escapeHtml(note.notes)}</p>`
                     : '';
-                const classesToday = getClassesForDate(entry.date);
+                const classesToday = getClassesForDateFiltered(entry.date);
                 const classesHtml = classesToday.length ? `
                     <p class="text-xs mt-1 text-gray-500 dark:text-gray-400 truncate">${classesToday.map(c => `<span${classPopupAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>
                 ` : '';
@@ -5911,7 +5943,11 @@ body.dark-theme[data-palette="mint"] {
                 enabled: typeof feed.enabled === 'boolean' ? feed.enabled : true,
                 isCanvas: typeof feed.isCanvas === 'boolean' ? feed.isCanvas : isCanvasFeedUrl(feed.url),
                 isBuzz: typeof feed.isBuzz === 'boolean' ? feed.isBuzz : isBuzzFeedUrl(feed.url),
-                isHoliday: typeof feed.isHoliday === 'boolean' ? feed.isHoliday : isHolidayFeedUrl(feed.url)
+                isHoliday: typeof feed.isHoliday === 'boolean' ? feed.isHoliday : isHolidayFeedUrl(feed.url),
+                // No URL pattern to detect this one generically (unlike Canvas/Buzz/holiday
+                // feeds) -- it's just whichever feed the user has flagged as their club calendar,
+                // which for the built-in default is the Club Events feed below.
+                isClub: typeof feed.isClub === 'boolean' ? feed.isClub : false
             };
         }
 
@@ -5919,9 +5955,9 @@ body.dark-theme[data-palette="mint"] {
         // lives on calendar.google.com rather than *.instructure.com, so it can't be auto-detected
         // as Canvas by domain -- isCanvas is forced true here instead of left to isCanvasFeedUrl.
         const DEFAULT_EXTERNAL_FEEDS = [
-            { id: 'altahawks', label: 'Alta Events', url: 'https://www.calendarwiz.com/CalendarWiz_iCal.php?crd=altahawks' },
+            { id: 'altahawks', label: 'Alta Events', url: 'https://www.calendarwiz.com/CalendarWiz_iCal.php?crd=altahawks', color: '#a855f7' },
             { id: 'agilixbuzz', label: 'CVA Assignments', url: 'https://api.agilixbuzz.com/ical/~0~prObHCX.wEg28NaXxE2J3.VuXpEWjdZzfVNB4mDxpG8!/calendar.ics' },
-            { id: 'google-club-events', label: 'Club Events', url: 'https://calendar.google.com/calendar/ical/bb37592a14924e19337340b54b98ca59cf368f9cf3af9613168fc4b5da63637a%40group.calendar.google.com/public/basic.ics' },
+            { id: 'google-club-events', label: 'Club Events', url: 'https://calendar.google.com/calendar/ical/bb37592a14924e19337340b54b98ca59cf368f9cf3af9613168fc4b5da63637a%40group.calendar.google.com/public/basic.ics', isClub: true, color: '#f97316' },
             { id: 'google-service-events', label: 'Service Events', url: 'https://calendar.google.com/calendar/ical/5734fae784efc819593817e7f624470144feec4343e329c0f4488cc6d088c50d%40group.calendar.google.com/public/basic.ics' },
             { id: 'google-canvas-assignments', label: 'Canvas Assignments', url: 'https://calendar.google.com/calendar/ical/7stkhs6ht7m5e4mt2d3b0mi1karkss4c%40import.calendar.google.com/public/basic.ics', isCanvas: true },
             { id: 'google-holidays', label: 'Holiday Events', url: 'https://calendar.google.com/calendar/ical/en.usa%23holiday%40group.v.calendar.google.com/public/basic.ics' }
@@ -5941,7 +5977,30 @@ body.dark-theme[data-palette="mint"] {
                         feed.label = LEGACY_LABEL_RENAMES[feed.label];
                         changed = true;
                     }
+                    // Installs saved before Club Events got its own "club" category never had
+                    // isClub set, so it defaulted to false in normalizeExternalFeed -- backfill
+                    // it here by matching the known default feed's URL, same idea as the label
+                    // renames above.
+                    if (!feed.isClub && feed.url === 'https://calendar.google.com/calendar/ical/bb37592a14924e19337340b54b98ca59cf368f9cf3af9613168fc4b5da63637a%40group.calendar.google.com/public/basic.ics') {
+                        feed.isClub = true;
+                        changed = true;
+                    }
                 });
+                // One-time recolor of the two built-in feeds (Club -> orange, Alta/sports ->
+                // purple) to match the new category palette. Gated behind a flag so it doesn't
+                // keep stomping a color the user deliberately picks afterward.
+                if (!localStorage.getItem('migratedClubSportsColors')) {
+                    externalFeeds.forEach(feed => {
+                        if (feed.url === 'https://calendar.google.com/calendar/ical/bb37592a14924e19337340b54b98ca59cf368f9cf3af9613168fc4b5da63637a%40group.calendar.google.com/public/basic.ics') {
+                            feed.color = '#f97316';
+                            changed = true;
+                        } else if (feed.url === 'https://www.calendarwiz.com/CalendarWiz_iCal.php?crd=altahawks') {
+                            feed.color = '#a855f7';
+                            changed = true;
+                        }
+                    });
+                    localStorage.setItem('migratedClubSportsColors', '1');
+                }
                 const existingUrls = new Set(externalFeeds.map(f => f.url));
                 DEFAULT_EXTERNAL_FEEDS.forEach(defaultFeed => {
                     if (!existingUrls.has(defaultFeed.url)) {
@@ -6275,28 +6334,32 @@ body.dark-theme[data-palette="mint"] {
             if (feed.isBuzz) return 'assignment';
             if (feed.isCanvas) return /calendar-event/i.test(uid || '') ? 'canvas-event' : 'assignment';
             if (feed.isHoliday) return 'event';
+            if (feed.isClub) return 'club';
             return SPORTS_TITLE_PATTERN.test(title || '') ? 'sports' : 'school-event';
         }
 
-        // Every non-assignment category folds into the "Events" bucket for the calendar's
-        // Assignments/Events filter; only "assignment" is its own group.
+        // Maps a raw event category to one of the calendar's filter chips. "canvas-event" folds
+        // into "event" since both just read as "Event" to the user (see CATEGORY_LABELS) --
+        // everything else (assignment, sports, school-event, club) already has its own chip.
         function categoryGroup(category) {
-            return category === 'assignment' ? 'assignment' : 'event';
+            if (category === 'assignment' || category === 'sports' || category === 'school-event' || category === 'club') return category;
+            return 'event';
         }
 
-        const CATEGORY_LABELS = { assignment: 'Assignment', 'canvas-event': 'Event', event: 'Event', sports: 'Sports', 'school-event': 'School Event' };
+        const CATEGORY_LABELS = { assignment: 'Assignment', 'canvas-event': 'Event', event: 'Event', sports: 'Sports', 'school-event': 'School Event', club: 'Club' };
         function categoryLabel(category) {
             return CATEGORY_LABELS[category] || 'Event';
         }
 
         // Small glyph shown centered inside each dot (and in the legend) so the category reads
         // at a glance even before checking the color: a checkmark for assignments, a star for
-        // sports, a flag for school events, and a calendar for everything else (real Canvas
-        // events, holidays).
+        // sports, a flag for school events, a people glyph for clubs, and a calendar for
+        // everything else (real Canvas events, holidays).
         const CATEGORY_ICON_PATHS = {
             assignment: '<path d="M5 13l4 4L19 7" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
             sports: '<path d="M12 2l2.6 6.2 6.7.6-5.1 4.4 1.6 6.6L12 16.6 6.2 19.8l1.6-6.6L2.7 8.8l6.7-.6L12 2z" fill="white"/>',
-            'school-event': '<path d="M6 3v18" stroke="white" stroke-width="2.6" stroke-linecap="round"/><path d="M6 4.5h12l-2.3 3.5L18 11.5H6" fill="none" stroke="white" stroke-width="2.1" stroke-linejoin="round"/>'
+            'school-event': '<path d="M6 3v18" stroke="white" stroke-width="2.6" stroke-linecap="round"/><path d="M6 4.5h12l-2.3 3.5L18 11.5H6" fill="none" stroke="white" stroke-width="2.1" stroke-linejoin="round"/>',
+            club: '<circle cx="8" cy="8" r="3" fill="white"/><circle cx="16" cy="8" r="3" fill="white"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6" fill="none" stroke="white" stroke-width="2.1" stroke-linecap="round"/><path d="M12 14.2c.9-.6 2-1 3-1 3.3 0 6 2.7 6 6" fill="none" stroke="white" stroke-width="2.1" stroke-linecap="round"/>'
         };
         const CATEGORY_ICON_DEFAULT = '<rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="white" stroke-width="2"/><path d="M8 3v4M16 3v4M4 10h16" stroke="white" stroke-width="2" stroke-linecap="round"/>';
         function categoryIconSvg(category, dotSizePx) {
@@ -6832,7 +6895,7 @@ body.dark-theme[data-palette="mint"] {
             const dayType = getDayType(date);
             const noSchool = isNoSchoolDay(date);
             const note = getNote(date);
-            const classesToday = getClassesForDate(date);
+            const classesToday = getClassesForDateFiltered(date);
             const events = getFilteredExternalEventsForDate(date);
             const dateLabel = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
@@ -7123,9 +7186,10 @@ body.dark-theme[data-palette="mint"] {
             `;
             panel.innerHTML = `
                 ${row('assignment', '#ef4444', 'Assignment', 'from Canvas or CVA/Buzz')}
-                ${row('sports', '#f97316', 'Sports', 'games/matches from an athletics feed')}
-                ${row('school-event', '#a3e635', 'School Event', 'clubs, service, non-game athletics items, etc.')}
-                ${row('event', '#38bdf8', 'Event', 'not school-specific: a real Canvas calendar event, a holiday, etc.')}
+                ${row('sports', '#a855f7', 'Sports', 'games/matches from an athletics feed')}
+                ${row('club', '#f97316', 'Club', 'from the Club Events feed')}
+                ${row('school-event', '#38bdf8', 'School Event', 'service, non-game athletics items, etc.')}
+                ${row('event', '#a3e635', 'Event', 'not school-specific: a real Canvas calendar event, a holiday, etc.')}
                 <p class="calendar-legend-note">Dot size and color intensity ramp up as the date gets closer. Click a dot for full details; hover a day for everything on it.</p>
             `;
         }
