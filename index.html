@@ -812,10 +812,12 @@ body.dark-theme[data-palette="mint"] {
         #home-widget-next-class[data-has-color] .home-next-class-big {
             color: var(--class-color);
         }
-        .home-next-class-meta {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 0.15rem;
+        #home-widget-next-class[data-has-color] .class-meta-chip {
+            border-color: color-mix(in srgb, var(--class-color) 35%, var(--glass-border));
+        }
+        #home-widget-next-class .class-meta-row {
+            margin-top: 0.5rem;
+            margin-bottom: 0;
         }
         .home-today-classes-row {
             display: flex;
@@ -896,6 +898,30 @@ body.dark-theme[data-palette="mint"] {
         .class-card p {
             color: var(--text-secondary);
             transition: color 0.5s ease-in-out;
+        }
+
+        /* Small card-like chips for a class's period/room/teacher, replacing the old single
+           text line so each fact reads as its own item rather than a run-on sentence. */
+        .class-meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 1rem;
+        }
+        .class-meta-chip {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 0.25rem 0.7rem;
+            border-radius: 9999px;
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .class-card[data-has-color] .class-meta-chip {
+            border-color: color-mix(in srgb, var(--class-color) 35%, var(--glass-border));
         }
 
         .new-tab-button {
@@ -3296,22 +3322,34 @@ body.dark-theme[data-palette="mint"] {
             return label.replace(/\bday\b/gi, '').replace(/\s{2,}/g, ' ').trim().replace(/^-\s*|\s*-$/g, '').trim();
         }
 
-        function getClassSubtitle(classItem) {
+        // A purely-numeric room ("204", "204A") reads fine as "Room 204" / "Room 204A", but a
+        // named space ("Gym", "Library", "Auditorium") already reads as a place on its own and
+        // "Room Gym" would look wrong -- so only prefix it when it starts with a digit.
+        function formatRoomLabel(room) {
+            const trimmed = (room || '').trim();
+            if (!trimmed) return '';
+            return /^\d/.test(trimmed) ? `Room ${trimmed}` : trimmed;
+        }
+
+        function getClassMetaChips(classItem) {
             const slotOption = userScheduleSlotOptions.find(o => o.value === classItem.scheduleSlot);
-            const parts = [];
-            if (slotOption && slotOption.label) parts.push(formatPeriodLabel(slotOption.label));
-            const roomTeacher = [];
-            if (classItem.room) roomTeacher.push(`Room ${classItem.room}`);
-            if (classItem.teacher) roomTeacher.push(classItem.teacher);
-            if (roomTeacher.length) parts.push(roomTeacher.join(', '));
-            return parts.join(' - ');
+            const chips = [];
+            if (slotOption && slotOption.label) chips.push(formatPeriodLabel(slotOption.label));
+            if (classItem.room) chips.push(formatRoomLabel(classItem.room));
+            if (classItem.teacher) chips.push(classItem.teacher);
+            return chips;
+        }
+
+        function classMetaChipsHTML(classItem) {
+            const chips = getClassMetaChips(classItem);
+            if (!chips.length) return '';
+            return `<div class="class-meta-row">${chips.map(c => `<span class="class-meta-chip">${escapeHtml(c)}</span>`).join('')}</div>`;
         }
 
         function createClassCardHTML(classItem) {
             const noteId = classItem.noteId || '';
             const noteValue = classNotes[noteId] || '';
             const hasNote = !!noteValue;
-            const subtitle = getClassSubtitle(classItem);
             return `
                 <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}
                      onclick="window.location.href='${escapeJsAttr(classItem.url)}'">
@@ -3321,7 +3359,7 @@ body.dark-theme[data-palette="mint"] {
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         </button>
                     </div>
-                    <p class="text-sm mb-4" title="${escapeAttr(subtitle)}">${escapeHtml(subtitle)}</p>
+                    ${classMetaChipsHTML(classItem)}
                     <div class="class-note-box ${hasNote ? '' : 'hidden'}" id="note-box-${noteId}" onclick="event.stopPropagation()">
                         <textarea class="class-note-textarea" placeholder="Quick note..." onchange="saveClassNote('${noteId}', this.value)">${escapeHtml(noteValue)}</textarea>
                     </div>
@@ -4191,10 +4229,9 @@ body.dark-theme[data-palette="mint"] {
             const verb = info.status === 'current' ? 'ends in' : 'starts in';
             if (titleEl) titleEl.textContent = info.status === 'current' ? 'Current Class' : 'Next Class';
             const classItem = info.classItem;
-            const subtitle = classItem ? getClassSubtitle(classItem) : '';
             container.innerHTML = `
                 <p class="home-next-class-big">${escapeHtml(info.label)}</p>
-                ${subtitle ? `<p class="home-next-class-meta">${escapeHtml(subtitle)}</p>` : ''}
+                ${classItem ? classMetaChipsHTML(classItem) : ''}
                 <p class="home-item-sub" style="margin-top:0.4rem;">${verb} ${timeStr}</p>
             `;
             const url = classItem && classItem.url;
@@ -6372,7 +6409,7 @@ body.dark-theme[data-palette="mint"] {
 
                         const teacherRoomParts = [];
                         if (c.classItem.teacher) teacherRoomParts.push(c.classItem.teacher);
-                        if (c.classItem.room) teacherRoomParts.push(`Room ${c.classItem.room}`);
+                        if (c.classItem.room) teacherRoomParts.push(formatRoomLabel(c.classItem.room));
                         const summary = teacherRoomParts.length
                             ? `${c.classItem.title} - ${teacherRoomParts.join(' | ')}`
                             : c.classItem.title;
