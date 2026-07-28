@@ -653,6 +653,28 @@ body.dark-theme[data-palette="mint"] {
            this fine already for these -- kept separate only so a future single-line tweak here
            doesn't have to reason about the two-line case). */
         .digest-item .note-preview-line { margin-top: 0.1rem; }
+        /* Section headers inside a digest banner (Assignments Due / Events / Classes) --
+           deliberately the same size/weight/spacing as .day-hover-tooltip-section-title so a
+           "Classes" header reads identically whether it's here or in the calendar preview. */
+        .digest-section { margin-top: 0.7rem; }
+        .digest-section-title {
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
+        }
+        /* The day-type badge + day note sit above the sectioned lists as a single summary row,
+           not inside .digest-items, since together they describe one fact ("what kind of day is
+           this") rather than a list entry. */
+        .digest-day-summary {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.6rem;
+            font-size: 0.85rem;
+        }
         .digest-dismiss-btn {
             width: 1.6rem;
             height: 1.6rem;
@@ -2323,6 +2345,7 @@ body.dark-theme[data-palette="mint"] {
         let calendarInitialized = false;
 
         function switchAppView(view) {
+            hideAllHoverPopups();
             const doSwitch = () => {
                 activeAppView = view;
                 document.getElementById('view-home').classList.toggle('hidden', view !== 'home');
@@ -4839,6 +4862,20 @@ body.dark-theme[data-palette="mint"] {
             }
             return null;
         }
+        // Both hover popups (the day-preview tooltip and the class-info popup) are shown purely
+        // by toggling a 'visible' class and otherwise just sit there positioned under the cursor
+        // -- they only ever get hidden by their own mouseout handler. Any navigation that swaps
+        // out the DOM out from under the cursor (clicking a day cell into Day view, switching
+        // calendar view/tab, switching the whole app view) skips that mouseout, so the popup is
+        // left dangling on screen. Call this at every one of those entry points as a blanket
+        // "nothing should be open after this" reset rather than trying to patch each trigger.
+        function hideAllHoverPopups() {
+            const dayTooltip = document.getElementById('day-hover-tooltip');
+            const classPopup = document.getElementById('class-info-popup');
+            if (dayTooltip) dayTooltip.classList.remove('visible');
+            if (classPopup) classPopup.classList.remove('visible');
+        }
+
         function buildClassPopupHtml(classItem) {
             const chips = getClassMetaChips(classItem);
             const note = classNoteText(classItem);
@@ -4895,6 +4932,11 @@ body.dark-theme[data-palette="mint"] {
                 popup.classList.remove('visible');
                 hoveredNoteId = null;
             });
+
+            // Blanket safety net (see hideAllHoverPopups): a click anywhere -- not just the ones
+            // that trigger a view change -- is a reasonable sign the user is done hovering, and
+            // catches any navigation path that swaps out the hovered element without a mouseout.
+            document.addEventListener('click', hideAllHoverPopups, true);
         }
 
         const defaultADays = userADays;
@@ -5104,6 +5146,7 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function switchView(view) {
+            hideAllHoverPopups();
             calendarView = view;
             localStorage.setItem('calendarView', view);
             document.querySelectorAll('.view-tab').forEach(tab => {
@@ -7176,46 +7219,54 @@ body.dark-theme[data-palette="mint"] {
                 const classesWithNotes = getClassesForDate(today).filter(c => classNoteText(c.classItem));
                 const hasAny = dueToday.length || eventsToday.length || dayType || noSchool || hasDayNote || classesWithNotes.length;
 
-                const dayTypeHtml = (dayType || noSchool) ? `
-                    <div class="digest-item">
-                        <span class="day-badge ${dayType ? 'badge-' + dayType.toLowerCase() : 'badge-none'}" style="margin:0;">${dayType ? `${dayType}-Day` : `${NO_SCHOOL_ICON}No School`}</span>
-                    </div>
-                ` : '';
-                const dayNoteHtml = hasDayNote ? `
-                    <div class="digest-item">
-                        <span class="home-dot" style="background:var(--accent-2);"></span>
-                        <span class="min-w-0">
-                            ${dayNote.title ? `<span style="font-weight:700;">${escapeHtml(dayNote.title)}</span>` : ''}
-                            ${dayNote.notes ? `<span class="note-preview-line" title="${escapeAttr(dayNote.notes)}">${escapeHtml(dayNote.notes)}</span>` : ''}
-                        </span>
-                    </div>
-                ` : '';
-                const preview = [
-                    dayTypeHtml,
-                    dayNoteHtml,
-                    ...dueToday.map(a => `<div class="digest-item"><span class="home-dot" style="background:#ef4444;"></span><span>${escapeHtml(a.title)} <span class="category-badge" style="background:#ef444433; color:#ef4444;">Assignment</span></span></div>`),
-                    ...eventsToday.map(ev => {
-                        const timeStr = ev.allDay ? 'All day' : formatEventTimestamp(ev.timestamp);
-                        return `
-                            <div class="digest-item">
-                                <span class="home-dot" style="background:${ev.color};"></span>
-                                <span class="min-w-0">
-                                    <span>${escapeHtml(ev.title)} <span style="color:var(--text-muted);">— ${timeStr}</span></span>
-                                    ${ev.description ? `<span class="note-preview-line" title="${escapeAttr(ev.description)}">${escapeHtml(ev.description)}</span>` : ''}
-                                </span>
-                            </div>
-                        `;
-                    }),
-                    ...classesWithNotes.map(c => `
-                        <div class="digest-item"${classPopupAttr(c.classItem)}>
-                            ${classDotHtml(c.classItem)}
+                // A day-type badge and/or day note reads as one "Day" fact, not a list item, so
+                // it gets its own compact header row instead of living inside .digest-items.
+                const dayHeaderHtml = (dayType || noSchool || hasDayNote) ? `
+                    <div class="digest-day-summary">
+                        ${(dayType || noSchool) ? `<span class="day-badge ${dayType ? 'badge-' + dayType.toLowerCase() : 'badge-none'}">${dayType ? `${dayType}-Day` : `${NO_SCHOOL_ICON}No School`}</span>` : ''}
+                        ${hasDayNote ? `
                             <span class="min-w-0">
-                                <span>${classNameHtml(c.classItem)}</span>
-                                <span class="note-preview-line">${escapeHtml(classNoteText(c.classItem))}</span>
+                                ${dayNote.title ? `<span style="font-weight:700;">${escapeHtml(dayNote.title)}</span>` : ''}
+                                ${dayNote.notes ? `<span class="note-preview-line" title="${escapeAttr(dayNote.notes)}">${escapeHtml(dayNote.notes)}</span>` : ''}
+                            </span>
+                        ` : ''}
+                    </div>
+                ` : '';
+
+                const dueHtml = dueToday.map(a => `<div class="digest-item"><span class="home-dot" style="background:#ef4444;"></span><span>${escapeHtml(a.title)} <span class="category-badge" style="background:#ef444433; color:#ef4444;">Assignment</span></span></div>`).join('');
+                const eventsHtml = eventsToday.map(ev => {
+                    const timeStr = ev.allDay ? 'All day' : formatEventTimestamp(ev.timestamp);
+                    return `
+                        <div class="digest-item">
+                            <span class="home-dot" style="background:${ev.color};"></span>
+                            <span class="min-w-0">
+                                <span>${escapeHtml(ev.title)} <span style="color:var(--text-muted);">— ${timeStr}</span></span>
+                                ${ev.description ? `<span class="note-preview-line" title="${escapeAttr(ev.description)}">${escapeHtml(ev.description)}</span>` : ''}
                             </span>
                         </div>
-                    `)
+                    `;
+                }).join('');
+                const classesHtml = classesWithNotes.map(c => `
+                    <div class="digest-item"${classPopupAttr(c.classItem)}>
+                        ${classDotHtml(c.classItem)}
+                        <span class="min-w-0">
+                            <span>${classNameHtml(c.classItem)}</span>
+                            <span class="note-preview-line">${escapeHtml(classNoteText(c.classItem))}</span>
+                        </span>
+                    </div>
+                `).join('');
+
+                // Same section-header pattern as the calendar's day-hover-tooltip (see
+                // buildDayTooltipHtml) so a class's info reads the same wherever it shows up.
+                const digestSection = (title, itemsHtml) => itemsHtml
+                    ? `<div class="digest-section"><p class="digest-section-title">${title}</p><div class="digest-items">${itemsHtml}</div></div>`
+                    : '';
+                const sections = [
+                    digestSection('Assignments Due', dueHtml),
+                    digestSection('Events', eventsHtml),
+                    digestSection('Classes', classesHtml)
                 ].join('');
+
                 html += `
                     <div class="digest-banner">
                         <div class="digest-banner-header">
@@ -7223,7 +7274,8 @@ body.dark-theme[data-palette="mint"] {
                             <button type="button" class="digest-dismiss-btn" onclick="dismissDailyDigest()" title="Dismiss">&times;</button>
                         </div>
                         <p class="digest-banner-summary">${hasAny ? `${dueToday.length} due, ${eventsToday.length} event${eventsToday.length === 1 ? '' : 's'} today.` : 'Nothing due or scheduled today.'}</p>
-                        ${preview ? `<div class="digest-items">${preview}</div>` : ''}
+                        ${dayHeaderHtml}
+                        ${sections}
                     </div>
                 `;
             }
@@ -7266,6 +7318,7 @@ body.dark-theme[data-palette="mint"] {
             setupCursorGlow();
             setupClickEffects();
             setupCalendarSearchDismiss();
+            setupClassHoverPopup();
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
                 if (currentThemeState === 'system') applyTheme('system');
             });
