@@ -55,19 +55,9 @@
         /* --accent-grad is re-declared (not just var()-composed) on every palette rule below:
            some engines don't reactively re-resolve a custom property that is only ever
            nested inside another custom property when the leaf values change at runtime. */
-        body[data-palette="violet"]  { --accent-1: #7c3aed; --accent-2: #a78bfa; --accent-3: #c026d3; --accent-grad: linear-gradient(135deg, #7c3aed, #a78bfa, #c026d3); --glow-accent: rgba(124, 58, 237, 0.35); --scrollbar-thumb: rgba(167, 139, 250, 0.4); }
-        body[data-palette="emerald"] { --accent-1: #10b981; --accent-2: #14b8a6; --accent-3: #84cc16; --accent-grad: linear-gradient(135deg, #10b981, #14b8a6, #84cc16); --glow-accent: rgba(16, 185, 129, 0.32); --scrollbar-thumb: rgba(52, 211, 153, 0.4); }
-        body[data-palette="rose"]    { --accent-1: #f43f5e; --accent-2: #ec4899; --accent-3: #fb7185; --accent-grad: linear-gradient(135deg, #f43f5e, #ec4899, #fb7185); --glow-accent: rgba(244, 63, 94, 0.32); --scrollbar-thumb: rgba(251, 113, 133, 0.4); }
-        body[data-palette="sunset"]  { --accent-1: #f59e0b; --accent-2: #f97316; --accent-3: #ef4444; --accent-grad: linear-gradient(135deg, #f59e0b, #f97316, #ef4444); --glow-accent: rgba(249, 115, 22, 0.32); --scrollbar-thumb: rgba(251, 146, 60, 0.4); }
-        body[data-palette="ocean"]   { --accent-1: #0ea5e9; --accent-2: #06b6d4; --accent-3: #22d3ee; --accent-grad: linear-gradient(135deg, #0ea5e9, #06b6d4, #22d3ee); --glow-accent: rgba(14, 165, 233, 0.32); --scrollbar-thumb: rgba(56, 189, 248, 0.4); }
-        body[data-palette="slate"]   { --accent-1: #64748b; --accent-2: #475569; --accent-3: #94a3b8; --accent-grad: linear-gradient(135deg, #64748b, #475569, #94a3b8); --glow-accent: rgba(100, 116, 139, 0.28); --scrollbar-thumb: rgba(148, 163, 184, 0.4); }
+        /* Ordered like a color-wheel swatch: warm reds through oranges/yellows, into
+           greens/teals, blues, violets/pinks, then the neutral (non-hued) palettes last. */
         body[data-palette="crimson"] { --accent-1: #dc2626; --accent-2: #ef4444; --accent-3: #f87171; --accent-grad: linear-gradient(135deg, #dc2626, #ef4444, #f87171); --glow-accent: rgba(220, 38, 38, 0.34); --scrollbar-thumb: rgba(248, 113, 113, 0.4); }
-        body[data-palette="teal"]    { --accent-1: #0d9488; --accent-2: #2dd4bf; --accent-3: #5eead4; --accent-grad: linear-gradient(135deg, #0d9488, #2dd4bf, #5eead4); --glow-accent: rgba(13, 148, 136, 0.32); --scrollbar-thumb: rgba(45, 212, 191, 0.4); }
-        body[data-palette="amber"]   { --accent-1: #d97706; --accent-2: #fbbf24; --accent-3: #fde047; --accent-grad: linear-gradient(135deg, #d97706, #fbbf24, #fde047); --glow-accent: rgba(217, 119, 6, 0.32); --scrollbar-thumb: rgba(251, 191, 36, 0.4); }
-        body[data-palette="fuchsia"] { --accent-1: #c026d3; --accent-2: #e879f9; --accent-3: #f0abfc; --accent-grad: linear-gradient(135deg, #c026d3, #e879f9, #f0abfc); --glow-accent: rgba(192, 38, 211, 0.34); --scrollbar-thumb: rgba(232, 121, 249, 0.4); }
-        body[data-palette="lime"]    { --accent-1: #65a30d; --accent-2: #a3e635; --accent-3: #bef264; --accent-grad: linear-gradient(135deg, #65a30d, #a3e635, #bef264); --glow-accent: rgba(101, 163, 13, 0.32); --scrollbar-thumb: rgba(163, 230, 53, 0.4); }
-        body[data-palette="sky"]     { --accent-1: #0284c7; --accent-2: #38bdf8; --accent-3: #7dd3fc; --accent-grad: linear-gradient(135deg, #0284c7, #38bdf8, #7dd3fc); --glow-accent: rgba(2, 132, 199, 0.32); --scrollbar-thumb: rgba(56, 189, 248, 0.4); }
-        body[data-palette="midnight"]{ --accent-1: #1d4ed8; --accent-2: #4338ca; --accent-3: #7c3aed; --accent-grad: linear-gradient(135deg, #1d4ed8, #4338ca, #7c3aed); --glow-accent: rgba(67, 56, 202, 0.34); --scrollbar-thumb: rgba(99, 102, 241, 0.4);}
 body[data-palette="coral"] {
     --accent-1: #f97316;
     --accent-2: #fb7185;
@@ -76,7 +66,9 @@ body[data-palette="coral"] {
     --glow-accent: rgba(249, 115, 22, 0.34);
     --scrollbar-thumb: rgba(251, 113, 133, 0.4);
 }
-
+        body[data-palette="amber"]   { --accent-1: #d97706; --accent-2: #fbbf24; --accent-3: #fde047; --accent-grad: linear-gradient(135deg, #d97706, #fbbf24, #fde047); --glow-accent: rgba(217, 119, 6, 0.32); --scrollbar-thumb: rgba(251, 191, 36, 0.4); }
+        body[data-palette="sunset"]  { --accent-1: #f59e0b; --accent-2: #f97316; --accent-3: #ef4444; --accent-grad: linear-gradient(135deg, #f59e0b, #f97316, #ef4444); --glow-accent: rgba(249, 115, 22, 0.32); --scrollbar-thumb: rgba(251, 146, 60, 0.4); }
+        body[data-palette="lime"]    { --accent-1: #65a30d; --accent-2: #a3e635; --accent-3: #bef264; --accent-grad: linear-gradient(135deg, #65a30d, #a3e635, #bef264); --glow-accent: rgba(101, 163, 13, 0.32); --scrollbar-thumb: rgba(163, 230, 53, 0.4); }
 body[data-palette="mint"] {
     --accent-1: #22c55e;
     --accent-2: #14b8a6;
@@ -85,34 +77,52 @@ body[data-palette="mint"] {
     --glow-accent: rgba(34, 197, 94, 0.32);
     --scrollbar-thumb: rgba(45, 212, 191, 0.4);
 }
+        body[data-palette="emerald"] { --accent-1: #10b981; --accent-2: #14b8a6; --accent-3: #84cc16; --accent-grad: linear-gradient(135deg, #10b981, #14b8a6, #84cc16); --glow-accent: rgba(16, 185, 129, 0.32); --scrollbar-thumb: rgba(52, 211, 153, 0.4); }
+        body[data-palette="teal"]    { --accent-1: #0d9488; --accent-2: #2dd4bf; --accent-3: #5eead4; --accent-grad: linear-gradient(135deg, #0d9488, #2dd4bf, #5eead4); --glow-accent: rgba(13, 148, 136, 0.32); --scrollbar-thumb: rgba(45, 212, 191, 0.4); }
+        body[data-palette="sky"]     { --accent-1: #0284c7; --accent-2: #38bdf8; --accent-3: #7dd3fc; --accent-grad: linear-gradient(135deg, #0284c7, #38bdf8, #7dd3fc); --glow-accent: rgba(2, 132, 199, 0.32); --scrollbar-thumb: rgba(56, 189, 248, 0.4); }
+        body[data-palette="midnight"]{ --accent-1: #1d4ed8; --accent-2: #4338ca; --accent-3: #7c3aed; --accent-grad: linear-gradient(135deg, #1d4ed8, #4338ca, #7c3aed); --glow-accent: rgba(67, 56, 202, 0.34); --scrollbar-thumb: rgba(99, 102, 241, 0.4);}
+        body[data-palette="violet"]  { --accent-1: #7c3aed; --accent-2: #a78bfa; --accent-3: #c026d3; --accent-grad: linear-gradient(135deg, #7c3aed, #a78bfa, #c026d3); --glow-accent: rgba(124, 58, 237, 0.35); --scrollbar-thumb: rgba(167, 139, 250, 0.4); }
+        body[data-palette="fuchsia"] { --accent-1: #c026d3; --accent-2: #e879f9; --accent-3: #f0abfc; --accent-grad: linear-gradient(135deg, #c026d3, #e879f9, #f0abfc); --glow-accent: rgba(192, 38, 211, 0.34); --scrollbar-thumb: rgba(232, 121, 249, 0.4); }
+        body[data-palette="rose"]    { --accent-1: #f43f5e; --accent-2: #ec4899; --accent-3: #fb7185; --accent-grad: linear-gradient(135deg, #f43f5e, #ec4899, #fb7185); --glow-accent: rgba(244, 63, 94, 0.32); --scrollbar-thumb: rgba(251, 113, 133, 0.4); }
+        body[data-palette="slate"]   { --accent-1: #64748b; --accent-2: #475569; --accent-3: #94a3b8; --accent-grad: linear-gradient(135deg, #64748b, #475569, #94a3b8); --glow-accent: rgba(100, 116, 139, 0.28); --scrollbar-thumb: rgba(148, 163, 184, 0.4); }
+        /* True achromatic grayscale -- no hue at all, unlike slate's faint blue lean. */
+        body[data-palette="monochrome"] { --accent-1: #404040; --accent-2: #737373; --accent-3: #a3a3a3; --accent-grad: linear-gradient(135deg, #404040, #737373, #a3a3a3); --glow-accent: rgba(115, 115, 115, 0.3); --scrollbar-thumb: rgba(163, 163, 163, 0.4); }
 
-
-        body.dark-theme[data-palette="violet"]  { --glow-accent: rgba(167, 139, 250, 0.55); --scrollbar-thumb: rgba(196, 181, 253, 0.5); }
-        body.dark-theme[data-palette="emerald"] { --glow-accent: rgba(52, 211, 153, 0.5); --scrollbar-thumb: rgba(110, 231, 183, 0.5); }
-        body.dark-theme[data-palette="rose"]    { --glow-accent: rgba(251, 113, 133, 0.5); --scrollbar-thumb: rgba(253, 164, 175, 0.5); }
-        body.dark-theme[data-palette="sunset"]  { --glow-accent: rgba(251, 146, 60, 0.5); --scrollbar-thumb: rgba(253, 186, 116, 0.5); }
-        body.dark-theme[data-palette="ocean"]   { --glow-accent: rgba(56, 189, 248, 0.5); --scrollbar-thumb: rgba(125, 211, 252, 0.5); }
-        body.dark-theme[data-palette="slate"]   { --glow-accent: rgba(148, 163, 184, 0.45); --scrollbar-thumb: rgba(203, 213, 225, 0.45); }
         body.dark-theme[data-palette="crimson"] { --glow-accent: rgba(248, 113, 113, 0.55); --scrollbar-thumb: rgba(252, 165, 165, 0.5); }
-        body.dark-theme[data-palette="teal"]    { --glow-accent: rgba(45, 212, 191, 0.5); --scrollbar-thumb: rgba(94, 234, 212, 0.5); }
+body.dark-theme[data-palette="coral"] {
+    --glow-accent: rgba(251, 113, 133, 0.55);
+    --scrollbar-thumb: rgba(253, 164, 175, 0.5);
+}
         body.dark-theme[data-palette="amber"]   { --glow-accent: rgba(251, 191, 36, 0.55); --scrollbar-thumb: rgba(253, 224, 71, 0.5); }
-        body.dark-theme[data-palette="fuchsia"] { --glow-accent: rgba(232, 121, 249, 0.55); --scrollbar-thumb: rgba(240, 171, 252, 0.5); }
+        body.dark-theme[data-palette="sunset"]  { --glow-accent: rgba(251, 146, 60, 0.5); --scrollbar-thumb: rgba(253, 186, 116, 0.5); }
         body.dark-theme[data-palette="lime"]    { --glow-accent: rgba(163, 230, 53, 0.5); --scrollbar-thumb: rgba(190, 242, 100, 0.45); }
+body.dark-theme[data-palette="mint"] {
+    --glow-accent: rgba(45, 212, 191, 0.55);
+    --scrollbar-thumb: rgba(94, 234, 212, 0.5);
+}
+        body.dark-theme[data-palette="emerald"] { --glow-accent: rgba(52, 211, 153, 0.5); --scrollbar-thumb: rgba(110, 231, 183, 0.5); }
+        body.dark-theme[data-palette="teal"]    { --glow-accent: rgba(45, 212, 191, 0.5); --scrollbar-thumb: rgba(94, 234, 212, 0.5); }
         body.dark-theme[data-palette="sky"]     { --glow-accent: rgba(56, 189, 248, 0.5); --scrollbar-thumb: rgba(125, 211, 252, 0.5); }
         body.dark-theme[data-palette="midnight"] {
     --glow-accent: rgba(99, 102, 241, 0.55);
     --scrollbar-thumb: rgba(129, 140, 248, 0.5);
 }
-
-body.dark-theme[data-palette="coral"] {
-    --glow-accent: rgba(251, 113, 133, 0.55);
-    --scrollbar-thumb: rgba(253, 164, 175, 0.5);
-}
-
-body.dark-theme[data-palette="mint"] {
-    --glow-accent: rgba(45, 212, 191, 0.55);
-    --scrollbar-thumb: rgba(94, 234, 212, 0.5);
-}
+        body.dark-theme[data-palette="violet"]  { --glow-accent: rgba(167, 139, 250, 0.55); --scrollbar-thumb: rgba(196, 181, 253, 0.5); }
+        body.dark-theme[data-palette="fuchsia"] { --glow-accent: rgba(232, 121, 249, 0.55); --scrollbar-thumb: rgba(240, 171, 252, 0.5); }
+        body.dark-theme[data-palette="rose"]    { --glow-accent: rgba(251, 113, 133, 0.5); --scrollbar-thumb: rgba(253, 164, 175, 0.5); }
+        body.dark-theme[data-palette="slate"]   { --glow-accent: rgba(148, 163, 184, 0.45); --scrollbar-thumb: rgba(203, 213, 225, 0.45); }
+        body.dark-theme[data-palette="monochrome"] { --glow-accent: rgba(163, 163, 163, 0.45); --scrollbar-thumb: rgba(212, 212, 212, 0.45); }
+        /* Monochrome's accent gradient is grayscale, so text that's normally gradient-clipped
+           with it (page titles, class names, agenda month headers) would render as a dim gray
+           smear -- plain white reads far better here than a "colored" gradient ever could.
+           Scoped to dark mode only since white-on-white in light mode would be invisible. */
+        body.dark-theme[data-palette="monochrome"] h1.gradient-text,
+        body.dark-theme[data-palette="monochrome"] .class-card h4,
+        body.dark-theme[data-palette="monochrome"] .agenda-month-header {
+            background: none;
+            -webkit-text-fill-color: #ffffff;
+            color: #ffffff;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'Inter', sans-serif;
             background-color: var(--bg-solid);
@@ -334,7 +344,19 @@ body.dark-theme[data-palette="mint"] {
             margin-bottom: 0.4rem;
             line-height: 1.35;
         }
+        /* Class rows are always a single line, so the dot should sit centered on it -- unlike
+           the Events row below, whose dot stays flex-start because that text can wrap to two
+           lines (title+badge, then feed label). */
+        .day-hover-tooltip-item.is-class-row {
+            align-items: center;
+        }
         .day-hover-tooltip-empty { color: var(--text-muted); font-size: 0.78rem; margin-top: 0.4rem; }
+        /* Tints the rich class-info popup with the class's own color, same idea as the class
+           card's border tint (see .class-card[data-has-color]) -- --class-color is set in JS
+           (setupClassHoverPopup) each time the popup's content changes. */
+        #class-info-popup {
+            border-color: color-mix(in srgb, var(--class-color, var(--accent-2)) 45%, var(--glass-border));
+        }
 
         /* ===================== Theme Popover ===================== */
         .theme-popover {
@@ -538,23 +560,26 @@ body.dark-theme[data-palette="mint"] {
             background: var(--glass-bg-strong);
         }
 
-        .calendar-search-wrap { position: relative; max-width: 360px; }
-        .calendar-search-input { padding: 0.6rem 0.9rem; border-radius: 0.75rem; }
+        .calendar-search-wrap { position: relative; max-width: 450px; width: 100%; }
+        .calendar-search-input { padding: 0.9rem 1.35rem; border-radius: 0.75rem; font-size: 1.05rem; }
         .calendar-search-results {
             position: absolute;
             top: calc(100% + 0.4rem);
             left: 0;
             right: 0;
-            z-index: 40;
+            z-index: 600;
             max-height: 320px;
             overflow-y: auto;
-            background: var(--glass-bg-strong);
+            background: rgba(255, 255, 255, 0.97);
             border: 1px solid var(--glass-border);
             border-radius: 0.9rem;
-            box-shadow: var(--glass-shadow);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
             backdrop-filter: blur(20px) saturate(160%);
             -webkit-backdrop-filter: blur(20px) saturate(160%);
             padding: 0.4rem;
+        }
+        body.dark-theme .calendar-search-results {
+            background: rgba(17, 15, 28, 0.97);
         }
         .calendar-search-result-item {
             display: flex;
@@ -569,6 +594,46 @@ body.dark-theme[data-palette="mint"] {
         .calendar-search-result-item:hover { background: var(--glass-bg); }
         .calendar-search-result-item .home-dot, .calendar-search-result-item > span:first-child { margin-top: 0.35rem; }
         .calendar-search-empty { padding: 0.6rem; font-size: 0.8rem; color: var(--text-muted); }
+        .calendar-search-suggestions-label {
+            padding: 0.4rem 0.6rem 0.2rem;
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--text-muted);
+        }
+        .calendar-search-suggestions-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-right: 0.5rem;
+        }
+        .calendar-search-clear-btn {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            padding: 0.2rem 0.4rem;
+        }
+        .calendar-search-clear-btn:hover { color: var(--text-primary); }
+        .calendar-search-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            padding: 0.3rem 0.6rem 0.5rem;
+        }
+        .calendar-search-suggestion-chip {
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .calendar-search-suggestion-chip:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-2);
+        }
 
         .calendar-legend-panel {
             background: var(--glass-bg-strong);
@@ -593,6 +658,33 @@ body.dark-theme[data-palette="mint"] {
         .digest-banner-summary { font-size: 0.9rem; margin-top: 0.3rem; }
         .digest-items { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
         .digest-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
+        /* Items with a note preview stack two lines, so the dot centers on the whole block
+           instead of sitting flush with the top of the first line (align-items: center handles
+           this fine already for these -- kept separate only so a future single-line tweak here
+           doesn't have to reason about the two-line case). */
+        .digest-item .note-preview-line { margin-top: 0.1rem; }
+        /* Section headers inside a digest banner (Assignments Due / Events / Classes) --
+           deliberately the same size/weight/spacing as .day-hover-tooltip-section-title so a
+           "Classes" header reads identically whether it's here or in the calendar preview. */
+        .digest-section { margin-top: 0.7rem; }
+        .digest-section-title {
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
+        }
+        /* The day-type badge + day note sit above the sectioned lists as a single summary row,
+           not inside .digest-items, since together they describe one fact ("what kind of day is
+           this") rather than a list entry. */
+        .digest-day-summary {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.6rem;
+            font-size: 0.85rem;
+        }
         .digest-dismiss-btn {
             width: 1.6rem;
             height: 1.6rem;
@@ -616,6 +708,9 @@ body.dark-theme[data-palette="mint"] {
         .digest-recall-btn:hover { color: var(--text-primary); border-color: var(--accent-2); }
 
         .category-filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
             padding: 0.5rem 1rem;
             border-radius: 9999px;
             border: 1px solid var(--glass-border);
@@ -626,11 +721,19 @@ body.dark-theme[data-palette="mint"] {
             opacity: 0.55;
             transition: all 0.2s ease-in-out;
         }
+        /* Each chip tints with its own category color (--chip-color, set inline per button) once
+           active, matching the same color used for that category's dots/legend row elsewhere. */
         .category-filter-chip.active {
             opacity: 1;
             color: var(--text-primary);
-            border-color: var(--accent-2);
-            box-shadow: 0 4px 14px var(--glow-accent);
+            border-color: var(--chip-color, var(--accent-2));
+            box-shadow: 0 4px 14px color-mix(in srgb, var(--chip-color, var(--accent-2)) 45%, transparent);
+        }
+        .filter-chip-dot {
+            width: 0.55rem;
+            height: 0.55rem;
+            border-radius: 50%;
+            flex-shrink: 0;
         }
         .category-badge {
             display: inline-block;
@@ -717,12 +820,18 @@ body.dark-theme[data-palette="mint"] {
             flex-shrink: 0;
             margin-left: 0.5rem;
         }
-        .home-list-item .home-dot {
+        .home-dot {
             width: 0.6rem;
             height: 0.6rem;
             border-radius: 50%;
-            margin-top: 0.35rem;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .home-list-item .home-dot {
+            margin-top: 0.35rem;
         }
         .home-list-item .home-item-title {
             font-weight: 700;
@@ -736,6 +845,68 @@ body.dark-theme[data-palette="mint"] {
             font-size: 1.6rem;
             font-weight: 800;
             color: var(--text-primary);
+        }
+        .home-widget.is-clickable {
+            cursor: pointer;
+            transition: transform 0.15s ease-in-out, background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+        }
+        .home-widget.is-clickable:hover {
+            background: var(--glass-bg-strong);
+        }
+        .home-widget.is-clickable:active {
+            transform: scale(0.98);
+        }
+        /* Mirrors .class-card's own color theming (see createClassCardHTML) so the Next/Current
+           Class tile reads as "that class" rather than a generic widget -- faint tint while it's
+           just coming up, the same stronger glow .class-card.is-current-period gets once it's
+           actually in session. */
+        #home-widget-next-class[data-has-color] {
+            border-color: color-mix(in srgb, var(--class-color) 55%, var(--glass-border)) !important;
+            background: color-mix(in srgb, var(--class-color) 7%, var(--glass-bg));
+        }
+        #home-widget-next-class.is-current-period[data-has-color] {
+            border-color: var(--class-color) !important;
+            background: color-mix(in srgb, var(--class-color) 16%, var(--glass-bg)) !important;
+            box-shadow: 0 0 0 2px var(--class-color), 0 20px 40px color-mix(in srgb, var(--class-color) 45%, transparent) !important;
+        }
+        #home-widget-next-class[data-has-color] .home-next-class-big {
+            color: var(--class-color);
+        }
+        #home-widget-next-class[data-has-color] .class-meta-chip {
+            border-color: color-mix(in srgb, var(--class-color) 35%, var(--glass-border));
+        }
+        #home-widget-next-class .class-meta-row {
+            margin-top: 0.5rem;
+            margin-bottom: 0;
+        }
+        .home-today-classes-row {
+            display: flex;
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .home-today-class-chip {
+            flex: 1 1 0;
+            min-width: 110px;
+            display: block;
+            padding: 0.6rem 0.75rem;
+            border-radius: 0.75rem;
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+            text-decoration: none;
+            transition: transform 0.15s ease-in-out;
+        }
+        .home-today-class-chip:hover {
+            transform: translateY(-2px);
+        }
+        .home-today-class-chip .home-item-title {
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+        .home-today-class-chip .home-item-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
         }
 
         .class-card {
@@ -787,6 +958,30 @@ body.dark-theme[data-palette="mint"] {
         .class-card p {
             color: var(--text-secondary);
             transition: color 0.5s ease-in-out;
+        }
+
+        /* Small card-like chips for a class's period/room/teacher, replacing the old single
+           text line so each fact reads as its own item rather than a run-on sentence. */
+        .class-meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 1rem;
+        }
+        .class-meta-chip {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 0.25rem 0.7rem;
+            border-radius: 9999px;
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .class-card[data-has-color] .class-meta-chip {
+            border-color: color-mix(in srgb, var(--class-color) 35%, var(--glass-border));
         }
 
         .new-tab-button {
@@ -1199,6 +1394,14 @@ body.dark-theme[data-palette="mint"] {
             color: var(--text-primary);
             box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
         }
+        /* Used on "click anywhere confirms" prompts (e.g. open-class prompts) so both buttons
+           read as equally deliberate choices, matching Cancel's size instead of looking like an
+           afterthought next to it. */
+        .modal-footer-button.is-modal-large {
+            height: 3.25rem;
+            padding: 0 2rem;
+            font-size: 1.05rem;
+        }
 
         /* Force Tailwind gray utilities to follow our manual theme toggle instead of OS preference */
         .text-gray-400, .text-gray-500, .text-gray-600, .text-gray-700, .text-gray-900 { color: var(--text-secondary) !important; }
@@ -1401,8 +1604,10 @@ body.dark-theme[data-palette="mint"] {
         .mini-day-cell.is-today .mini-day-number { color: var(--accent-2); }
         .mini-day-cell .day-badge { font-size: 0.55rem; padding: 0.05rem 0.3rem; }
         .mini-day-cell .note-dot { position: static; width: 0.3rem; height: 0.3rem; box-shadow: none; }
-        .mini-external-dots { display: flex; gap: 0.2rem; }
-        .mini-external-dot { width: 0.3rem; height: 0.3rem; border-radius: 9999px; }
+        .mini-external-dots { display: flex; gap: 0.3rem; margin-top: 0.15rem; }
+        .mini-external-dot { width: 0.3rem; height: 0.3rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .calendar-event-dot { transition: transform 0.12s var(--ease-out, ease-out); }
+        .calendar-event-dot:hover { transform: scale(1.4); }
         .mini-upcoming-card {
             border-radius: 0.85rem;
             border: 1px solid var(--glass-border);
@@ -1412,6 +1617,17 @@ body.dark-theme[data-palette="mint"] {
         .mini-upcoming-date { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-muted); }
         .mini-upcoming-title { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
         .mini-upcoming-sub { font-size: 0.72rem; color: var(--text-secondary); margin-top: 0.15rem; }
+        .mini-upcoming-category-group .mini-upcoming-sub { padding-left: 1.1rem; margin-top: 0.1rem; }
+        .mini-upcoming-category-label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            color: var(--text-muted);
+        }
         .mini-empty-state { font-size: 0.85rem; color: var(--text-muted); }
 
         .day-classes-section { margin-bottom: 1.5rem; }
@@ -1429,6 +1645,20 @@ body.dark-theme[data-palette="mint"] {
             transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
         }
         .day-class-row:hover { background: var(--glass-bg-strong); }
+        /* Truncates a note to one line; the native title attribute (set alongside this class
+           wherever it's used -- Day view, the Today brief) shows the full text on hover instead
+           of wrapping. Month/week previews deliberately don't get this visible line at all --
+           they still get the same hover-title on the class name itself, just no inline text. */
+        .day-class-note, .note-preview-line {
+            display: block;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            cursor: help;
+        }
 
         .week-day-col {
             background: var(--glass-bg);
@@ -1644,6 +1874,9 @@ body.dark-theme[data-palette="mint"] {
                 var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
                 if (dark) document.body.classList.add('dark-theme');
                 var p = localStorage.getItem('themePalette');
+                // Ocean was replaced by Monochrome -- migrate anyone who had it selected instead
+                // of silently falling back to the default (unstyled) palette.
+                if (p === 'ocean') { p = 'monochrome'; localStorage.setItem('themePalette', p); }
                 if (p) document.body.dataset.palette = p;
             } catch (e) {}
         })();
@@ -1718,7 +1951,7 @@ body.dark-theme[data-palette="mint"] {
 
                     <div class="home-widget-grid">
                         <div class="home-widget" id="home-widget-next-class">
-                            <h2>Next Class</h2>
+                            <h2 id="home-next-class-title">Next Class</h2>
                             <div id="home-next-class-content"></div>
                         </div>
                         <div class="home-widget" id="home-widget-due-soon">
@@ -1768,13 +2001,19 @@ body.dark-theme[data-palette="mint"] {
             <!-- ===================== CALENDAR VIEW ===================== -->
             <section id="view-calendar" class="app-view hidden">
                 <div class="main-container rounded-3xl p-6 sm:p-10 border relative">
-                    <header class="flex flex-wrap justify-between items-center gap-4 mb-4">
-                        <h1 class="gradient-text text-3xl sm:text-4xl font-extrabold tracking-tight">School Calendar</h1>
+                    <header class="flex flex-wrap justify-between items-start gap-4 mb-4">
+                        <div>
+                            <h1 class="gradient-text text-5xl sm:text-6xl font-extrabold tracking-tight">School Calendar</h1>
+                            <h3 class="text-xl sm:text-2xl font-medium tracking-wide mt-1" id="calendar-time"></h3>
+                        </div>
                         <div class="view-toolbar items-center">
                             <button id="today-button" class="px-4 py-2 rounded-full text-sm font-semibold">Today</button>
                             <button id="export-button" class="px-4 py-2 rounded-full text-sm font-semibold">Export</button>
                             <button id="import-button" class="px-4 py-2 rounded-full text-sm font-semibold">Import</button>
                             <input type="file" id="import-file-input" accept="application/json,.json,text/csv,.csv" class="hidden">
+                            <button type="button" id="calendar-legend-toggle-btn" class="icon-btn p-3 rounded-full" onclick="toggleCalendarLegend()" title="Legend">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </button>
                             <button id="calendar-settings-button" class="icon-btn p-3 rounded-full" onclick="openCalendarSettingsModal()" title="Settings">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             </button>
@@ -1790,19 +2029,22 @@ body.dark-theme[data-palette="mint"] {
                         <button class="view-tab px-4 py-2 rounded-lg border font-semibold text-sm" data-view="agenda">Agenda</button>
                     </div>
 
-                    <!-- Assignments / Events Filter + Legend toggle -->
-                    <div class="flex flex-wrap items-center gap-2 mb-4" id="calendar-category-filters">
-                        <button type="button" class="category-filter-chip active" data-group="assignment" onclick="toggleCalendarCategoryFilter('assignment')">Assignments</button>
-                        <button type="button" class="category-filter-chip active" data-group="event" onclick="toggleCalendarCategoryFilter('event')">Events</button>
-                        <button type="button" class="category-filter-chip" id="calendar-legend-toggle-btn" onclick="toggleCalendarLegend()">Legend</button>
+                    <!-- Category Filter + Search -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4" id="calendar-category-filters">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" class="category-filter-chip active" data-group="assignment" style="--chip-color:#ef4444;" onclick="toggleCalendarCategoryFilter('assignment')"><span class="filter-chip-dot" style="background:#ef4444;"></span>Assignments</button>
+                            <button type="button" class="category-filter-chip active" data-group="school-event" style="--chip-color:#38bdf8;" onclick="toggleCalendarCategoryFilter('school-event')"><span class="filter-chip-dot" style="background:#38bdf8;"></span>School Events</button>
+                            <button type="button" class="category-filter-chip active" data-group="club" style="--chip-color:#f97316;" onclick="toggleCalendarCategoryFilter('club')"><span class="filter-chip-dot" style="background:#f97316;"></span>Clubs</button>
+                            <button type="button" class="category-filter-chip active" data-group="sports" style="--chip-color:#a855f7;" onclick="toggleCalendarCategoryFilter('sports')"><span class="filter-chip-dot" style="background:#a855f7;"></span>Sports</button>
+                            <button type="button" class="category-filter-chip active" data-group="event" style="--chip-color:#a3e635;" onclick="toggleCalendarCategoryFilter('event')"><span class="filter-chip-dot" style="background:#a3e635;"></span>Events</button>
+                            <button type="button" class="category-filter-chip active" data-group="classes" style="--chip-color:#6366f1;" onclick="toggleCalendarClassesFilter()"><span class="filter-chip-dot" style="background:#6366f1;"></span>Classes</button>
+                        </div>
+                        <div class="calendar-search-wrap">
+                            <input type="text" id="calendar-search-input" class="form-input calendar-search-input" placeholder="Search assignments &amp; events..." oninput="handleCalendarSearchInput(this.value)" onfocus="handleCalendarSearchInput(this.value)">
+                            <div id="calendar-search-results" class="calendar-search-results hidden"></div>
+                        </div>
                     </div>
                     <div id="calendar-legend-panel" class="calendar-legend-panel hidden"></div>
-
-                    <!-- Search -->
-                    <div class="calendar-search-wrap mb-6">
-                        <input type="text" id="calendar-search-input" class="form-input calendar-search-input" placeholder="Search assignments &amp; events..." oninput="handleCalendarSearchInput(this.value)" onfocus="handleCalendarSearchInput(this.value)">
-                        <div id="calendar-search-results" class="calendar-search-results hidden"></div>
-                    </div>
 
                     <!-- Nav Row (hidden for agenda) -->
                     <div class="flex justify-between items-center mb-6" id="nav-row">
@@ -1824,6 +2066,11 @@ body.dark-theme[data-palette="mint"] {
 
     <div id="orbit-tooltip" class="orbit-tooltip" aria-hidden="true"></div>
     <div id="day-hover-tooltip" class="day-hover-tooltip" aria-hidden="true"></div>
+    <!-- Rich class-info popup: same look as day-hover-tooltip, shown for any class reference
+         anywhere in the app (Upcoming Events, the Today brief, calendar previews) via a
+         data-class-note-id attribute, so hovering always surfaces the same info the Classes
+         page card shows instead of a plain browser title tooltip. -->
+    <div id="class-info-popup" class="day-hover-tooltip" aria-hidden="true"></div>
 
     <div id="class-color-popover" class="class-color-popover hidden" onclick="event.stopPropagation()">
         <div class="class-color-swatch-grid" id="class-color-swatch-grid"></div>
@@ -1851,22 +2098,22 @@ body.dark-theme[data-palette="mint"] {
         </div>
         <p class="theme-popover-label">Color</p>
         <div class="theme-palette-grid">
-            <button type="button" class="theme-palette-swatch" data-palette="indigo" style="--sw1:#6366f1;--sw2:#a855f7;--sw3:#ec4899" onclick="applyPalette('indigo')" title="Indigo"><span class="sr-only">Indigo</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="violet" style="--sw1:#7c3aed;--sw2:#a78bfa;--sw3:#c026d3" onclick="applyPalette('violet')" title="Violet"><span class="sr-only">Violet</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="emerald" style="--sw1:#10b981;--sw2:#14b8a6;--sw3:#84cc16" onclick="applyPalette('emerald')" title="Emerald"><span class="sr-only">Emerald</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="rose" style="--sw1:#f43f5e;--sw2:#ec4899;--sw3:#fb7185" onclick="applyPalette('rose')" title="Rose"><span class="sr-only">Rose</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="sunset" style="--sw1:#f59e0b;--sw2:#f97316;--sw3:#ef4444" onclick="applyPalette('sunset')" title="Sunset"><span class="sr-only">Sunset</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="ocean" style="--sw1:#0ea5e9;--sw2:#06b6d4;--sw3:#22d3ee" onclick="applyPalette('ocean')" title="Ocean"><span class="sr-only">Ocean</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="slate" style="--sw1:#64748b;--sw2:#475569;--sw3:#94a3b8" onclick="applyPalette('slate')" title="Slate"><span class="sr-only">Slate</span></button>
             <button type="button" class="theme-palette-swatch" data-palette="crimson" style="--sw1:#dc2626;--sw2:#ef4444;--sw3:#f87171" onclick="applyPalette('crimson')" title="Crimson"><span class="sr-only">Crimson</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="teal" style="--sw1:#0d9488;--sw2:#2dd4bf;--sw3:#5eead4" onclick="applyPalette('teal')" title="Teal"><span class="sr-only">Teal</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="coral" style="--sw1:#f97316;--sw2:#fb7185;--sw3:#ec4899" onclick="applyPalette('coral')" title="Coral"><span class="sr-only">Coral</span></button>
             <button type="button" class="theme-palette-swatch" data-palette="amber" style="--sw1:#d97706;--sw2:#fbbf24;--sw3:#fde047" onclick="applyPalette('amber')" title="Amber"><span class="sr-only">Amber</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="fuchsia" style="--sw1:#c026d3;--sw2:#e879f9;--sw3:#f0abfc" onclick="applyPalette('fuchsia')" title="Fuchsia"><span class="sr-only">Fuchsia</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="sunset" style="--sw1:#f59e0b;--sw2:#f97316;--sw3:#ef4444" onclick="applyPalette('sunset')" title="Sunset"><span class="sr-only">Sunset</span></button>
             <button type="button" class="theme-palette-swatch" data-palette="lime" style="--sw1:#65a30d;--sw2:#a3e635;--sw3:#bef264" onclick="applyPalette('lime')" title="Lime"><span class="sr-only">Lime</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="mint" style="--sw1:#22c55e;--sw2:#14b8a6;--sw3:#06b6d4" onclick="applyPalette('mint')" title="Mint"><span class="sr-only">Mint</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="emerald" style="--sw1:#10b981;--sw2:#14b8a6;--sw3:#84cc16" onclick="applyPalette('emerald')" title="Emerald"><span class="sr-only">Emerald</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="teal" style="--sw1:#0d9488;--sw2:#2dd4bf;--sw3:#5eead4" onclick="applyPalette('teal')" title="Teal"><span class="sr-only">Teal</span></button>
             <button type="button" class="theme-palette-swatch" data-palette="sky" style="--sw1:#0284c7;--sw2:#38bdf8;--sw3:#7dd3fc" onclick="applyPalette('sky')" title="Sky"><span class="sr-only">Sky</span></button>
             <button type="button" class="theme-palette-swatch" data-palette="midnight" style="--sw1:#1d4ed8;--sw2:#4338ca;--sw3:#7c3aed" onclick="applyPalette('midnight')" title="Midnight"><span class="sr-only">Midnight</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="coral" style="--sw1:#f97316;--sw2:#fb7185;--sw3:#ec4899" onclick="applyPalette('coral')" title="Coral"><span class="sr-only">Coral</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="mint" style="--sw1:#22c55e;--sw2:#14b8a6;--sw3:#06b6d4" onclick="applyPalette('mint')" title="Mint"><span class="sr-only">Mint</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="indigo" style="--sw1:#6366f1;--sw2:#a855f7;--sw3:#ec4899" onclick="applyPalette('indigo')" title="Indigo"><span class="sr-only">Indigo</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="violet" style="--sw1:#7c3aed;--sw2:#a78bfa;--sw3:#c026d3" onclick="applyPalette('violet')" title="Violet"><span class="sr-only">Violet</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="fuchsia" style="--sw1:#c026d3;--sw2:#e879f9;--sw3:#f0abfc" onclick="applyPalette('fuchsia')" title="Fuchsia"><span class="sr-only">Fuchsia</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="rose" style="--sw1:#f43f5e;--sw2:#ec4899;--sw3:#fb7185" onclick="applyPalette('rose')" title="Rose"><span class="sr-only">Rose</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="slate" style="--sw1:#64748b;--sw2:#475569;--sw3:#94a3b8" onclick="applyPalette('slate')" title="Slate"><span class="sr-only">Slate</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="monochrome" style="--sw1:#404040;--sw2:#737373;--sw3:#a3a3a3" onclick="applyPalette('monochrome')" title="Monochrome"><span class="sr-only">Monochrome</span></button>
         </div>
         <p class="theme-popover-label" style="margin-top: 1rem;">Motion</p>
         <div class="motion-mode-row">
@@ -2100,9 +2347,10 @@ body.dark-theme[data-palette="mint"] {
     </div>
 
     <!-- Custom Confirmation Modal -->
-    <div id="confirmation-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="hideConfirmationModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-8 border" onclick="event.stopPropagation()">
-            <h3 class="text-2xl font-bold mb-4">Confirm Action</h3>
+    <div id="confirmation-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="handleConfirmationModalClick(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-8 border">
+            <h3 class="text-2xl font-bold mb-1">Confirm Action</h3>
+            <p class="text-xs font-medium mb-4 hidden" id="confirmation-hint" style="color: var(--text-muted);">(click anywhere to continue)</p>
             <p class="text-gray-700 mb-6" id="confirmation-message"></p>
             <div class="flex justify-end gap-4" id="confirmation-buttons"></div>
         </div>
@@ -2125,6 +2373,7 @@ body.dark-theme[data-palette="mint"] {
         let calendarInitialized = false;
 
         function switchAppView(view) {
+            hideAllHoverPopups();
             const doSwitch = () => {
                 activeAppView = view;
                 document.getElementById('view-home').classList.toggle('hidden', view !== 'home');
@@ -2217,16 +2466,20 @@ body.dark-theme[data-palette="mint"] {
             saveUserScheduleDates();
             saveUserScheduleSlotOptions();
             closeAllSettingsModal();
-            getScheduledClassUrl();
         }
 
         // ===================== EXPORT / IMPORT ALL DATA =====================
-        // The complete, authoritative set of localStorage keys this app owns.
+        // The complete, authoritative set of localStorage keys this app owns. Both Export/Import
+        // All Data and "Reset Everything" (see confirmResetEverything) key off this single list --
+        // it used to be duplicated by hand in both places and had quietly drifted out of sync
+        // (missing noSchoolDaysV1 entirely, so No School Days silently survived a "reset
+        // everything" and never made it into a backup).
         const ALL_DATA_KEYS = [
-            'classDataV3', 'userADays', 'userBDays', 'userScheduleSlotOptionsV2',
+            'classDataV3', 'userADays', 'userBDays', 'noSchoolDaysV1', 'userScheduleSlotOptionsV2',
             'dayNotesV1', 'classNotesV1',
             'theme', 'themePalette', 'motionPref', 'timeFormat',
-            'calendarView', 'weekStart',
+            'calendarView', 'weekStart', 'calendarCategoryFilter', 'calendarShowClasses', 'recentCalendarSearches',
+            'dismissedDailyDigestDate', 'dismissedWeeklyDigestKey',
             'showGoogleCalendar', 'googleCalendarEmbedUrl',
             'icsIncludeDayEvents', 'icsIncludeClassEvents',
             'externalIcsFeeds', 'externalIcsCache',
@@ -2774,7 +3027,9 @@ body.dark-theme[data-palette="mint"] {
                 '.mini-calendar-panel, .mini-day-cell, .mini-upcoming-card, ' +
                 '.day-class-row, .week-class-row, .day-badge, .main-category-item, ' +
                 '.agenda-month-header, .weekday-header, .mini-weekday-label, ' +
-                '.class-color-custom-row, .theme-mode-row, .motion-mode-row, .ics-toggle-row';
+                '.class-color-custom-row, .theme-mode-row, .motion-mode-row, .ics-toggle-row, ' +
+                '.calendar-legend-row, .calendar-search-result-item, .calendar-search-suggestion-chip, ' +
+                '.digest-banner, .digest-item, .home-due-group, .category-badge';
 
             const DETACH_DURATION = 1900; // fixed (not randomized) so every element settles at the same pace -- long enough for the wobble envelope's decaying oscillation to fully play out
 
@@ -2869,6 +3124,11 @@ body.dark-theme[data-palette="mint"] {
             }
 
             document.addEventListener('click', (e) => {
+                // Skip entirely for text fields -- the ripple's post-click shove was landing
+                // right as the browser placed the text caret, so the field would visually hop
+                // out from under the click and the caret would end up somewhere other than
+                // where the user clicked instead of landing precisely between characters.
+                if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
                 spawnRipple(e.clientX, e.clientY);
                 if (isReducedMotion()) return;
                 triggerDetach(e.clientX, e.clientY);
@@ -2877,10 +3137,18 @@ body.dark-theme[data-palette="mint"] {
         }
 
         // ===================== CONFIRMATION MODAL (shared) =====================
-        function showConfirmationModal(message, options) {
+        // When opts.clickAnywhereConfirms is set, clicking anywhere in the modal other than the
+        // Cancel button runs the first option's action (used for low-stakes "open the class?"
+        // prompts, never for destructive confirms like delete/reset/import-overwrite).
+        let confirmationClickThroughAction = null;
+
+        function showConfirmationModal(message, options, opts) {
+            opts = opts || {};
             document.getElementById('confirmation-message').textContent = message;
+            document.getElementById('confirmation-hint').classList.toggle('hidden', !opts.clickAnywhereConfirms);
             const confirmationButtonsContainer = document.getElementById('confirmation-buttons');
             confirmationButtonsContainer.innerHTML = '';
+            confirmationClickThroughAction = opts.clickAnywhereConfirms && options[0] ? options[0].action : null;
 
             options.forEach(option => {
                 const button = document.createElement('button');
@@ -2895,6 +3163,7 @@ body.dark-theme[data-palette="mint"] {
                 } else {
                     button.classList.add('bg-indigo-600');
                 }
+                if (opts.clickAnywhereConfirms) button.classList.add('is-modal-large');
                 button.textContent = option.text;
                 button.onclick = () => {
                     option.action();
@@ -2912,8 +3181,23 @@ body.dark-theme[data-palette="mint"] {
             });
         }
 
+        // Single click handler on the modal's outer (backdrop) element -- clicks inside the
+        // content bubble up to it since content no longer stops propagation, so this is the
+        // one place that decides what a click anywhere in the modal should do.
+        function handleConfirmationModalClick(event) {
+            if (event.target.closest('.modal-footer-button')) return;
+            if (confirmationClickThroughAction) {
+                const action = confirmationClickThroughAction;
+                hideConfirmationModal();
+                action();
+                return;
+            }
+            if (event.target.id === 'confirmation-modal') hideConfirmationModal();
+        }
+
         function hideConfirmationModal(event) {
             if (event && event.target.id !== 'confirmation-modal' && !event.target.classList.contains('modal-footer-button')) return;
+            confirmationClickThroughAction = null;
             const modal = document.getElementById('confirmation-modal');
             modal.classList.add('opacity-0');
             modal.classList.remove('show');
@@ -3090,7 +3374,7 @@ body.dark-theme[data-palette="mint"] {
                 const classCardsHTML = category.classes.map(createClassCardHTML).join('');
                 return `
                     <div class="main-category-item ${widthClass}">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 text-center">${category.categoryName}</h2>
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 text-center">${escapeHtml(category.categoryName)}</h2>
                         <div class="grid grid-cols-1 gap-4">
                             ${classCardsHTML}
                         </div>
@@ -3104,7 +3388,7 @@ body.dark-theme[data-palette="mint"] {
             const classCardsHTML = category.classes.map(createClassCardHTML).join('');
             return `
                 <div class="main-category-item full-width">
-                    <h2 class="text-3xl sm:text-4xl font-bold mb-6 text-center">${category.categoryName}</h2>
+                    <h2 class="text-3xl sm:text-4xl font-bold mb-6 text-center">${escapeHtml(category.categoryName)}</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${classCardsHTML}
                     </div>
@@ -3125,39 +3409,51 @@ body.dark-theme[data-palette="mint"] {
             return label.replace(/\bday\b/gi, '').replace(/\s{2,}/g, ' ').trim().replace(/^-\s*|\s*-$/g, '').trim();
         }
 
-        function getClassSubtitle(classItem) {
+        // A purely-numeric room ("204", "204A") reads fine as "Room 204" / "Room 204A", but a
+        // named space ("Gym", "Library", "Auditorium") already reads as a place on its own and
+        // "Room Gym" would look wrong -- so only prefix it when it starts with a digit.
+        function formatRoomLabel(room) {
+            const trimmed = (room || '').trim();
+            if (!trimmed) return '';
+            return /^\d/.test(trimmed) ? `Room ${trimmed}` : trimmed;
+        }
+
+        function getClassMetaChips(classItem) {
             const slotOption = userScheduleSlotOptions.find(o => o.value === classItem.scheduleSlot);
-            const parts = [];
-            if (slotOption && slotOption.label) parts.push(formatPeriodLabel(slotOption.label));
-            const roomTeacher = [];
-            if (classItem.room) roomTeacher.push(`Room ${classItem.room}`);
-            if (classItem.teacher) roomTeacher.push(classItem.teacher);
-            if (roomTeacher.length) parts.push(roomTeacher.join(', '));
-            return parts.join(' - ');
+            const chips = [];
+            if (slotOption && slotOption.label) chips.push(formatPeriodLabel(slotOption.label));
+            if (classItem.room) chips.push(formatRoomLabel(classItem.room));
+            if (classItem.teacher) chips.push(classItem.teacher);
+            return chips;
+        }
+
+        function classMetaChipsHTML(classItem) {
+            const chips = getClassMetaChips(classItem);
+            if (!chips.length) return '';
+            return `<div class="class-meta-row">${chips.map(c => `<span class="class-meta-chip">${escapeHtml(c)}</span>`).join('')}</div>`;
         }
 
         function createClassCardHTML(classItem) {
             const noteId = classItem.noteId || '';
             const noteValue = classNotes[noteId] || '';
             const hasNote = !!noteValue;
-            const subtitle = getClassSubtitle(classItem);
             return `
-                <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}
-                     onclick="window.location.href='${classItem.url}'">
+                <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}${classPopupAttr(classItem)}
+                     onclick="window.location.href='${escapeJsAttr(classItem.url)}'">
                     <div class="flex items-start justify-between gap-2 mb-2 pr-8">
-                        <h4 class="text-xl font-bold">${classItem.title}</h4>
+                        <h4 class="text-xl font-bold">${escapeHtml(classItem.title)}</h4>
                         <button class="class-note-toggle ${hasNote ? 'has-note' : ''}" data-note-id="${noteId}" onclick="event.stopPropagation(); toggleClassNote('${noteId}')" title="Quick note">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         </button>
                     </div>
-                    <p class="text-sm mb-4" title="${escapeAttr(subtitle)}">${escapeHtml(subtitle)}</p>
+                    ${classMetaChipsHTML(classItem)}
                     <div class="class-note-box ${hasNote ? '' : 'hidden'}" id="note-box-${noteId}" onclick="event.stopPropagation()">
                         <textarea class="class-note-textarea" placeholder="Quick note..." onchange="saveClassNote('${noteId}', this.value)">${escapeHtml(noteValue)}</textarea>
                     </div>
-                    <button class="new-tab-button" onclick="event.stopPropagation(); window.open('${classItem.url}', '_blank');" title="Open in new tab">
+                    <button class="new-tab-button" onclick="event.stopPropagation(); window.open('${escapeJsAttr(classItem.url)}', '_blank');" title="Open in new tab">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     </button>
-                    <div class="class-url-display" title="${classItem.url}">${classItem.url}</div>
+                    <div class="class-url-display" title="${escapeAttr(classItem.url)}">${escapeHtml(classItem.url)}</div>
                 </div>
             `;
         }
@@ -3228,7 +3524,7 @@ body.dark-theme[data-palette="mint"] {
                                 <span class="drag-handle mr-3 p-1 rounded-md transition" title="Drag to reorder">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                                 </span>
-                                <input type="text" value="${category.categoryName}" placeholder="Category Name"
+                                <input type="text" value="${escapeAttr(category.categoryName)}" placeholder="Category Name"
                                        class="category-name-input text-2xl font-bold bg-transparent focus:rounded p-2 -ml-2 w-full"
                                        data-category-index="${categoryIndex}"
                                        onchange="updateCategoryName(${categoryIndex}, this.value)">
@@ -3287,7 +3583,7 @@ body.dark-theme[data-palette="mint"] {
                             <span class="drag-handle mr-3 p-1 rounded-md transition" title="Drag to reorder">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                             </span>
-                            <input type="text" value="${category.categoryName}" placeholder="Category Name"
+                            <input type="text" value="${escapeAttr(category.categoryName)}" placeholder="Category Name"
                                    class="category-name-input text-2xl font-bold bg-transparent focus:rounded p-2 -ml-2 w-full"
                                    data-category-index="${categoryIndex}"
                                    onchange="updateCategoryName(${categoryIndex}, this.value)">
@@ -3341,15 +3637,15 @@ body.dark-theme[data-palette="mint"] {
                         </svg>
                     </span>
                     <button type="button" class="class-color-swatch-btn ${classItem.color ? '' : 'is-empty'}" data-category-index="${categoryIndex}" data-class-index="${classIndex}" style="background:${classItem.color || 'transparent'}" title="Class color" onclick="event.stopPropagation(); openClassColorPicker(this, ${categoryIndex}, ${classIndex})"></button>
-                    <input type="text" value="${classItem.title}" placeholder="Class Title" class="class-title-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'title', this.value)">
-                    <input type="text" value="${classItem.teacher || ''}" placeholder="Teacher" class="class-teacher-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'teacher', this.value)">
-                    <input type="text" value="${classItem.room || ''}" placeholder="Room" class="class-room-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'room', this.value)">
-                    <input type="text" value="${classItem.canvasCourseCode || ''}" placeholder="Canvas Course Code" title="Matches this class to Canvas assignments, e.g. the [BIO-101] tag Canvas puts on due dates" class="class-canvas-code-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'canvasCourseCode', this.value)">
+                    <input type="text" value="${escapeAttr(classItem.title)}" placeholder="Class Title" class="class-title-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'title', this.value)">
+                    <input type="text" value="${escapeAttr(classItem.teacher || '')}" placeholder="Teacher" class="class-teacher-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'teacher', this.value)">
+                    <input type="text" value="${escapeAttr(classItem.room || '')}" placeholder="Room" class="class-room-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'room', this.value)">
+                    <input type="text" value="${escapeAttr(classItem.canvasCourseCode || '')}" placeholder="Canvas Course Code" title="Matches this class to Canvas assignments, e.g. the [BIO-101] tag Canvas puts on due dates" class="class-canvas-code-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'canvasCourseCode', this.value)">
                     <select class="class-schedule-slot-select form-select" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'scheduleSlot', this.value)">
                         ${scheduleOptionsHtml}
                     </select>
                     <div class="flex items-center gap-2">
-                        <input type="url" value="${classItem.url}" placeholder="URL" class="class-url-input form-input flex-grow" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'url', this.value)">
+                        <input type="url" value="${escapeAttr(classItem.url)}" placeholder="URL" class="class-url-input form-input flex-grow" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'url', this.value)">
                         <button type="button" class="duplicate-class-btn p-2" onclick="duplicateClass(${categoryIndex}, ${classIndex})" title="Duplicate Class">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">  <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
                         </button>
@@ -3551,6 +3847,10 @@ body.dark-theme[data-palette="mint"] {
             classData = newClassData;
             saveToLocalStorage();
             renderClassLinks();
+            // The mini calendar preview's "upcoming" cards list each day's scheduled classes by
+            // name (see getClassesForDate) -- without this, a class rename/re-slot wouldn't show
+            // up there until the user happened to visit the Calendar page for an unrelated reason.
+            renderClassesCalendarPreview();
         }
 
         // --- SETTINGS MODAL FUNCTIONS (Classes) ---
@@ -3688,6 +3988,10 @@ body.dark-theme[data-palette="mint"] {
             const [startStr, endStr] = timeRange.split(' - ');
             return `${formatTimeOnly(startStr)} - ${formatTimeOnly(endStr)}`;
         }
+        function formatEventTimestamp(ts) {
+            const d = new Date(ts);
+            return formatTimeLabel(d.getHours(), d.getMinutes());
+        }
 
         // --- PREFERENCES ---
         const DEFAULT_GCAL_URL = "https://calendar.google.com/calendar/embed?height=1500&wkst=1&ctz=America%2FDenver&showPrint=0&showTitle=0&showCalendars=0&showTz=0&mode=AGENDA&title&src=NTczNGZhZTc4NGVmYzgxOTU5MzgxN2U3ZjYyNDQ3MDE0NGZlZWM0MzQzZTMyOWMwZjQ0ODhjYzZkMDg4YzUwZEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=ODgyM2YyNGQ0MTFiZjU5ZDlhY2U5Mzg5ZGVjYTEyZDIyYTM5MWQ1NWUwZGM4MWI4NzVkMWQ0YjFjNmE1Yjg3ZkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=YmIzNzU5MmExNDkyNGUxOTMzNzM0MGI1NGI5OGNhNTljZjM2OGY5Y2YzYWY5NjEzMTY4ZmM0YjVkYTYzNjM3YUBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=Z212YmptZTY1bGlnNXZpdXY5bnNodGFmMWt2MG9rN2VAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&src=N3N0a2hzNmh0N201ZTRtdDJkM2IwbWkxa2Fya3NzNGNAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&src=MHFjbmE4dGF0Zjlxam9vZjRhY2k1N3RkNm1qb2Q4MTdAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&src=c3JhZWdsY2xhbjhxNm01NTFqYzFnbjZubHQ2MWZrM2FAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&color=%2333b679&color=%23ad1457&color=%23f4511e&color=%23039be5&color=%23d50000&color=%23d50000&color=%23795548";
@@ -3759,7 +4063,7 @@ body.dark-theme[data-palette="mint"] {
         function confirmResetEverything() {
             showConfirmationModal('Reset EVERYTHING — classes, schedule dates, calendar notes, and preferences? This cannot be undone.', [
                 { text: 'Confirm', action: () => {
-                    ['classDataV3', 'userADays', 'userBDays', 'userScheduleSlotOptionsV2', 'dayNotesV1', 'classNotesV1', 'theme', 'calendarView', 'timeFormat', 'showGoogleCalendar', 'googleCalendarEmbedUrl', 'weekStart', 'githubGistToken', 'githubGistId', 'githubGistRawUrl', 'externalIcsFeeds', 'externalIcsCache'].forEach(k => localStorage.removeItem(k));
+                    ALL_DATA_KEYS.forEach(k => localStorage.removeItem(k));
                     window.location.reload();
                 }},
                 { text: 'Cancel', action: () => {} }
@@ -3796,7 +4100,6 @@ body.dark-theme[data-palette="mint"] {
             saveUserScheduleDates();
             saveUserScheduleSlotOptions();
             closeSchedulingSettingsModal();
-            getScheduledClassUrl();
         }
 
         // --- DRAG AND DROP: CATEGORIES ---
@@ -3938,12 +4241,23 @@ body.dark-theme[data-palette="mint"] {
         }
 
         // --- TIME & DATE DISPLAY ---
-        function displayTime() {
+        // Single source of truth for the "Time: ... | Date: ..." subheader shown under Home,
+        // Classes, and Calendar's titles -- called every tick so none of them go stale.
+        function updateClockDisplays() {
             const date = new Date();
             const hour12 = (localStorage.getItem('timeFormat') || '12') === '12';
             const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: hour12 });
             const formattedDate = `${date.getMonth() + 1}.${date.getDate()}.${date.getFullYear()}`;
-            document.getElementById('Time').textContent = `Time: ${time} | Date: ${formattedDate}`;
+            const text = `Time: ${time} | Date: ${formattedDate}`;
+            ['Time', 'home-time', 'calendar-time'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = text;
+            });
+        }
+
+        let lastHomeDueSoonMinuteBucket = -1;
+        function displayTime() {
+            updateClockDisplays();
             const info = getCurrentOrNextPeriodInfo();
             updateCountdownChip(info);
             updateCurrentClassHighlight(info);
@@ -3952,20 +4266,24 @@ body.dark-theme[data-palette="mint"] {
             checkAssignmentDueSoonPrompt();
             if (activeAppView === 'home') {
                 renderHomeNextClass();
-                renderHomeDueSoon();
+                // Due Soon's countdowns only ever display minute/hour/day granularity (see
+                // formatDueCountdown) except in the final 60 seconds before something is due, so
+                // rebuilding its whole list every single tick is 59/60 wasted work. Skip re-render
+                // unless the displayed minute would actually change, or something is imminent
+                // enough that formatDueCountdown is showing live seconds.
+                const nextDue = getNextDueAssignment();
+                const isImminent = nextDue && (nextDue.dueAt - Date.now()) < 60000;
+                const minuteBucket = Math.floor(Date.now() / 60000);
+                if (isImminent || minuteBucket !== lastHomeDueSoonMinuteBucket) {
+                    lastHomeDueSoonMinuteBucket = minuteBucket;
+                    renderHomeDueSoon();
+                }
             }
         }
 
         // --- HOME DASHBOARD ---
         function renderHomeDashboard() {
-            const timeEl = document.getElementById('home-time');
-            if (timeEl) {
-                const date = new Date();
-                const hour12 = (localStorage.getItem('timeFormat') || '12') === '12';
-                const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12 });
-                const formattedDate = `${date.getMonth() + 1}.${date.getDate()}.${date.getFullYear()}`;
-                timeEl.textContent = `Time: ${time} | Date: ${formattedDate}`;
-            }
+            updateClockDisplays();
             renderHomeNextClass();
             renderHomeDueSoon();
             renderHomeUpcoming();
@@ -3973,12 +4291,27 @@ body.dark-theme[data-palette="mint"] {
             renderDigestBanner();
         }
 
+        // Only surfaces a "next" (not yet started) class once it's within 10 minutes of its
+        // first minute -- earlier than that the widget just says nothing's coming up soon.
+        const NEXT_CLASS_LEAD_SECONDS = 10 * 60;
+
         function renderHomeNextClass() {
             const container = document.getElementById('home-next-class-content');
+            const titleEl = document.getElementById('home-next-class-title');
+            const widget = document.getElementById('home-widget-next-class');
             if (!container) return;
             const info = getCurrentOrNextPeriodInfo();
-            if (!info) {
+            const show = info && (info.status === 'current' || info.secondsLeft <= NEXT_CLASS_LEAD_SECONDS);
+            if (!show) {
+                if (titleEl) titleEl.textContent = 'Next Class';
                 container.innerHTML = `<p class="home-widget-empty">No classes scheduled right now.</p>`;
+                if (widget) {
+                    widget.classList.remove('is-clickable', 'is-current-period');
+                    widget.removeAttribute('data-has-color');
+                    widget.removeAttribute('data-class-note-id');
+                    widget.style.removeProperty('--class-color');
+                    widget.onclick = null;
+                }
                 return;
             }
             const totalSeconds = Math.max(0, Math.round(info.secondsLeft));
@@ -3986,12 +4319,33 @@ body.dark-theme[data-palette="mint"] {
             const ss = totalSeconds % 60;
             const timeStr = mm > 0 ? `${mm}m ${String(ss).padStart(2, '0')}s` : `${ss}s`;
             const verb = info.status === 'current' ? 'ends in' : 'starts in';
-            const statusLabel = info.status === 'current' ? 'In session' : 'Up next';
+            if (titleEl) titleEl.textContent = info.status === 'current' ? 'Current Class' : 'Next Class';
+            const classItem = info.classItem;
             container.innerHTML = `
-                <p class="home-widget-empty" style="margin-bottom:0.4rem;">${statusLabel}</p>
                 <p class="home-next-class-big">${escapeHtml(info.label)}</p>
+                ${classItem ? classMetaChipsHTML(classItem) : ''}
                 <p class="home-item-sub" style="margin-top:0.4rem;">${verb} ${timeStr}</p>
             `;
+            const url = classItem && classItem.url;
+            if (widget) {
+                widget.classList.toggle('is-current-period', info.status === 'current');
+                if (classItem && classItem.noteId) widget.setAttribute('data-class-note-id', classItem.noteId);
+                else widget.removeAttribute('data-class-note-id');
+                if (classItem && classItem.color) {
+                    widget.setAttribute('data-has-color', '');
+                    widget.style.setProperty('--class-color', classItem.color);
+                } else {
+                    widget.removeAttribute('data-has-color');
+                    widget.style.removeProperty('--class-color');
+                }
+                if (url && url !== '#') {
+                    widget.classList.add('is-clickable');
+                    widget.onclick = () => { window.location.href = url; };
+                } else {
+                    widget.classList.remove('is-clickable');
+                    widget.onclick = null;
+                }
+            }
         }
 
         // Starts at the active theme's accent color and blends toward red as the due date closes
@@ -4063,6 +4417,17 @@ body.dark-theme[data-palette="mint"] {
             if (!container) return;
             const today = new Date();
             today.setHours(0, 0, 0, 0);
+
+            const todaysClasses = getClassesForDate(today);
+            const classesRowHtml = todaysClasses.length ? `
+                <div class="home-today-classes-row">${todaysClasses.map(({ classItem, timeRange }) => `
+                    <a class="home-today-class-chip" href="${escapeAttr(classItem.url || '#')}" ${classItem.color ? `style="border-left: 3px solid ${escapeAttr(classItem.color)};"` : ''}${classPopupAttr(classItem)} onclick="${classItem.url ? '' : 'return false;'}">
+                        <p class="home-item-title">${escapeHtml(classItem.title)}</p>
+                        ${timeRange ? `<p class="home-item-sub">${escapeHtml(timeRange)}</p>` : ''}
+                    </a>
+                `).join('')}</div>
+            ` : '';
+
             const items = [];
             for (let i = 0; i < 14 && items.length < 5; i++) {
                 const d = new Date(today);
@@ -4071,10 +4436,10 @@ body.dark-theme[data-palette="mint"] {
             }
             const trimmed = items.slice(0, 5);
             if (!trimmed.length) {
-                container.innerHTML = `<p class="home-widget-empty">No upcoming events.</p>`;
+                container.innerHTML = classesRowHtml || `<p class="home-widget-empty">No upcoming events.</p>`;
                 return;
             }
-            container.innerHTML = `<div class="home-list">${trimmed.map(({ date, event }) => {
+            const eventsListHtml = `<div class="home-list">${trimmed.map(({ date, event }) => {
                 const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
                 return `
                     <div class="home-list-item">
@@ -4086,6 +4451,7 @@ body.dark-theme[data-palette="mint"] {
                     </div>
                 `;
             }).join('')}</div>`;
+            container.innerHTML = classesRowHtml + eventsListHtml;
         }
 
         // --- PERIOD COUNTDOWN CHIP ---
@@ -4262,7 +4628,7 @@ body.dark-theme[data-palette="mint"] {
             showConfirmationModal(`"${next.title}" is due soon for ${matchedClass.title}. Open the class now?`, [
                 { text: 'Continue', action: () => { window.location.href = matchedClass.url; } },
                 { text: 'Cancel', action: () => {} }
-            ]);
+            ], { clickAnywhereConfirms: true });
         }
 
         // --- "OPEN CURRENT CLASS?" PROMPT (re-checked every tick, not just at page load) ---
@@ -4277,25 +4643,21 @@ body.dark-theme[data-palette="mint"] {
             const modal = document.getElementById('confirmation-modal');
             if (modal && !modal.classList.contains('hidden')) return;
 
-            const scheduledUrlResult = getScheduledClassUrl();
-            if (scheduledUrlResult === undefined) return;
+            const scheduled = getScheduledClassUrl();
+            if (!scheduled) return;
             lastPromptedScheduleSlot = info.scheduleSlot;
 
-            const URLParts = scheduledUrlResult.split("(");
-            const myInterval = setInterval(() => {
-                window.open(URLParts[1]);
-                clearInterval(myInterval);
-            }, 3000);
-
-            showConfirmationModal(`Open Current Class: ${scheduledUrlResult}?`, [
+            showConfirmationModal(`Open ${scheduled.title} now?`, [
                 { text: 'Continue', action: () => {
-                    window.location.href = URLParts[1];
+                    window.location.href = scheduled.url;
                 }},
                 { text: 'Cancel', action: () => {} }
-            ]);
+            ], { clickAnywhereConfirms: true });
         }
 
         // --- SCHEDULE REDIRECTION LOGIC ---
+        // Returns { title, url } for the class in session right now, or null if there isn't one
+        // (no school today, between periods, or the matched class has no URL set).
         function getScheduledClassUrl() {
             const now = new Date();
             const year = now.getFullYear();
@@ -4313,8 +4675,7 @@ body.dark-theme[data-palette="mint"] {
             const isHalfDay = (dotw === 5);
 
             if (isNoSchoolDay(now) || (!isADay && !isBDay)) {
-                console.log("Not a scheduled A or B day. Staying on current page.");
-                return;
+                return null;
             }
 
             for (const slotOption of userScheduleSlotOptions) {
@@ -4353,14 +4714,12 @@ body.dark-theme[data-palette="mint"] {
                 for (const category of classData) {
                     for (const classItem of category.classes) {
                         if (classItem.scheduleSlot === scheduleSlotToFind && classItem.url && classItem.url !== '#') {
-                            console.log(`Redirecting to scheduled class: ${classItem.title} (${classItem.scheduleSlot})`);
-                            return `${classItem.title}
-                            (${classItem.url}`;
+                            return { title: classItem.title, url: classItem.url };
                         }
                     }
                 }
             }
-            console.log("No class in session or no matching schedule slot found. Staying on current page.");
+            return null;
         }
 
         // =====================================================================================
@@ -4370,12 +4729,13 @@ body.dark-theme[data-palette="mint"] {
         let currentDate = new Date();
         let selectedDayKey = null;
 
-        // --- ASSIGNMENTS / EVENTS FILTER (calendar page) ---
-        let calendarCategoryFilter = { assignment: true, event: true };
+        // --- CATEGORY FILTER (calendar page) ---
+        const DEFAULT_CALENDAR_CATEGORY_FILTER = { assignment: true, 'school-event': true, club: true, sports: true, event: true };
+        let calendarCategoryFilter = { ...DEFAULT_CALENDAR_CATEGORY_FILTER };
         function loadCalendarCategoryFilter() {
             const saved = localStorage.getItem('calendarCategoryFilter');
             if (saved) {
-                try { calendarCategoryFilter = Object.assign({ assignment: true, event: true }, JSON.parse(saved)); } catch (e) {}
+                try { calendarCategoryFilter = Object.assign({ ...DEFAULT_CALENDAR_CATEGORY_FILTER }, JSON.parse(saved)); } catch (e) {}
             }
         }
         function saveCalendarCategoryFilter() {
@@ -4387,11 +4747,27 @@ body.dark-theme[data-palette="mint"] {
             renderCalendarCategoryFilterChips();
             renderCalendar();
         }
+        // Classes aren't an external-feed category like the others, so their on/off state lives
+        // in its own flag rather than inside calendarCategoryFilter -- but it's still just
+        // another chip in the same row, kept in sync by the same render function.
+        let calendarShowClasses = localStorage.getItem('calendarShowClasses') !== 'false';
+        function toggleCalendarClassesFilter() {
+            calendarShowClasses = !calendarShowClasses;
+            localStorage.setItem('calendarShowClasses', String(calendarShowClasses));
+            renderCalendarCategoryFilterChips();
+            renderCalendar();
+        }
+        // Every place the calendar lists a day's classes goes through this instead of calling
+        // getClassesForDate directly, so the Classes chip actually hides them everywhere at once.
+        function getClassesForDateFiltered(date) {
+            return calendarShowClasses ? getClassesForDate(date) : [];
+        }
         function renderCalendarCategoryFilterChips() {
             const container = document.getElementById('calendar-category-filters');
             if (!container) return;
             container.querySelectorAll('.category-filter-chip').forEach(chip => {
-                chip.classList.toggle('active', !!calendarCategoryFilter[chip.dataset.group]);
+                const group = chip.dataset.group;
+                chip.classList.toggle('active', group === 'classes' ? calendarShowClasses : !!calendarCategoryFilter[group]);
             });
         }
         function getFilteredExternalEventsForDate(date) {
@@ -4511,6 +4887,102 @@ body.dark-theme[data-palette="mint"] {
         function classDotHtml(classItem) {
             return classItem.color ? `<span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:${escapeAttr(classItem.color)}"></span>` : '';
         }
+        function classNoteText(classItem) {
+            return classItem.noteId ? (classNotes[classItem.noteId] || '') : '';
+        }
+        // A ready-to-splice `data-class-note-id="..."` attribute, for every class card/preview
+        // across the app (class cards, month/week/agenda previews, home widgets, the Today
+        // brief) so hovering shows the same rich popup the Classes page card shows -- wired up
+        // by setupClassHoverPopup(). Keyed off noteId (already unique per class) instead of a
+        // registry, so it stays correct across re-renders with no cleanup needed.
+        function classPopupAttr(classItem) {
+            return classItem && classItem.noteId ? ` data-class-note-id="${escapeAttr(classItem.noteId)}"` : '';
+        }
+        function findClassByNoteId(noteId) {
+            if (!noteId) return null;
+            for (const category of classData) {
+                for (const classItem of category.classes) {
+                    if (classItem.noteId === noteId) return classItem;
+                }
+            }
+            return null;
+        }
+        // Both hover popups (the day-preview tooltip and the class-info popup) are shown purely
+        // by toggling a 'visible' class and otherwise just sit there positioned under the cursor
+        // -- they only ever get hidden by their own mouseout handler. Any navigation that swaps
+        // out the DOM out from under the cursor (clicking a day cell into Day view, switching
+        // calendar view/tab, switching the whole app view) skips that mouseout, so the popup is
+        // left dangling on screen. Call this at every one of those entry points as a blanket
+        // "nothing should be open after this" reset rather than trying to patch each trigger.
+        function hideAllHoverPopups() {
+            const dayTooltip = document.getElementById('day-hover-tooltip');
+            const classPopup = document.getElementById('class-info-popup');
+            if (dayTooltip) dayTooltip.classList.remove('visible');
+            if (classPopup) classPopup.classList.remove('visible');
+        }
+
+        function buildClassPopupHtml(classItem) {
+            const chips = getClassMetaChips(classItem);
+            const note = classNoteText(classItem);
+            return `
+                <p class="day-hover-tooltip-date">${classDotHtml(classItem)}${classNameHtml(classItem)}</p>
+                ${chips.length ? `<div class="class-meta-row" style="margin:0 0 0.5rem;">${chips.map(c => `<span class="class-meta-chip">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
+                ${note ? `<p class="day-hover-tooltip-item" style="color:var(--text-muted); white-space:pre-wrap;">${escapeHtml(note)}</p>` : `<p class="day-hover-tooltip-empty">No notes for this class.</p>`}
+            `;
+        }
+        function setupClassHoverPopup() {
+            const popup = document.getElementById('class-info-popup');
+            if (!popup || document.body.dataset.classPopupBound) return;
+            document.body.dataset.classPopupBound = 'true';
+
+            let hoveredNoteId = null;
+
+            function position(x, y) {
+                const rect = popup.getBoundingClientRect();
+                const margin = 16;
+                let left = x + margin;
+                let top = y + margin;
+                if (left + rect.width > window.innerWidth - 8) left = x - rect.width - margin;
+                if (top + rect.height > window.innerHeight - 8) top = y - rect.height - margin;
+                popup.style.left = Math.max(8, left) + 'px';
+                popup.style.top = Math.max(8, top) + 'px';
+            }
+
+            document.addEventListener('mouseover', (e) => {
+                const el = e.target.closest('[data-class-note-id]');
+                if (!el) return;
+                const noteId = el.dataset.classNoteId;
+                if (!noteId) return;
+                if (noteId !== hoveredNoteId) {
+                    const classItem = findClassByNoteId(noteId);
+                    if (!classItem) return;
+                    hoveredNoteId = noteId;
+                    popup.innerHTML = buildClassPopupHtml(classItem);
+                    popup.style.setProperty('--class-color', classItem.color || 'var(--accent-2)');
+                }
+                popup.classList.add('visible');
+                position(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!popup.classList.contains('visible')) return;
+                if (!e.target.closest('[data-class-note-id]')) return;
+                position(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mouseout', (e) => {
+                const el = e.target.closest('[data-class-note-id]');
+                if (!el) return;
+                if (el.contains(e.relatedTarget)) return;
+                popup.classList.remove('visible');
+                hoveredNoteId = null;
+            });
+
+            // Blanket safety net (see hideAllHoverPopups): a click anywhere -- not just the ones
+            // that trigger a view change -- is a reasonable sign the user is done hovering, and
+            // catches any navigation path that swaps out the hovered element without a mouseout.
+            document.addEventListener('click', hideAllHoverPopups, true);
+        }
 
         const defaultADays = userADays;
         const defaultBDays = userBDays;
@@ -4566,8 +5038,8 @@ body.dark-theme[data-palette="mint"] {
                 const badgeHtml = dayType ? `<span class="day-badge ${dayType === 'A' ? 'badge-a' : 'badge-b'}">${dayType}</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none" title="No School">${NO_SCHOOL_ICON}</span>` : '';
                 const noteDotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
                 const externalDotsHtml = externalEvents.length ? `<div class="mini-external-dots">${externalEvents.slice(0, 2).map((event, idx) => {
-                    const size = (3.5 + eventUrgencyT(event.category, cursor, today) * 4.5).toFixed(1);
-                    return `<span class="mini-external-dot" style="width:${size}px;height:${size}px;background:${event.color};cursor:pointer;" title="${escapeHtml(event.title)} — ${escapeHtml(categoryLabel(event.category))}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx})"></span>`;
+                    const size = (7 + eventUrgencyT(event.category, cursor, today) * 6).toFixed(1);
+                    return `<span class="mini-external-dot calendar-event-dot" style="width:${size}px;height:${size}px;background:${event.color};cursor:pointer;" title="${escapeHtml(event.title)} — ${escapeHtml(categoryLabel(event.category))}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx})">${categoryIconSvg(event.category, size)}</span>`;
                 }).join('')}</div>` : '';
 
                 cells += `
@@ -4595,8 +5067,35 @@ body.dark-theme[data-palette="mint"] {
                 const titleHtml = note && note.title ? `<p class="mini-upcoming-title">${escapeHtml(note.title)}</p>` : (dayType ? `<p class="mini-upcoming-title">${dayType}-Day</p>` : noSchool ? `<p class="mini-upcoming-title">No School</p>` : '<p class="mini-upcoming-title">Scheduled</p>');
                 const notesHtml = note && note.notes ? `<p class="mini-upcoming-sub line-clamp-2">${escapeHtml(note.notes)}</p>` : '';
                 const classesToday = getClassesForDate(currentDay);
-                const classesHtml = classesToday.length ? `<p class="mini-upcoming-sub truncate">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>` : '';
-                const externalHtml = externalEvents.length ? `<div class="mt-1 space-y-1">${externalEvents.slice(0, 2).map(event => `<p class="mini-upcoming-sub truncate">${escapeHtml(event.title)}</p>`).join('')}</div>` : '';
+                const classesHtml = classesToday.length ? `<p class="mini-upcoming-sub truncate">${classesToday.map(c => `<span${classPopupAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>` : '';
+                // When more than one category is happening that day, group by category (each with
+                // its own icon+label) instead of a flat list -- otherwise a single "Assignment"
+                // dot per line is enough to tell items apart without a group header.
+                const categoriesToday = new Set(externalEvents.map(e => e.category));
+                let externalHtml = '';
+                if (categoriesToday.size > 1) {
+                    const groups = new Map();
+                    externalEvents.forEach(e => {
+                        if (!groups.has(e.category)) groups.set(e.category, []);
+                        groups.get(e.category).push(e);
+                    });
+                    externalHtml = `<div class="mt-1 space-y-1.5">${Array.from(groups.entries()).map(([cat, items]) => `
+                        <div class="mini-upcoming-category-group">
+                            <p class="mini-upcoming-category-label">
+                                <span class="home-dot" style="width:0.75rem; height:0.75rem; background:${items[0].color};">${categoryIconSvg(cat, 12)}</span>
+                                ${escapeHtml(categoryLabel(cat))}
+                            </p>
+                            ${items.slice(0, 3).map(e => `<p class="mini-upcoming-sub truncate">${escapeHtml(e.title)}</p>`).join('')}
+                        </div>
+                    `).join('')}</div>`;
+                } else if (externalEvents.length) {
+                    externalHtml = `<div class="mt-1 space-y-1">${externalEvents.slice(0, 2).map(event => `
+                        <p class="mini-upcoming-sub truncate flex items-center gap-1.5">
+                            <span class="home-dot" style="width:0.7rem; height:0.7rem; background:${event.color};">${categoryIconSvg(event.category, 11)}</span>
+                            <span class="truncate">${escapeHtml(event.title)}</span>
+                        </p>
+                    `).join('')}</div>`;
+                }
                 upcomingItems.push(`
                     <div class="mini-upcoming-card">
                         <div class="flex items-center justify-between gap-2">
@@ -4692,6 +5191,7 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function switchView(view) {
+            hideAllHoverPopups();
             calendarView = view;
             localStorage.setItem('calendarView', view);
             document.querySelectorAll('.view-tab').forEach(tab => {
@@ -4776,19 +5276,19 @@ body.dark-theme[data-palette="mint"] {
                 const dayType = getDayType(cursor);
                 const note = getNote(cursor);
                 const externalEvents = getFilteredExternalEventsForDate(cursor);
-                const classesToday = getClassesForDate(cursor);
+                const classesToday = getClassesForDateFiltered(cursor);
                 const badgeHtml = dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}-Day</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>` : '';
                 const titleHtml = note && note.title ? `<p class="text-xs mt-1 truncate font-medium">${escapeHtml(note.title)}</p>` : '';
                 const dotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
                 const externalDotsHtml = externalEvents.length ? `
-                    <div class="flex items-end gap-1 mt-1">
+                    <div class="flex items-end flex-wrap gap-1.5 mt-1">
                         ${externalEvents.slice(0, 4).map((e, idx) => {
-                            const size = (5 + eventUrgencyT(e.category, cursor, today) * 6).toFixed(1);
-                            return `<span class="rounded-full flex-shrink-0" style="width:${size}px;height:${size}px;background:${e.color};cursor:pointer;" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx}, true)"></span>`;
+                            const size = (7 + eventUrgencyT(e.category, cursor, today) * 5).toFixed(1);
+                            return `<span class="rounded-full flex-shrink-0 flex items-center justify-center calendar-event-dot" style="width:${size}px;height:${size}px;background:${e.color};cursor:pointer;overflow:hidden;" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx}, true)">${categoryIconSvg(e.category, size)}</span>`;
                         }).join('')}
                     </div>
                 ` : '';
-                const classesPreviewHtml = classesToday.length ? `<p class="day-classes-preview">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>` : '';
+                const classesPreviewHtml = classesToday.length ? `<p class="day-classes-preview">${classesToday.map(c => `<span${classPopupAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>` : '';
                 cells += `
                     <div class="day-cell p-2 rounded-lg border ${isOutside ? 'outside-month' : ''} ${isToday ? 'is-today' : ''}" data-date="${dateKey(cursor)}" onclick="openDay('${dateKey(cursor)}')">
                         <div class="flex justify-between items-center">
@@ -4824,7 +5324,7 @@ body.dark-theme[data-palette="mint"] {
                 const dayType = getDayType(d);
                 const note = getNote(d);
                 const externalEvents = getFilteredExternalEventsForDate(d);
-                const classesToday = getClassesForDate(d);
+                const classesToday = getClassesForDateFiltered(d);
                 const isNoSchool = isNoSchoolDay(d);
                 const badgeLabel = dayType ? `${dayType}-Day` : isNoSchool ? 'No School' : note && (note.title || note.notes) ? 'Event' : '';
                 const badgeClass = dayType ? `day-badge badge-${dayType.toLowerCase()}` : isNoSchool ? 'day-badge badge-none' : note && (note.title || note.notes) ? 'day-badge bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-200' : '';
@@ -4838,7 +5338,7 @@ body.dark-theme[data-palette="mint"] {
                 ` : '';
                 const classesHtml = classesToday.length ? `
                     <div class="week-classes-list">
-                        ${classesToday.map(c => `<p class="week-class-row"><span class="flex items-center gap-1.5 min-w-0">${classDotHtml(c.classItem)}<span class="truncate">${classNameHtml(c.classItem)}</span></span>${c.timeRange ? `<span class="week-class-time">${escapeHtml(formatTimeOnly(c.timeRange.split(' - ')[0]))}</span>` : ''}</p>`).join('')}
+                        ${classesToday.map(c => `<p class="week-class-row"${classPopupAttr(c.classItem)}><span class="flex items-center gap-1.5 min-w-0">${classDotHtml(c.classItem)}<span class="truncate">${classNameHtml(c.classItem)}</span></span>${c.timeRange ? `<span class="week-class-time">${escapeHtml(formatTimeOnly(c.timeRange.split(' - ')[0]))}</span>` : ''}</p>`).join('')}
                     </div>
                 ` : '';
                 cols += `
@@ -4862,7 +5362,7 @@ body.dark-theme[data-palette="mint"] {
             const dayType = getDayType(currentDate);
             const note = getNote(currentDate) || { title: '', notes: '' };
             const externalEvents = getFilteredExternalEventsForDate(currentDate);
-            const classesToday = getClassesForDate(currentDate);
+            const classesToday = getClassesForDateFiltered(currentDate);
             const badgeHtml = dayType
                 ? `<span class="day-badge badge-${dayType.toLowerCase()} text-sm px-3 py-1">${dayType}-Day</span>`
                 : isNoSchoolDay(currentDate)
@@ -4874,12 +5374,17 @@ body.dark-theme[data-palette="mint"] {
                 <div class="day-classes-section">
                     <p class="text-sm font-semibold mb-2">Today's Classes</p>
                     <div class="space-y-2">
-                        ${classesToday.map(c => `
-                            <a class="day-class-row" style="${c.classItem.color ? `border-left: 3px solid ${escapeAttr(c.classItem.color)};` : ''}" href="${c.classItem.url || '#'}" onclick="${c.classItem.url ? '' : 'return false;'}">
-                                <span class="flex items-center gap-2 font-medium">${classDotHtml(c.classItem)}${classNameHtml(c.classItem)}</span>
-                                ${c.timeRange ? `<span class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>` : ''}
+                        ${classesToday.map(c => {
+                            const noteText = classNoteText(c.classItem);
+                            return `
+                            <a class="day-class-row" style="${c.classItem.color ? `border-left: 3px solid ${escapeAttr(c.classItem.color)};` : ''}" href="${escapeAttr(c.classItem.url || '#')}"${classPopupAttr(c.classItem)} onclick="${c.classItem.url ? '' : 'return false;'}">
+                                <span class="min-w-0">
+                                    <span class="flex items-center gap-2 font-medium">${classDotHtml(c.classItem)}${classNameHtml(c.classItem)}</span>
+                                    ${noteText ? `<span class="day-class-note">${escapeHtml(noteText)}</span>` : ''}
+                                </span>
+                                ${c.timeRange ? `<span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>` : ''}
                             </a>
-                        `).join('')}
+                        `;}).join('')}
                     </div>
                 </div>
             ` : '';
@@ -5024,9 +5529,9 @@ body.dark-theme[data-palette="mint"] {
                 const notesHtml = note && note.notes
                     ? `<p class="text-xs mt-1 text-gray-500 dark:text-gray-400 whitespace-pre-wrap">${escapeHtml(note.notes)}</p>`
                     : '';
-                const classesToday = getClassesForDate(entry.date);
+                const classesToday = getClassesForDateFiltered(entry.date);
                 const classesHtml = classesToday.length ? `
-                    <p class="text-xs mt-1 text-gray-500 dark:text-gray-400 truncate">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>
+                    <p class="text-xs mt-1 text-gray-500 dark:text-gray-400 truncate">${classesToday.map(c => `<span${classPopupAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>
                 ` : '';
                 const externalHtml = externalEvents.length ? `
                     <div class="mt-2 space-y-1">
@@ -5451,7 +5956,11 @@ body.dark-theme[data-palette="mint"] {
                 enabled: typeof feed.enabled === 'boolean' ? feed.enabled : true,
                 isCanvas: typeof feed.isCanvas === 'boolean' ? feed.isCanvas : isCanvasFeedUrl(feed.url),
                 isBuzz: typeof feed.isBuzz === 'boolean' ? feed.isBuzz : isBuzzFeedUrl(feed.url),
-                isHoliday: typeof feed.isHoliday === 'boolean' ? feed.isHoliday : isHolidayFeedUrl(feed.url)
+                isHoliday: typeof feed.isHoliday === 'boolean' ? feed.isHoliday : isHolidayFeedUrl(feed.url),
+                // No URL pattern to detect this one generically (unlike Canvas/Buzz/holiday
+                // feeds) -- it's just whichever feed the user has flagged as their club calendar,
+                // which for the built-in default is the Club Events feed below.
+                isClub: typeof feed.isClub === 'boolean' ? feed.isClub : false
             };
         }
 
@@ -5459,9 +5968,9 @@ body.dark-theme[data-palette="mint"] {
         // lives on calendar.google.com rather than *.instructure.com, so it can't be auto-detected
         // as Canvas by domain -- isCanvas is forced true here instead of left to isCanvasFeedUrl.
         const DEFAULT_EXTERNAL_FEEDS = [
-            { id: 'altahawks', label: 'Alta Events', url: 'https://www.calendarwiz.com/CalendarWiz_iCal.php?crd=altahawks' },
+            { id: 'altahawks', label: 'Alta Events', url: 'https://www.calendarwiz.com/CalendarWiz_iCal.php?crd=altahawks', color: '#a855f7' },
             { id: 'agilixbuzz', label: 'CVA Assignments', url: 'https://api.agilixbuzz.com/ical/~0~prObHCX.wEg28NaXxE2J3.VuXpEWjdZzfVNB4mDxpG8!/calendar.ics' },
-            { id: 'google-club-events', label: 'Club Events', url: 'https://calendar.google.com/calendar/ical/bb37592a14924e19337340b54b98ca59cf368f9cf3af9613168fc4b5da63637a%40group.calendar.google.com/public/basic.ics' },
+            { id: 'google-club-events', label: 'Club Events', url: 'https://calendar.google.com/calendar/ical/bb37592a14924e19337340b54b98ca59cf368f9cf3af9613168fc4b5da63637a%40group.calendar.google.com/public/basic.ics', isClub: true, color: '#f97316' },
             { id: 'google-service-events', label: 'Service Events', url: 'https://calendar.google.com/calendar/ical/5734fae784efc819593817e7f624470144feec4343e329c0f4488cc6d088c50d%40group.calendar.google.com/public/basic.ics' },
             { id: 'google-canvas-assignments', label: 'Canvas Assignments', url: 'https://calendar.google.com/calendar/ical/7stkhs6ht7m5e4mt2d3b0mi1karkss4c%40import.calendar.google.com/public/basic.ics', isCanvas: true },
             { id: 'google-holidays', label: 'Holiday Events', url: 'https://calendar.google.com/calendar/ical/en.usa%23holiday%40group.v.calendar.google.com/public/basic.ics' }
@@ -5481,7 +5990,30 @@ body.dark-theme[data-palette="mint"] {
                         feed.label = LEGACY_LABEL_RENAMES[feed.label];
                         changed = true;
                     }
+                    // Installs saved before Club Events got its own "club" category never had
+                    // isClub set, so it defaulted to false in normalizeExternalFeed -- backfill
+                    // it here by matching the known default feed's URL, same idea as the label
+                    // renames above.
+                    if (!feed.isClub && feed.url === 'https://calendar.google.com/calendar/ical/bb37592a14924e19337340b54b98ca59cf368f9cf3af9613168fc4b5da63637a%40group.calendar.google.com/public/basic.ics') {
+                        feed.isClub = true;
+                        changed = true;
+                    }
                 });
+                // One-time recolor of the two built-in feeds (Club -> orange, Alta/sports ->
+                // purple) to match the new category palette. Gated behind a flag so it doesn't
+                // keep stomping a color the user deliberately picks afterward.
+                if (!localStorage.getItem('migratedClubSportsColors')) {
+                    externalFeeds.forEach(feed => {
+                        if (feed.url === 'https://calendar.google.com/calendar/ical/bb37592a14924e19337340b54b98ca59cf368f9cf3af9613168fc4b5da63637a%40group.calendar.google.com/public/basic.ics') {
+                            feed.color = '#f97316';
+                            changed = true;
+                        } else if (feed.url === 'https://www.calendarwiz.com/CalendarWiz_iCal.php?crd=altahawks') {
+                            feed.color = '#a855f7';
+                            changed = true;
+                        }
+                    });
+                    localStorage.setItem('migratedClubSportsColors', '1');
+                }
                 const existingUrls = new Set(externalFeeds.map(f => f.url));
                 DEFAULT_EXTERNAL_FEEDS.forEach(defaultFeed => {
                     if (!existingUrls.has(defaultFeed.url)) {
@@ -5513,7 +6045,10 @@ body.dark-theme[data-palette="mint"] {
             const isCanvas = isCanvasFeedUrl(url);
             const isBuzz = isBuzzFeedUrl(url);
             const defaultLabel = isCanvas ? 'Canvas' : isBuzz ? 'CVA' : url;
-            externalFeeds.push({ id: 'feed-' + Date.now(), label: label || defaultLabel, url, color: EXTERNAL_FEED_COLORS[externalFeeds.length % EXTERNAL_FEED_COLORS.length], enabled: true, isCanvas, isBuzz });
+            // Routed through normalizeExternalFeed rather than a hand-built object literal so
+            // every detection flag (isCanvas/isBuzz/isHoliday/...) is guaranteed to be filled in
+            // -- a manually-added feed used to silently skip isHoliday until the next page load.
+            externalFeeds.push(normalizeExternalFeed({ id: 'feed-' + Date.now(), label: label || defaultLabel, url, enabled: true }, externalFeeds.length));
             saveExternalFeeds();
             labelInput.value = '';
             urlInput.value = '';
@@ -5619,6 +6154,7 @@ body.dark-theme[data-palette="mint"] {
             feed.url = url;
             feed.isCanvas = isCanvasFeedUrl(url);
             feed.isBuzz = isBuzzFeedUrl(url);
+            feed.isHoliday = isHolidayFeedUrl(url);
             saveExternalFeeds();
             const cache = getExternalFeedCache();
             delete cache[feed.id];
@@ -5811,18 +6347,38 @@ body.dark-theme[data-palette="mint"] {
             if (feed.isBuzz) return 'assignment';
             if (feed.isCanvas) return /calendar-event/i.test(uid || '') ? 'canvas-event' : 'assignment';
             if (feed.isHoliday) return 'event';
+            if (feed.isClub) return 'club';
             return SPORTS_TITLE_PATTERN.test(title || '') ? 'sports' : 'school-event';
         }
 
-        // Every non-assignment category folds into the "Events" bucket for the calendar's
-        // Assignments/Events filter; only "assignment" is its own group.
+        // Maps a raw event category to one of the calendar's filter chips. "canvas-event" folds
+        // into "event" since both just read as "Event" to the user (see CATEGORY_LABELS) --
+        // everything else (assignment, sports, school-event, club) already has its own chip.
         function categoryGroup(category) {
-            return category === 'assignment' ? 'assignment' : 'event';
+            if (category === 'assignment' || category === 'sports' || category === 'school-event' || category === 'club') return category;
+            return 'event';
         }
 
-        const CATEGORY_LABELS = { assignment: 'Assignment', 'canvas-event': 'Event', event: 'Event', sports: 'Sports', 'school-event': 'School Event' };
+        const CATEGORY_LABELS = { assignment: 'Assignment', 'canvas-event': 'Event', event: 'Event', sports: 'Sports', 'school-event': 'School Event', club: 'Club' };
         function categoryLabel(category) {
             return CATEGORY_LABELS[category] || 'Event';
+        }
+
+        // Small glyph shown centered inside each dot (and in the legend) so the category reads
+        // at a glance even before checking the color: a checkmark for assignments, a star for
+        // sports, a flag for school events, a people glyph for clubs, and a calendar for
+        // everything else (real Canvas events, holidays).
+        const CATEGORY_ICON_PATHS = {
+            assignment: '<path d="M5 13l4 4L19 7" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
+            sports: '<path d="M12 2l2.6 6.2 6.7.6-5.1 4.4 1.6 6.6L12 16.6 6.2 19.8l1.6-6.6L2.7 8.8l6.7-.6L12 2z" fill="white"/>',
+            'school-event': '<path d="M6 3v18" stroke="white" stroke-width="2.6" stroke-linecap="round"/><path d="M6 4.5h12l-2.3 3.5L18 11.5H6" fill="none" stroke="white" stroke-width="2.1" stroke-linejoin="round"/>',
+            club: '<circle cx="8" cy="8" r="3" fill="white"/><circle cx="16" cy="8" r="3" fill="white"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6" fill="none" stroke="white" stroke-width="2.1" stroke-linecap="round"/><path d="M12 14.2c.9-.6 2-1 3-1 3.3 0 6 2.7 6 6" fill="none" stroke="white" stroke-width="2.1" stroke-linecap="round"/>'
+        };
+        const CATEGORY_ICON_DEFAULT = '<rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="white" stroke-width="2"/><path d="M8 3v4M16 3v4M4 10h16" stroke="white" stroke-width="2" stroke-linecap="round"/>';
+        function categoryIconSvg(category, dotSizePx) {
+            const s = Math.max(5, Math.round((dotSizePx || 16) * 0.62));
+            const inner = CATEGORY_ICON_PATHS[category] || CATEGORY_ICON_DEFAULT;
+            return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="pointer-events:none; flex-shrink:0;" aria-hidden="true">${inner}</svg>`;
         }
 
         // Normalized 0-1 "urgency" for a dot on a given calendar cell: assignments ramp up over a
@@ -5884,7 +6440,10 @@ body.dark-theme[data-palette="mint"] {
                     externalEventsByDate[ev.date].push({ title: ev.title, feedLabel: feed.label, color: feed.color || feedColor(feed, i), category: categorizeFeedEvent(feed, ev.uid, ev.title), description: ev.description, timestamp: ev.timestamp, allDay: !!ev.allDay });
                 });
             });
-            rebuildCanvasAssignmentsIndex();
+            // Pass the cache along rather than having rebuildCanvasAssignmentsIndex re-read and
+            // re-JSON.parse the same (potentially large, a full school year of assignments)
+            // localStorage blob a second time on every single rebuild.
+            rebuildCanvasAssignmentsIndex(cache);
         }
 
         function getExternalEventsForDate(date) {
@@ -5905,8 +6464,8 @@ body.dark-theme[data-palette="mint"] {
         // or CVA/Buzz (see isCanvasFeedUrl / isBuzzFeedUrl). Rebuilt any time the external feed
         // cache changes.
         let canvasAssignments = [];
-        function rebuildCanvasAssignmentsIndex() {
-            const cache = getExternalFeedCache();
+        function rebuildCanvasAssignmentsIndex(cache) {
+            if (!cache) cache = getExternalFeedCache();
             const list = [];
             externalFeeds.forEach(feed => {
                 if (!feed.enabled || !(feed.isCanvas || feed.isBuzz)) return;
@@ -6094,7 +6653,7 @@ body.dark-theme[data-palette="mint"] {
 
                         const teacherRoomParts = [];
                         if (c.classItem.teacher) teacherRoomParts.push(c.classItem.teacher);
-                        if (c.classItem.room) teacherRoomParts.push(`Room ${c.classItem.room}`);
+                        if (c.classItem.room) teacherRoomParts.push(formatRoomLabel(c.classItem.room));
                         const summary = teacherRoomParts.length
                             ? `${c.classItem.title} - ${teacherRoomParts.join(' | ')}`
                             : c.classItem.title;
@@ -6302,12 +6861,23 @@ body.dark-theme[data-palette="mint"] {
         function escapeAttr(str) {
             return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
+        // For free-form text embedded as a single-quoted JS string literal inside an inline
+        // onclick="..." attribute, e.g. onclick="foo('${escapeJsAttr(userText)}')". Two nested
+        // contexts need escaping: the JS string itself (backslash, single quote) and, after that,
+        // the surrounding HTML attribute (&, ", <, >) that plain escapeAttr handles on its own --
+        // escapeAttr alone leaves a literal "'" free to close the JS string early and corrupt the
+        // handler (and everything rendered after it), which arbitrary user text (search queries,
+        // pasted URLs, etc.) can easily contain.
+        function escapeJsAttr(str) {
+            return escapeAttr((str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+        }
 
         function initCalendar() {
             loadScheduleDatesForCalendar();
             loadDayNotes();
             loadExternalFeeds();
             loadCalendarCategoryFilter();
+            loadRecentCalendarSearches();
             rebuildExternalEventsIndex();
             refreshExternalFeeds(false);
 
@@ -6338,7 +6908,7 @@ body.dark-theme[data-palette="mint"] {
             const dayType = getDayType(date);
             const noSchool = isNoSchoolDay(date);
             const note = getNote(date);
-            const classesToday = getClassesForDate(date);
+            const classesToday = getClassesForDateFiltered(date);
             const events = getFilteredExternalEventsForDate(date);
             const dateLabel = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
@@ -6360,12 +6930,15 @@ body.dark-theme[data-palette="mint"] {
             const classesHtml = classesToday.length ? `
                 <div class="day-hover-tooltip-section">
                     <p class="day-hover-tooltip-section-title">Classes</p>
-                    ${classesToday.map(c => `
-                        <div class="day-hover-tooltip-item">
+                    ${classesToday.map(c => {
+                        return `
+                        <div class="day-hover-tooltip-item is-class-row">
                             ${classDotHtml(c.classItem)}
-                            <span>${classNameHtml(c.classItem)}${c.timeRange ? ` <span style="color:var(--text-muted);">— ${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>` : ''}</span>
+                            <span class="min-w-0">
+                                <span>${classNameHtml(c.classItem)}${c.timeRange ? ` <span style="color:var(--text-muted);">— ${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>` : ''}</span>
+                            </span>
                         </div>
-                    `).join('')}
+                    `;}).join('')}
                 </div>
             ` : '';
 
@@ -6400,7 +6973,10 @@ body.dark-theme[data-palette="mint"] {
             if (!tooltip || !content || content.dataset.hoverTooltipBound) return;
             content.dataset.hoverTooltipBound = 'true';
 
-            let currentDate = null;
+            // Deliberately NOT named currentDate -- that's the global Date object driving which
+            // month/week/day the calendar is showing. This is just a date-key string tracking
+            // which cell the tooltip is currently rendered for.
+            let hoveredDateKey = null;
 
             function position(x, y) {
                 const rect = tooltip.getBoundingClientRect();
@@ -6416,11 +6992,11 @@ body.dark-theme[data-palette="mint"] {
             content.addEventListener('mouseover', (e) => {
                 const cell = e.target.closest('.day-cell, .week-day-col');
                 if (!cell || !content.contains(cell)) return;
-                const date = cell.dataset.date;
-                if (!date) return;
-                if (date !== currentDate) {
-                    currentDate = date;
-                    tooltip.innerHTML = buildDayTooltipHtml(date);
+                const dateStr = cell.dataset.date;
+                if (!dateStr) return;
+                if (dateStr !== hoveredDateKey) {
+                    hoveredDateKey = dateStr;
+                    tooltip.innerHTML = buildDayTooltipHtml(dateStr);
                 }
                 tooltip.classList.add('visible');
                 position(e.clientX, e.clientY);
@@ -6437,7 +7013,7 @@ body.dark-theme[data-palette="mint"] {
                 if (!cell) return;
                 if (cell.contains(e.relatedTarget)) return;
                 tooltip.classList.remove('visible');
-                currentDate = null;
+                hoveredDateKey = null;
             });
         }
 
@@ -6498,11 +7074,69 @@ body.dark-theme[data-palette="mint"] {
             return list;
         }
 
+        // Generic, vague starting points shown before the user has typed anything -- not real
+        // matches, just common words worth trying so an empty box isn't a dead end.
+        const CALENDAR_SEARCH_SUGGESTIONS = ['Exam', 'Quiz', 'Assignment', 'Project', 'Discussion', 'Game', 'Meeting', 'Holiday'];
+
+        function applyCalendarSearchSuggestion(term) {
+            const input = document.getElementById('calendar-search-input');
+            if (input) { input.value = term; input.focus(); }
+            handleCalendarSearchInput(term);
+        }
+
+        // Recent searches replace the generic suggestion chips once the user actually has some;
+        // the generic list is just a cold-start fallback for a brand-new install.
+        let recentCalendarSearches = [];
+        let lastCalendarSearchQuery = '';
+
+        function loadRecentCalendarSearches() {
+            try { recentCalendarSearches = JSON.parse(localStorage.getItem('recentCalendarSearches') || '[]'); }
+            catch (e) { recentCalendarSearches = []; }
+        }
+        function saveRecentCalendarSearches() {
+            localStorage.setItem('recentCalendarSearches', JSON.stringify(recentCalendarSearches));
+        }
+        function recordCalendarSearch(term) {
+            const clean = (term || '').trim();
+            if (!clean) return;
+            recentCalendarSearches = [clean, ...recentCalendarSearches.filter(t => t.toLowerCase() !== clean.toLowerCase())].slice(0, 8);
+            saveRecentCalendarSearches();
+        }
+        function clearRecentCalendarSearches() {
+            recentCalendarSearches = [];
+            saveRecentCalendarSearches();
+            handleCalendarSearchInput('');
+        }
+
         function handleCalendarSearchInput(value) {
             const resultsEl = document.getElementById('calendar-search-results');
             if (!resultsEl) return;
-            const query = value.trim().toLowerCase();
-            if (!query) { resultsEl.classList.add('hidden'); resultsEl.innerHTML = ''; return; }
+            const rawQuery = value.trim();
+            const query = rawQuery.toLowerCase();
+            lastCalendarSearchQuery = rawQuery;
+
+            if (!query) {
+                if (recentCalendarSearches.length) {
+                    resultsEl.innerHTML = `
+                        <div class="calendar-search-suggestions-header">
+                            <p class="calendar-search-suggestions-label">Recent searches</p>
+                            <button type="button" class="calendar-search-clear-btn" onclick="clearRecentCalendarSearches()">Clear</button>
+                        </div>
+                        <div class="calendar-search-suggestions">
+                            ${recentCalendarSearches.map(term => `<button type="button" class="calendar-search-suggestion-chip" onclick="applyCalendarSearchSuggestion('${escapeJsAttr(term)}')">${escapeHtml(term)}</button>`).join('')}
+                        </div>
+                    `;
+                } else {
+                    resultsEl.innerHTML = `
+                        <p class="calendar-search-suggestions-label">Try searching for…</p>
+                        <div class="calendar-search-suggestions">
+                            ${CALENDAR_SEARCH_SUGGESTIONS.map(term => `<button type="button" class="calendar-search-suggestion-chip" onclick="applyCalendarSearchSuggestion('${escapeJsAttr(term)}')">${escapeHtml(term)}</button>`).join('')}
+                        </div>
+                    `;
+                }
+                resultsEl.classList.remove('hidden');
+                return;
+            }
 
             const matches = getAllCalendarEventsFlat()
                 .filter(ev => ev.title.toLowerCase().includes(query))
@@ -6519,7 +7153,7 @@ body.dark-theme[data-palette="mint"] {
                 const d = parseDateKey(ev.dateKeyStr);
                 const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 return `
-                    <button type="button" class="calendar-search-result-item" onclick="hideCalendarSearchResults(); openEventDetailModal('${ev.dateKeyStr}', ${ev.idx})">
+                    <button type="button" class="calendar-search-result-item" onclick="recordCalendarSearch(lastCalendarSearchQuery); hideCalendarSearchResults(); openEventDetailModal('${ev.dateKeyStr}', ${ev.idx})">
                         <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${ev.color};"></span>
                         <span class="min-w-0">
                             <span class="font-semibold truncate block">${escapeHtml(ev.title)}</span>
@@ -6550,18 +7184,25 @@ body.dark-theme[data-palette="mint"] {
             const btn = document.getElementById('calendar-legend-toggle-btn');
             if (!panel) return;
             const nowHidden = !panel.classList.toggle('hidden');
-            if (btn) btn.classList.toggle('active', nowHidden);
+            if (btn) btn.classList.toggle('is-active', nowHidden);
             if (nowHidden) renderCalendarLegend();
         }
 
         function renderCalendarLegend() {
             const panel = document.getElementById('calendar-legend-panel');
             if (!panel) return;
+            const row = (category, color, label, desc) => `
+                <div class="calendar-legend-row">
+                    <span class="home-dot" style="width:1.15rem; height:1.15rem; background:${color};">${categoryIconSvg(category, 18)}</span>
+                    <strong>${label}</strong> &nbsp;— ${desc}
+                </div>
+            `;
             panel.innerHTML = `
-                <div class="calendar-legend-row"><span class="home-dot" style="background:#ef4444;"></span> <strong>Assignment</strong> &nbsp;— from Canvas or CVA/Buzz</div>
-                <div class="calendar-legend-row"><span class="home-dot" style="background:#f97316;"></span> <strong>Sports</strong> &nbsp;— games/matches from an athletics feed</div>
-                <div class="calendar-legend-row"><span class="home-dot" style="background:#a3e635;"></span> <strong>School Event</strong> &nbsp;— clubs, service, non-game athletics items, etc.</div>
-                <div class="calendar-legend-row"><span class="home-dot" style="background:#38bdf8;"></span> <strong>Event</strong> &nbsp;— not school-specific: a real Canvas calendar event, a holiday, etc.</div>
+                ${row('assignment', '#ef4444', 'Assignment', 'from Canvas or CVA/Buzz')}
+                ${row('sports', '#a855f7', 'Sports', 'games/matches from an athletics feed')}
+                ${row('club', '#f97316', 'Club', 'from the Club Events feed')}
+                ${row('school-event', '#38bdf8', 'School Event', 'service, non-game athletics items, etc.')}
+                ${row('event', '#a3e635', 'Event', 'not school-specific: a real Canvas calendar event, a holiday, etc.')}
                 <p class="calendar-legend-note">Dot size and color intensity ramp up as the date gets closer. Click a dot for full details; hover a day for everything on it.</p>
             `;
         }
@@ -6642,14 +7283,67 @@ body.dark-theme[data-palette="mint"] {
             }
 
             if (!dailyDismissed) {
-                const now = Date.now();
+                const today = new Date();
                 const dueToday = canvasAssignments.filter(a => dateKey(new Date(a.dueAt)) === todayKey);
-                const eventsToday = getExternalEventsForDate(new Date()).filter(ev => ev.category !== 'assignment');
-                const hasAny = dueToday.length || eventsToday.length;
-                const preview = [
-                    ...dueToday.map(a => `<div class="digest-item"><span class="home-dot" style="background:#ef4444;"></span><span>${escapeHtml(a.title)} <span class="category-badge" style="background:#ef444433; color:#ef4444;">Assignment</span></span></div>`),
-                    ...eventsToday.map(ev => `<div class="digest-item"><span class="home-dot" style="background:${ev.color};"></span><span>${escapeHtml(ev.title)}</span></div>`)
+                const eventsToday = getExternalEventsForDate(today).filter(ev => ev.category !== 'assignment');
+                const dayType = getDayType(today);
+                const noSchool = isNoSchoolDay(today);
+                const dayNote = getNote(today);
+                const hasDayNote = !!(dayNote && (dayNote.title || dayNote.notes));
+                // Classes only show up here if there's actually a note attached -- the full
+                // schedule already lives in the Next Class widget and Today's Classes list, so
+                // this brief only calls out the ones with something worth reading.
+                const classesWithNotes = getClassesForDate(today).filter(c => classNoteText(c.classItem));
+                const hasAny = dueToday.length || eventsToday.length || dayType || noSchool || hasDayNote || classesWithNotes.length;
+
+                // A day-type badge and/or day note reads as one "Day" fact, not a list item, so
+                // it gets its own compact header row instead of living inside .digest-items.
+                const dayHeaderHtml = (dayType || noSchool || hasDayNote) ? `
+                    <div class="digest-day-summary">
+                        ${(dayType || noSchool) ? `<span class="day-badge ${dayType ? 'badge-' + dayType.toLowerCase() : 'badge-none'}">${dayType ? `${dayType}-Day` : `${NO_SCHOOL_ICON}No School`}</span>` : ''}
+                        ${hasDayNote ? `
+                            <span class="min-w-0">
+                                ${dayNote.title ? `<span style="font-weight:700;">${escapeHtml(dayNote.title)}</span>` : ''}
+                                ${dayNote.notes ? `<span class="note-preview-line" title="${escapeAttr(dayNote.notes)}">${escapeHtml(dayNote.notes)}</span>` : ''}
+                            </span>
+                        ` : ''}
+                    </div>
+                ` : '';
+
+                const dueHtml = dueToday.map(a => `<div class="digest-item"><span class="home-dot" style="background:#ef4444;"></span><span>${escapeHtml(a.title)} <span class="category-badge" style="background:#ef444433; color:#ef4444;">Assignment</span></span></div>`).join('');
+                const eventsHtml = eventsToday.map(ev => {
+                    const timeStr = ev.allDay ? 'All day' : formatEventTimestamp(ev.timestamp);
+                    return `
+                        <div class="digest-item">
+                            <span class="home-dot" style="background:${ev.color};"></span>
+                            <span class="min-w-0">
+                                <span>${escapeHtml(ev.title)} <span style="color:var(--text-muted);">— ${timeStr}</span></span>
+                                ${ev.description ? `<span class="note-preview-line" title="${escapeAttr(ev.description)}">${escapeHtml(ev.description)}</span>` : ''}
+                            </span>
+                        </div>
+                    `;
+                }).join('');
+                const classesHtml = classesWithNotes.map(c => `
+                    <div class="digest-item"${classPopupAttr(c.classItem)}>
+                        ${classDotHtml(c.classItem)}
+                        <span class="min-w-0">
+                            <span>${classNameHtml(c.classItem)}</span>
+                            <span class="note-preview-line">${escapeHtml(classNoteText(c.classItem))}</span>
+                        </span>
+                    </div>
+                `).join('');
+
+                // Same section-header pattern as the calendar's day-hover-tooltip (see
+                // buildDayTooltipHtml) so a class's info reads the same wherever it shows up.
+                const digestSection = (title, itemsHtml) => itemsHtml
+                    ? `<div class="digest-section"><p class="digest-section-title">${title}</p><div class="digest-items">${itemsHtml}</div></div>`
+                    : '';
+                const sections = [
+                    digestSection('Assignments Due', dueHtml),
+                    digestSection('Events', eventsHtml),
+                    digestSection('Classes', classesHtml)
                 ].join('');
+
                 html += `
                     <div class="digest-banner">
                         <div class="digest-banner-header">
@@ -6657,7 +7351,8 @@ body.dark-theme[data-palette="mint"] {
                             <button type="button" class="digest-dismiss-btn" onclick="dismissDailyDigest()" title="Dismiss">&times;</button>
                         </div>
                         <p class="digest-banner-summary">${hasAny ? `${dueToday.length} due, ${eventsToday.length} event${eventsToday.length === 1 ? '' : 's'} today.` : 'Nothing due or scheduled today.'}</p>
-                        ${preview ? `<div class="digest-items">${preview}</div>` : ''}
+                        ${dayHeaderHtml}
+                        ${sections}
                     </div>
                 `;
             }
@@ -6700,6 +7395,7 @@ body.dark-theme[data-palette="mint"] {
             setupCursorGlow();
             setupClickEffects();
             setupCalendarSearchDismiss();
+            setupClassHoverPopup();
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
                 if (currentThemeState === 'system') applyTheme('system');
             });
