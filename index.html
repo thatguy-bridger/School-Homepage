@@ -341,6 +341,12 @@ body.dark-theme[data-palette="mint"] {
             align-items: center;
         }
         .day-hover-tooltip-empty { color: var(--text-muted); font-size: 0.78rem; margin-top: 0.4rem; }
+        /* Tints the rich class-info popup with the class's own color, same idea as the class
+           card's border tint (see .class-card[data-has-color]) -- --class-color is set in JS
+           (setupClassHoverPopup) each time the popup's content changes. */
+        #class-info-popup {
+            border-color: color-mix(in srgb, var(--class-color, var(--accent-2)) 45%, var(--glass-border));
+        }
 
         /* ===================== Theme Popover ===================== */
         .theme-popover {
@@ -2010,6 +2016,11 @@ body.dark-theme[data-palette="mint"] {
 
     <div id="orbit-tooltip" class="orbit-tooltip" aria-hidden="true"></div>
     <div id="day-hover-tooltip" class="day-hover-tooltip" aria-hidden="true"></div>
+    <!-- Rich class-info popup: same look as day-hover-tooltip, shown for any class reference
+         anywhere in the app (Upcoming Events, the Today brief, calendar previews) via a
+         data-class-note-id attribute, so hovering always surfaces the same info the Classes
+         page card shows instead of a plain browser title tooltip. -->
+    <div id="class-info-popup" class="day-hover-tooltip" aria-hidden="true"></div>
 
     <div id="class-color-popover" class="class-color-popover hidden" onclick="event.stopPropagation()">
         <div class="class-color-swatch-grid" id="class-color-swatch-grid"></div>
@@ -3376,7 +3387,7 @@ body.dark-theme[data-palette="mint"] {
             const noteValue = classNotes[noteId] || '';
             const hasNote = !!noteValue;
             return `
-                <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}${classNoteTitleAttr(classItem)}
+                <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}${classPopupAttr(classItem)}
                      onclick="window.location.href='${escapeJsAttr(classItem.url)}'">
                     <div class="flex items-start justify-between gap-2 mb-2 pr-8">
                         <h4 class="text-xl font-bold">${escapeHtml(classItem.title)}</h4>
@@ -4246,7 +4257,7 @@ body.dark-theme[data-palette="mint"] {
                 if (widget) {
                     widget.classList.remove('is-clickable', 'is-current-period');
                     widget.removeAttribute('data-has-color');
-                    widget.removeAttribute('title');
+                    widget.removeAttribute('data-class-note-id');
                     widget.style.removeProperty('--class-color');
                     widget.onclick = null;
                 }
@@ -4267,8 +4278,8 @@ body.dark-theme[data-palette="mint"] {
             const url = classItem && classItem.url;
             if (widget) {
                 widget.classList.toggle('is-current-period', info.status === 'current');
-                const noteText = classItem ? classNoteText(classItem) : '';
-                if (noteText) widget.setAttribute('title', noteText); else widget.removeAttribute('title');
+                if (classItem && classItem.noteId) widget.setAttribute('data-class-note-id', classItem.noteId);
+                else widget.removeAttribute('data-class-note-id');
                 if (classItem && classItem.color) {
                     widget.setAttribute('data-has-color', '');
                     widget.style.setProperty('--class-color', classItem.color);
@@ -4359,7 +4370,7 @@ body.dark-theme[data-palette="mint"] {
             const todaysClasses = getClassesForDate(today);
             const classesRowHtml = todaysClasses.length ? `
                 <div class="home-today-classes-row">${todaysClasses.map(({ classItem, timeRange }) => `
-                    <a class="home-today-class-chip" href="${escapeAttr(classItem.url || '#')}" ${classItem.color ? `style="border-left: 3px solid ${escapeAttr(classItem.color)};"` : ''}${classNoteTitleAttr(classItem)} onclick="${classItem.url ? '' : 'return false;'}">
+                    <a class="home-today-class-chip" href="${escapeAttr(classItem.url || '#')}" ${classItem.color ? `style="border-left: 3px solid ${escapeAttr(classItem.color)};"` : ''}${classPopupAttr(classItem)} onclick="${classItem.url ? '' : 'return false;'}">
                         <p class="home-item-title">${escapeHtml(classItem.title)}</p>
                         ${timeRange ? `<p class="home-item-sub">${escapeHtml(timeRange)}</p>` : ''}
                     </a>
@@ -4811,12 +4822,79 @@ body.dark-theme[data-palette="mint"] {
         function classNoteText(classItem) {
             return classItem.noteId ? (classNotes[classItem.noteId] || '') : '';
         }
-        // A ready-to-splice ` title="..."` attribute carrying a class's full quick note, for
-        // every class card/preview across the app (class cards, month/week previews, home
-        // widgets) so hovering shows the full note even where no note text is rendered inline.
-        function classNoteTitleAttr(classItem) {
+        // A ready-to-splice `data-class-note-id="..."` attribute, for every class card/preview
+        // across the app (class cards, month/week/agenda previews, home widgets, the Today
+        // brief) so hovering shows the same rich popup the Classes page card shows -- wired up
+        // by setupClassHoverPopup(). Keyed off noteId (already unique per class) instead of a
+        // registry, so it stays correct across re-renders with no cleanup needed.
+        function classPopupAttr(classItem) {
+            return classItem && classItem.noteId ? ` data-class-note-id="${escapeAttr(classItem.noteId)}"` : '';
+        }
+        function findClassByNoteId(noteId) {
+            if (!noteId) return null;
+            for (const category of classData) {
+                for (const classItem of category.classes) {
+                    if (classItem.noteId === noteId) return classItem;
+                }
+            }
+            return null;
+        }
+        function buildClassPopupHtml(classItem) {
+            const chips = getClassMetaChips(classItem);
             const note = classNoteText(classItem);
-            return note ? ` title="${escapeAttr(note)}"` : '';
+            return `
+                <p class="day-hover-tooltip-date">${classDotHtml(classItem)}${classNameHtml(classItem)}</p>
+                ${chips.length ? `<div class="class-meta-row" style="margin:0 0 0.5rem;">${chips.map(c => `<span class="class-meta-chip">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
+                ${note ? `<p class="day-hover-tooltip-item" style="color:var(--text-muted); white-space:pre-wrap;">${escapeHtml(note)}</p>` : `<p class="day-hover-tooltip-empty">No notes for this class.</p>`}
+            `;
+        }
+        function setupClassHoverPopup() {
+            const popup = document.getElementById('class-info-popup');
+            if (!popup || document.body.dataset.classPopupBound) return;
+            document.body.dataset.classPopupBound = 'true';
+
+            let hoveredNoteId = null;
+
+            function position(x, y) {
+                const rect = popup.getBoundingClientRect();
+                const margin = 16;
+                let left = x + margin;
+                let top = y + margin;
+                if (left + rect.width > window.innerWidth - 8) left = x - rect.width - margin;
+                if (top + rect.height > window.innerHeight - 8) top = y - rect.height - margin;
+                popup.style.left = Math.max(8, left) + 'px';
+                popup.style.top = Math.max(8, top) + 'px';
+            }
+
+            document.addEventListener('mouseover', (e) => {
+                const el = e.target.closest('[data-class-note-id]');
+                if (!el) return;
+                const noteId = el.dataset.classNoteId;
+                if (!noteId) return;
+                if (noteId !== hoveredNoteId) {
+                    const classItem = findClassByNoteId(noteId);
+                    if (!classItem) return;
+                    hoveredNoteId = noteId;
+                    popup.innerHTML = buildClassPopupHtml(classItem);
+                    popup.style.setProperty('--class-color', classItem.color || 'var(--accent-2)');
+                }
+                popup.classList.add('visible');
+                position(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!popup.classList.contains('visible')) return;
+                if (!e.target.closest('[data-class-note-id]')) return;
+                position(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mouseout', (e) => {
+                const el = e.target.closest('[data-class-note-id]');
+                if (!el) return;
+                if (el.contains(e.relatedTarget)) return;
+                popup.classList.remove('visible');
+                hoveredNoteId = null;
+            });
         }
 
         const defaultADays = userADays;
@@ -4902,7 +4980,7 @@ body.dark-theme[data-palette="mint"] {
                 const titleHtml = note && note.title ? `<p class="mini-upcoming-title">${escapeHtml(note.title)}</p>` : (dayType ? `<p class="mini-upcoming-title">${dayType}-Day</p>` : noSchool ? `<p class="mini-upcoming-title">No School</p>` : '<p class="mini-upcoming-title">Scheduled</p>');
                 const notesHtml = note && note.notes ? `<p class="mini-upcoming-sub line-clamp-2">${escapeHtml(note.notes)}</p>` : '';
                 const classesToday = getClassesForDate(currentDay);
-                const classesHtml = classesToday.length ? `<p class="mini-upcoming-sub truncate">${classesToday.map(c => `<span${classNoteTitleAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>` : '';
+                const classesHtml = classesToday.length ? `<p class="mini-upcoming-sub truncate">${classesToday.map(c => `<span${classPopupAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>` : '';
                 // When more than one category is happening that day, group by category (each with
                 // its own icon+label) instead of a flat list -- otherwise a single "Assignment"
                 // dot per line is enough to tell items apart without a group header.
@@ -5122,7 +5200,7 @@ body.dark-theme[data-palette="mint"] {
                         }).join('')}
                     </div>
                 ` : '';
-                const classesPreviewHtml = classesToday.length ? `<p class="day-classes-preview">${classesToday.map(c => `<span${classNoteTitleAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>` : '';
+                const classesPreviewHtml = classesToday.length ? `<p class="day-classes-preview">${classesToday.map(c => `<span${classPopupAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>` : '';
                 cells += `
                     <div class="day-cell p-2 rounded-lg border ${isOutside ? 'outside-month' : ''} ${isToday ? 'is-today' : ''}" data-date="${dateKey(cursor)}" onclick="openDay('${dateKey(cursor)}')">
                         <div class="flex justify-between items-center">
@@ -5172,7 +5250,7 @@ body.dark-theme[data-palette="mint"] {
                 ` : '';
                 const classesHtml = classesToday.length ? `
                     <div class="week-classes-list">
-                        ${classesToday.map(c => `<p class="week-class-row"${classNoteTitleAttr(c.classItem)}><span class="flex items-center gap-1.5 min-w-0">${classDotHtml(c.classItem)}<span class="truncate">${classNameHtml(c.classItem)}</span></span>${c.timeRange ? `<span class="week-class-time">${escapeHtml(formatTimeOnly(c.timeRange.split(' - ')[0]))}</span>` : ''}</p>`).join('')}
+                        ${classesToday.map(c => `<p class="week-class-row"${classPopupAttr(c.classItem)}><span class="flex items-center gap-1.5 min-w-0">${classDotHtml(c.classItem)}<span class="truncate">${classNameHtml(c.classItem)}</span></span>${c.timeRange ? `<span class="week-class-time">${escapeHtml(formatTimeOnly(c.timeRange.split(' - ')[0]))}</span>` : ''}</p>`).join('')}
                     </div>
                 ` : '';
                 cols += `
@@ -5211,10 +5289,10 @@ body.dark-theme[data-palette="mint"] {
                         ${classesToday.map(c => {
                             const noteText = classNoteText(c.classItem);
                             return `
-                            <a class="day-class-row" style="${c.classItem.color ? `border-left: 3px solid ${escapeAttr(c.classItem.color)};` : ''}" href="${escapeAttr(c.classItem.url || '#')}" onclick="${c.classItem.url ? '' : 'return false;'}">
+                            <a class="day-class-row" style="${c.classItem.color ? `border-left: 3px solid ${escapeAttr(c.classItem.color)};` : ''}" href="${escapeAttr(c.classItem.url || '#')}"${classPopupAttr(c.classItem)} onclick="${c.classItem.url ? '' : 'return false;'}">
                                 <span class="min-w-0">
                                     <span class="flex items-center gap-2 font-medium">${classDotHtml(c.classItem)}${classNameHtml(c.classItem)}</span>
-                                    ${noteText ? `<span class="day-class-note" title="${escapeAttr(noteText)}">${escapeHtml(noteText)}</span>` : ''}
+                                    ${noteText ? `<span class="day-class-note">${escapeHtml(noteText)}</span>` : ''}
                                 </span>
                                 ${c.timeRange ? `<span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>` : ''}
                             </a>
@@ -5365,7 +5443,7 @@ body.dark-theme[data-palette="mint"] {
                     : '';
                 const classesToday = getClassesForDate(entry.date);
                 const classesHtml = classesToday.length ? `
-                    <p class="text-xs mt-1 text-gray-500 dark:text-gray-400 truncate">${classesToday.map(c => `<span${classNoteTitleAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>
+                    <p class="text-xs mt-1 text-gray-500 dark:text-gray-400 truncate">${classesToday.map(c => `<span${classPopupAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>
                 ` : '';
                 const externalHtml = externalEvents.length ? `
                     <div class="mt-2 space-y-1">
@@ -7129,11 +7207,11 @@ body.dark-theme[data-palette="mint"] {
                         `;
                     }),
                     ...classesWithNotes.map(c => `
-                        <div class="digest-item">
+                        <div class="digest-item"${classPopupAttr(c.classItem)}>
                             ${classDotHtml(c.classItem)}
                             <span class="min-w-0">
                                 <span>${classNameHtml(c.classItem)}</span>
-                                <span class="note-preview-line" title="${escapeAttr(classNoteText(c.classItem))}">${escapeHtml(classNoteText(c.classItem))}</span>
+                                <span class="note-preview-line">${escapeHtml(classNoteText(c.classItem))}</span>
                             </span>
                         </div>
                     `)
