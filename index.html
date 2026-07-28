@@ -334,6 +334,12 @@ body.dark-theme[data-palette="mint"] {
             margin-bottom: 0.4rem;
             line-height: 1.35;
         }
+        /* Class rows are always a single line, so the dot should sit centered on it -- unlike
+           the Events row below, whose dot stays flex-start because that text can wrap to two
+           lines (title+badge, then feed label). */
+        .day-hover-tooltip-item.is-class-row {
+            align-items: center;
+        }
         .day-hover-tooltip-empty { color: var(--text-muted); font-size: 0.78rem; margin-top: 0.4rem; }
 
         /* ===================== Theme Popover ===================== */
@@ -636,6 +642,11 @@ body.dark-theme[data-palette="mint"] {
         .digest-banner-summary { font-size: 0.9rem; margin-top: 0.3rem; }
         .digest-items { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
         .digest-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
+        /* Items with a note preview stack two lines, so the dot centers on the whole block
+           instead of sitting flush with the top of the first line (align-items: center handles
+           this fine already for these -- kept separate only so a future single-line tweak here
+           doesn't have to reason about the two-line case). */
+        .digest-item .note-preview-line { margin-top: 0.1rem; }
         .digest-dismiss-btn {
             width: 1.6rem;
             height: 1.6rem;
@@ -1585,6 +1596,20 @@ body.dark-theme[data-palette="mint"] {
             transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
         }
         .day-class-row:hover { background: var(--glass-bg-strong); }
+        /* Truncates a note to one line; the native title attribute (set alongside this class
+           wherever it's used -- Day view, the Today brief) shows the full text on hover instead
+           of wrapping. Month/week previews deliberately don't get this visible line at all --
+           they still get the same hover-title on the class name itself, just no inline text. */
+        .day-class-note, .note-preview-line {
+            display: block;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            cursor: help;
+        }
 
         .week-day-col {
             background: var(--glass-bg);
@@ -3351,7 +3376,7 @@ body.dark-theme[data-palette="mint"] {
             const noteValue = classNotes[noteId] || '';
             const hasNote = !!noteValue;
             return `
-                <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}
+                <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}${classNoteTitleAttr(classItem)}
                      onclick="window.location.href='${escapeJsAttr(classItem.url)}'">
                     <div class="flex items-start justify-between gap-2 mb-2 pr-8">
                         <h4 class="text-xl font-bold">${escapeHtml(classItem.title)}</h4>
@@ -3901,6 +3926,10 @@ body.dark-theme[data-palette="mint"] {
             const [startStr, endStr] = timeRange.split(' - ');
             return `${formatTimeOnly(startStr)} - ${formatTimeOnly(endStr)}`;
         }
+        function formatEventTimestamp(ts) {
+            const d = new Date(ts);
+            return formatTimeLabel(d.getHours(), d.getMinutes());
+        }
 
         // --- PREFERENCES ---
         const DEFAULT_GCAL_URL = "https://calendar.google.com/calendar/embed?height=1500&wkst=1&ctz=America%2FDenver&showPrint=0&showTitle=0&showCalendars=0&showTz=0&mode=AGENDA&title&src=NTczNGZhZTc4NGVmYzgxOTU5MzgxN2U3ZjYyNDQ3MDE0NGZlZWM0MzQzZTMyOWMwZjQ0ODhjYzZkMDg4YzUwZEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=ODgyM2YyNGQ0MTFiZjU5ZDlhY2U5Mzg5ZGVjYTEyZDIyYTM5MWQ1NWUwZGM4MWI4NzVkMWQ0YjFjNmE1Yjg3ZkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=YmIzNzU5MmExNDkyNGUxOTMzNzM0MGI1NGI5OGNhNTljZjM2OGY5Y2YzYWY5NjEzMTY4ZmM0YjVkYTYzNjM3YUBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=Z212YmptZTY1bGlnNXZpdXY5bnNodGFmMWt2MG9rN2VAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&src=N3N0a2hzNmh0N201ZTRtdDJkM2IwbWkxa2Fya3NzNGNAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&src=MHFjbmE4dGF0Zjlxam9vZjRhY2k1N3RkNm1qb2Q4MTdAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&src=c3JhZWdsY2xhbjhxNm01NTFqYzFnbjZubHQ2MWZrM2FAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&color=%2333b679&color=%23ad1457&color=%23f4511e&color=%23039be5&color=%23d50000&color=%23d50000&color=%23795548";
@@ -4217,6 +4246,7 @@ body.dark-theme[data-palette="mint"] {
                 if (widget) {
                     widget.classList.remove('is-clickable', 'is-current-period');
                     widget.removeAttribute('data-has-color');
+                    widget.removeAttribute('title');
                     widget.style.removeProperty('--class-color');
                     widget.onclick = null;
                 }
@@ -4237,6 +4267,8 @@ body.dark-theme[data-palette="mint"] {
             const url = classItem && classItem.url;
             if (widget) {
                 widget.classList.toggle('is-current-period', info.status === 'current');
+                const noteText = classItem ? classNoteText(classItem) : '';
+                if (noteText) widget.setAttribute('title', noteText); else widget.removeAttribute('title');
                 if (classItem && classItem.color) {
                     widget.setAttribute('data-has-color', '');
                     widget.style.setProperty('--class-color', classItem.color);
@@ -4327,7 +4359,7 @@ body.dark-theme[data-palette="mint"] {
             const todaysClasses = getClassesForDate(today);
             const classesRowHtml = todaysClasses.length ? `
                 <div class="home-today-classes-row">${todaysClasses.map(({ classItem, timeRange }) => `
-                    <a class="home-today-class-chip" href="${escapeAttr(classItem.url || '#')}" ${classItem.color ? `style="border-left: 3px solid ${escapeAttr(classItem.color)};"` : ''} onclick="${classItem.url ? '' : 'return false;'}">
+                    <a class="home-today-class-chip" href="${escapeAttr(classItem.url || '#')}" ${classItem.color ? `style="border-left: 3px solid ${escapeAttr(classItem.color)};"` : ''}${classNoteTitleAttr(classItem)} onclick="${classItem.url ? '' : 'return false;'}">
                         <p class="home-item-title">${escapeHtml(classItem.title)}</p>
                         ${timeRange ? `<p class="home-item-sub">${escapeHtml(timeRange)}</p>` : ''}
                     </a>
@@ -4776,6 +4808,16 @@ body.dark-theme[data-palette="mint"] {
         function classDotHtml(classItem) {
             return classItem.color ? `<span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:${escapeAttr(classItem.color)}"></span>` : '';
         }
+        function classNoteText(classItem) {
+            return classItem.noteId ? (classNotes[classItem.noteId] || '') : '';
+        }
+        // A ready-to-splice ` title="..."` attribute carrying a class's full quick note, for
+        // every class card/preview across the app (class cards, month/week previews, home
+        // widgets) so hovering shows the full note even where no note text is rendered inline.
+        function classNoteTitleAttr(classItem) {
+            const note = classNoteText(classItem);
+            return note ? ` title="${escapeAttr(note)}"` : '';
+        }
 
         const defaultADays = userADays;
         const defaultBDays = userBDays;
@@ -4860,7 +4902,7 @@ body.dark-theme[data-palette="mint"] {
                 const titleHtml = note && note.title ? `<p class="mini-upcoming-title">${escapeHtml(note.title)}</p>` : (dayType ? `<p class="mini-upcoming-title">${dayType}-Day</p>` : noSchool ? `<p class="mini-upcoming-title">No School</p>` : '<p class="mini-upcoming-title">Scheduled</p>');
                 const notesHtml = note && note.notes ? `<p class="mini-upcoming-sub line-clamp-2">${escapeHtml(note.notes)}</p>` : '';
                 const classesToday = getClassesForDate(currentDay);
-                const classesHtml = classesToday.length ? `<p class="mini-upcoming-sub truncate">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>` : '';
+                const classesHtml = classesToday.length ? `<p class="mini-upcoming-sub truncate">${classesToday.map(c => `<span${classNoteTitleAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>` : '';
                 // When more than one category is happening that day, group by category (each with
                 // its own icon+label) instead of a flat list -- otherwise a single "Assignment"
                 // dot per line is enough to tell items apart without a group header.
@@ -5080,7 +5122,7 @@ body.dark-theme[data-palette="mint"] {
                         }).join('')}
                     </div>
                 ` : '';
-                const classesPreviewHtml = classesToday.length ? `<p class="day-classes-preview">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>` : '';
+                const classesPreviewHtml = classesToday.length ? `<p class="day-classes-preview">${classesToday.map(c => `<span${classNoteTitleAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>` : '';
                 cells += `
                     <div class="day-cell p-2 rounded-lg border ${isOutside ? 'outside-month' : ''} ${isToday ? 'is-today' : ''}" data-date="${dateKey(cursor)}" onclick="openDay('${dateKey(cursor)}')">
                         <div class="flex justify-between items-center">
@@ -5130,7 +5172,7 @@ body.dark-theme[data-palette="mint"] {
                 ` : '';
                 const classesHtml = classesToday.length ? `
                     <div class="week-classes-list">
-                        ${classesToday.map(c => `<p class="week-class-row"><span class="flex items-center gap-1.5 min-w-0">${classDotHtml(c.classItem)}<span class="truncate">${classNameHtml(c.classItem)}</span></span>${c.timeRange ? `<span class="week-class-time">${escapeHtml(formatTimeOnly(c.timeRange.split(' - ')[0]))}</span>` : ''}</p>`).join('')}
+                        ${classesToday.map(c => `<p class="week-class-row"${classNoteTitleAttr(c.classItem)}><span class="flex items-center gap-1.5 min-w-0">${classDotHtml(c.classItem)}<span class="truncate">${classNameHtml(c.classItem)}</span></span>${c.timeRange ? `<span class="week-class-time">${escapeHtml(formatTimeOnly(c.timeRange.split(' - ')[0]))}</span>` : ''}</p>`).join('')}
                     </div>
                 ` : '';
                 cols += `
@@ -5166,12 +5208,17 @@ body.dark-theme[data-palette="mint"] {
                 <div class="day-classes-section">
                     <p class="text-sm font-semibold mb-2">Today's Classes</p>
                     <div class="space-y-2">
-                        ${classesToday.map(c => `
+                        ${classesToday.map(c => {
+                            const noteText = classNoteText(c.classItem);
+                            return `
                             <a class="day-class-row" style="${c.classItem.color ? `border-left: 3px solid ${escapeAttr(c.classItem.color)};` : ''}" href="${escapeAttr(c.classItem.url || '#')}" onclick="${c.classItem.url ? '' : 'return false;'}">
-                                <span class="flex items-center gap-2 font-medium">${classDotHtml(c.classItem)}${classNameHtml(c.classItem)}</span>
-                                ${c.timeRange ? `<span class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>` : ''}
+                                <span class="min-w-0">
+                                    <span class="flex items-center gap-2 font-medium">${classDotHtml(c.classItem)}${classNameHtml(c.classItem)}</span>
+                                    ${noteText ? `<span class="day-class-note" title="${escapeAttr(noteText)}">${escapeHtml(noteText)}</span>` : ''}
+                                </span>
+                                ${c.timeRange ? `<span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>` : ''}
                             </a>
-                        `).join('')}
+                        `;}).join('')}
                     </div>
                 </div>
             ` : '';
@@ -5318,7 +5365,7 @@ body.dark-theme[data-palette="mint"] {
                     : '';
                 const classesToday = getClassesForDate(entry.date);
                 const classesHtml = classesToday.length ? `
-                    <p class="text-xs mt-1 text-gray-500 dark:text-gray-400 truncate">${classesToday.map(c => classNameHtml(c.classItem)).join(', ')}</p>
+                    <p class="text-xs mt-1 text-gray-500 dark:text-gray-400 truncate">${classesToday.map(c => `<span${classNoteTitleAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>
                 ` : '';
                 const externalHtml = externalEvents.length ? `
                     <div class="mt-2 space-y-1">
@@ -6686,12 +6733,15 @@ body.dark-theme[data-palette="mint"] {
             const classesHtml = classesToday.length ? `
                 <div class="day-hover-tooltip-section">
                     <p class="day-hover-tooltip-section-title">Classes</p>
-                    ${classesToday.map(c => `
-                        <div class="day-hover-tooltip-item">
+                    ${classesToday.map(c => {
+                        return `
+                        <div class="day-hover-tooltip-item is-class-row">
                             ${classDotHtml(c.classItem)}
-                            <span>${classNameHtml(c.classItem)}${c.timeRange ? ` <span style="color:var(--text-muted);">— ${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>` : ''}</span>
+                            <span class="min-w-0">
+                                <span>${classNameHtml(c.classItem)}${c.timeRange ? ` <span style="color:var(--text-muted);">— ${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>` : ''}</span>
+                            </span>
                         </div>
-                    `).join('')}
+                    `;}).join('')}
                 </div>
             ` : '';
 
@@ -7035,12 +7085,58 @@ body.dark-theme[data-palette="mint"] {
             }
 
             if (!dailyDismissed) {
+                const today = new Date();
                 const dueToday = canvasAssignments.filter(a => dateKey(new Date(a.dueAt)) === todayKey);
-                const eventsToday = getExternalEventsForDate(new Date()).filter(ev => ev.category !== 'assignment');
-                const hasAny = dueToday.length || eventsToday.length;
+                const eventsToday = getExternalEventsForDate(today).filter(ev => ev.category !== 'assignment');
+                const dayType = getDayType(today);
+                const noSchool = isNoSchoolDay(today);
+                const dayNote = getNote(today);
+                const hasDayNote = !!(dayNote && (dayNote.title || dayNote.notes));
+                // Classes only show up here if there's actually a note attached -- the full
+                // schedule already lives in the Next Class widget and Today's Classes list, so
+                // this brief only calls out the ones with something worth reading.
+                const classesWithNotes = getClassesForDate(today).filter(c => classNoteText(c.classItem));
+                const hasAny = dueToday.length || eventsToday.length || dayType || noSchool || hasDayNote || classesWithNotes.length;
+
+                const dayTypeHtml = (dayType || noSchool) ? `
+                    <div class="digest-item">
+                        <span class="day-badge ${dayType ? 'badge-' + dayType.toLowerCase() : 'badge-none'}" style="margin:0;">${dayType ? `${dayType}-Day` : `${NO_SCHOOL_ICON}No School`}</span>
+                    </div>
+                ` : '';
+                const dayNoteHtml = hasDayNote ? `
+                    <div class="digest-item">
+                        <span class="home-dot" style="background:var(--accent-2);"></span>
+                        <span class="min-w-0">
+                            ${dayNote.title ? `<span style="font-weight:700;">${escapeHtml(dayNote.title)}</span>` : ''}
+                            ${dayNote.notes ? `<span class="note-preview-line" title="${escapeAttr(dayNote.notes)}">${escapeHtml(dayNote.notes)}</span>` : ''}
+                        </span>
+                    </div>
+                ` : '';
                 const preview = [
+                    dayTypeHtml,
+                    dayNoteHtml,
                     ...dueToday.map(a => `<div class="digest-item"><span class="home-dot" style="background:#ef4444;"></span><span>${escapeHtml(a.title)} <span class="category-badge" style="background:#ef444433; color:#ef4444;">Assignment</span></span></div>`),
-                    ...eventsToday.map(ev => `<div class="digest-item"><span class="home-dot" style="background:${ev.color};"></span><span>${escapeHtml(ev.title)}</span></div>`)
+                    ...eventsToday.map(ev => {
+                        const timeStr = ev.allDay ? 'All day' : formatEventTimestamp(ev.timestamp);
+                        return `
+                            <div class="digest-item">
+                                <span class="home-dot" style="background:${ev.color};"></span>
+                                <span class="min-w-0">
+                                    <span>${escapeHtml(ev.title)} <span style="color:var(--text-muted);">— ${timeStr}</span></span>
+                                    ${ev.description ? `<span class="note-preview-line" title="${escapeAttr(ev.description)}">${escapeHtml(ev.description)}</span>` : ''}
+                                </span>
+                            </div>
+                        `;
+                    }),
+                    ...classesWithNotes.map(c => `
+                        <div class="digest-item">
+                            ${classDotHtml(c.classItem)}
+                            <span class="min-w-0">
+                                <span>${classNameHtml(c.classItem)}</span>
+                                <span class="note-preview-line" title="${escapeAttr(classNoteText(c.classItem))}">${escapeHtml(classNoteText(c.classItem))}</span>
+                            </span>
+                        </div>
+                    `)
                 ].join('');
                 html += `
                     <div class="digest-banner">
