@@ -178,7 +178,7 @@ body.dark-theme[data-palette="mint"] {
     left: 50%;
     transform: translateX(-50%);
 
-    width: clamp(200px, 50vw, 400px);
+    width: clamp(253px, 50vw, 506px);
     height: 4rem;
     padding: 0 1rem;
 
@@ -735,6 +735,22 @@ body.dark-theme[data-palette="mint"] {
             border-radius: 50%;
             flex-shrink: 0;
         }
+        .weekday-chip {
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 50%;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-strong);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.8rem;
+            transition: all 0.15s ease-in-out;
+        }
+        .weekday-chip.active {
+            background: var(--accent-grad);
+            color: white;
+            border-color: transparent;
+        }
         .category-badge {
             display: inline-block;
             font-size: 0.65rem;
@@ -819,6 +835,40 @@ body.dark-theme[data-palette="mint"] {
             white-space: nowrap;
             flex-shrink: 0;
             margin-left: 0.5rem;
+        }
+        .home-due-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+        /* Hidden until the row is hovered, like the class card's new-tab button -- keeps the
+           default Due Soon list exactly as clean as before this existed. */
+        .home-assignment-done-btn {
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            opacity: 0;
+            transform: scale(0.85);
+            transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out, background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .home-assignment-done-btn svg { width: 0.85rem; height: 0.85rem; }
+        .home-list-item.has-countdown:hover .home-assignment-done-btn {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .home-assignment-done-btn:hover {
+            background: #22c55e;
+            border-color: #22c55e;
+            color: white;
         }
         .home-dot {
             width: 0.6rem;
@@ -1006,18 +1056,67 @@ body.dark-theme[data-palette="mint"] {
             transform: scale(1);
         }
 
-        .class-url-display {
+        /* Always-visible chip (unlike the hover-only new-tab button) showing how many extra
+           items a class has -- only rendered at all when there are any, so a class without them
+           looks exactly like it did before this feature existed. */
+        .class-links-badge {
+            display: inline-flex !important;
+            align-items: center;
+            gap: 0.3rem;
+            cursor: pointer;
+        }
+        .class-links-badge svg { width: 0.85rem; height: 0.85rem; }
+        .class-links-badge:hover { background: var(--glass-bg); }
+        .class-links-dropdown {
             position: absolute;
-            bottom: 1rem;
-            left: 1rem;
+            top: 3.25rem;
             right: 1rem;
+            z-index: 20;
+            /* Noticeably more opaque than the usual glass-bg-strong -- this floats over a
+               class-card that already has its own color tint plus the animated background blobs
+               behind everything, so the normal frosted-glass level left link text hard to read. */
+            background: color-mix(in srgb, var(--bg-solid) 88%, var(--glass-bg-strong) 12%);
+            backdrop-filter: blur(16px) saturate(160%);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 0.4rem;
+            min-width: 170px;
+            box-shadow: var(--glass-shadow);
+            display: none;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+        .class-links-dropdown.show { display: flex; }
+        .class-links-dropdown a {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .class-links-dropdown a svg { flex-shrink: 0; width: 0.9rem; height: 0.9rem; }
+        .class-links-dropdown a:hover { background: var(--glass-bg); }
+
+        /* Sits in normal flow (not absolutely positioned) and collapsed to nothing by default, so
+           a card with its hover state closed is exactly as tall as its title + chips -- it only
+           grows to make room for this on hover instead of always reserving space for it. */
+        .class-url-display {
+            margin-top: 0;
+            max-height: 0;
             text-align: center;
             opacity: 0;
-            transition: opacity 0.3s ease-in-out;
+            transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out, margin-top 0.3s ease-in-out;
             color: var(--text-primary);
             background: var(--glass-bg-strong);
             backdrop-filter: blur(10px);
-            padding: 0.25rem 0.5rem;
+            padding: 0 0.5rem;
             border-radius: 0.5rem;
             font-size: 0.75rem;
             white-space: nowrap;
@@ -1027,7 +1126,10 @@ body.dark-theme[data-palette="mint"] {
         }
 
         .class-card:hover .class-url-display {
+            margin-top: 0.6rem;
+            max-height: 1.6rem;
             opacity: 1;
+            padding: 0.25rem 0.5rem;
         }
 
         .class-note-toggle {
@@ -1043,8 +1145,28 @@ body.dark-theme[data-palette="mint"] {
         .class-note-toggle svg { width: 1rem; height: 1rem; }
         .class-note-toggle:hover { color: var(--text-primary); background: var(--glass-bg-strong); }
         .class-note-toggle.has-note { color: var(--accent-2); }
+        /* Right-aligned footer row so the toggle reads as pinned to the bottom-right of the
+           card, in flow (not absolutely positioned) so it never overlaps the chips/note above it
+           the way an absolutely-positioned corner button would on a short card. */
+        .class-card-footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 0.5rem;
+        }
         .class-note-box { margin: -0.25rem 0 0.75rem; }
         .class-note-box.hidden { display: none; }
+        .class-note-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.35rem;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--text-muted);
+        }
+        .class-note-charcount { font-weight: 600; text-transform: none; letter-spacing: normal; }
         .class-note-textarea {
             width: 100%;
             min-height: 3.5rem;
@@ -1056,6 +1178,7 @@ body.dark-theme[data-palette="mint"] {
             font-size: 0.8rem;
             font-family: inherit;
             resize: vertical;
+            overflow: hidden;
         }
 
         /* --- Modal Styles --- */
@@ -1847,6 +1970,19 @@ body.dark-theme[data-palette="mint"] {
         .no-school-toast .toast-close:hover { color: var(--text-primary); background: var(--glass-bg); }
         .no-school-toast .toast-close:active { transform: scale(0.9); }
         .no-school-toast .toast-close svg { width: 1rem; height: 1rem; }
+        .no-school-toast .toast-undo-btn {
+            flex-shrink: 0;
+            color: var(--accent-2);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.82rem;
+            padding: 0.3rem 0.5rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .no-school-toast .toast-undo-btn:hover { background: var(--glass-bg); }
 
         /* ===================== Reduced motion ===================== */
         /* Crushes every CSS animation/transition to effectively instant (not literally 0, so
@@ -1888,6 +2024,29 @@ body.dark-theme[data-palette="mint"] {
     <div class="cursor-glow" id="cursor-glow"></div>
 
     <div id="no-school-toast" class="no-school-toast hidden" role="status" aria-live="polite"></div>
+    <div id="action-toast" class="no-school-toast hidden" role="status" aria-live="polite"></div>
+
+    <!-- Reminders quick-add modal (opened via the "N" keyboard shortcut or a button) -->
+    <div id="reminder-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="hideReminderModal(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-8 border" onclick="event.stopPropagation()">
+            <h3 class="text-2xl font-bold mb-4" id="reminder-modal-title">Add Reminder</h3>
+            <label class="block text-sm font-semibold mb-2" for="reminder-text-input">Reminder</label>
+            <input type="text" id="reminder-text-input" class="form-input mb-4" placeholder="e.g. Bring gym clothes" onkeydown="if(event.key==='Enter'){event.preventDefault(); saveReminderFromModal();}">
+            <label class="block text-sm font-semibold mb-2">Repeats on</label>
+            <div class="flex flex-wrap gap-2 mb-4" id="reminder-weekday-picker"></div>
+            <label class="block text-sm font-semibold mb-2">Attach to (optional)</label>
+            <select id="reminder-attach-type" class="form-select mb-3" onchange="renderReminderAttachValueOptions()">
+                <option value="none">None</option>
+                <option value="class">A Class</option>
+                <option value="category">An Event Category</option>
+            </select>
+            <div id="reminder-attach-value-wrap" class="mb-6"></div>
+            <div class="flex justify-end gap-4">
+                <button type="button" class="modal-footer-button is-secondary" onclick="hideReminderModal()">Cancel</button>
+                <button type="button" class="modal-footer-button bg-indigo-600" onclick="saveReminderFromModal()">Save</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Top bar: app-level navigation -->
     <header class="app-topbar">
@@ -1911,6 +2070,13 @@ body.dark-theme[data-palette="mint"] {
                 <a href="#calendar" data-view="calendar" class="sidebar-link" onclick="event.preventDefault(); switchAppView('calendar')" title="Calendar">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     <span class="sr-only">Calendar</span>
+                </a>
+            </div>
+
+            <div class="orbit-item">
+                <a href="#reminders" data-view="reminders" class="sidebar-link" onclick="event.preventDefault(); switchAppView('reminders')" title="Reminders">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v1a3 3 0 006 0v-1m-9 0h12a1 1 0 001-1c-1.5-1-2-3-2-5a5 5 0 00-10 0c0 2-.5 4-2 5a1 1 0 001 1z"></path></svg>
+                    <span class="sr-only">Reminders</span>
                 </a>
             </div>
 
@@ -2038,6 +2204,7 @@ body.dark-theme[data-palette="mint"] {
                             <button type="button" class="category-filter-chip active" data-group="sports" style="--chip-color:#a855f7;" onclick="toggleCalendarCategoryFilter('sports')"><span class="filter-chip-dot" style="background:#a855f7;"></span>Sports</button>
                             <button type="button" class="category-filter-chip active" data-group="event" style="--chip-color:#a3e635;" onclick="toggleCalendarCategoryFilter('event')"><span class="filter-chip-dot" style="background:#a3e635;"></span>Events</button>
                             <button type="button" class="category-filter-chip active" data-group="classes" style="--chip-color:#6366f1;" onclick="toggleCalendarClassesFilter()"><span class="filter-chip-dot" style="background:#6366f1;"></span>Classes</button>
+                            <button type="button" class="category-filter-chip active" data-group="reminders" style="--chip-color:#eab308;" onclick="toggleCalendarRemindersFilter()"><span class="filter-chip-dot" style="background:#eab308;"></span>Reminders</button>
                         </div>
                         <div class="calendar-search-wrap">
                             <input type="text" id="calendar-search-input" class="form-input calendar-search-input" placeholder="Search assignments &amp; events..." oninput="handleCalendarSearchInput(this.value)" onfocus="handleCalendarSearchInput(this.value)">
@@ -2059,6 +2226,20 @@ body.dark-theme[data-palette="mint"] {
 
                     <!-- View Content -->
                     <div id="view-content"></div>
+                </div>
+            </section>
+
+            <!-- ===================== REMINDERS VIEW ===================== -->
+            <section id="view-reminders" class="app-view hidden">
+                <div class="main-container rounded-3xl p-6 sm:p-10 border relative">
+                    <div class="flex flex-wrap justify-between items-start gap-6 mb-10">
+                        <div>
+                            <h1 class="gradient-text text-5xl sm:text-6xl font-extrabold tracking-tight">Reminders</h1>
+                            <h3 class="text-xl sm:text-2xl font-medium tracking-wide mt-1" id="reminders-time"></h3>
+                        </div>
+                        <button type="button" class="modal-footer-button bg-indigo-600" onclick="openReminderModal()">+ Add Reminder</button>
+                    </div>
+                    <div id="reminders-list-container"></div>
                 </div>
             </section>
         </main>
@@ -2379,13 +2560,15 @@ body.dark-theme[data-palette="mint"] {
                 document.getElementById('view-home').classList.toggle('hidden', view !== 'home');
                 document.getElementById('view-classes').classList.toggle('hidden', view !== 'classes');
                 document.getElementById('view-calendar').classList.toggle('hidden', view !== 'calendar');
+                document.getElementById('view-reminders').classList.toggle('hidden', view !== 'reminders');
                 document.querySelectorAll('.sidebar-link').forEach(a => a.classList.toggle('active', a.dataset.view === view));
-                document.title = view === 'calendar' ? 'School Calendar' : view === 'home' ? 'Home' : 'School Dashboard';
+                document.title = view === 'calendar' ? 'School Calendar' : view === 'reminders' ? 'Reminders' : view === 'home' ? 'Home' : 'School Dashboard';
                 if (view === 'calendar' && !calendarInitialized) {
                     calendarInitialized = true;
                     initCalendar();
                 }
                 if (view === 'home') renderHomeDashboard();
+                if (view === 'reminders') renderRemindersView();
                 if (location.hash.replace('#', '') !== view) {
                     history.replaceState(null, '', '#' + view);
                 }
@@ -2399,7 +2582,7 @@ body.dark-theme[data-palette="mint"] {
 
         window.addEventListener('hashchange', () => {
             const hashView = location.hash.replace('#', '');
-            const view = hashView === 'calendar' || hashView === 'classes' ? hashView : 'home';
+            const view = hashView === 'calendar' || hashView === 'classes' || hashView === 'reminders' ? hashView : 'home';
             if (view !== activeAppView) switchAppView(view);
         });
 
@@ -2478,8 +2661,8 @@ body.dark-theme[data-palette="mint"] {
             'classDataV3', 'userADays', 'userBDays', 'noSchoolDaysV1', 'userScheduleSlotOptionsV2',
             'dayNotesV1', 'classNotesV1',
             'theme', 'themePalette', 'motionPref', 'timeFormat',
-            'calendarView', 'weekStart', 'calendarCategoryFilter', 'calendarShowClasses', 'recentCalendarSearches',
-            'dismissedDailyDigestDate', 'dismissedWeeklyDigestKey',
+            'calendarView', 'weekStart', 'calendarCategoryFilter', 'calendarShowClasses', 'calendarShowReminders', 'recentCalendarSearches',
+            'dismissedDailyDigestDate', 'dismissedWeeklyDigestKey', 'dismissedAssignmentKeys', 'remindersV1',
             'showGoogleCalendar', 'googleCalendarEmbedUrl',
             'icsIncludeDayEvents', 'icsIncludeClassEvents',
             'externalIcsFeeds', 'externalIcsCache',
@@ -2691,12 +2874,25 @@ body.dark-theme[data-palette="mint"] {
             // right after writing styles forces a synchronous layout; doing that for every icon on
             // every animation frame is what was making the whole page feel laggy.
             let stageCenterX = 0, stageCenterY = 0, maxDist = 100;
+            let stageHalfW = 100, stageHalfH = 30;
+            // Physics state: each icon drifts toward its sine-wave "home" target (buildDriftRecipes)
+            // like before, but now as a soft spring pull on a real position+velocity rather than
+            // being teleported straight to the target -- that's what leaves room for collisions
+            // (and the stage's own walls) to actually push them off course, ball-in-a-box style.
+            let phys = [];
+            let iconRadius = 23;
             function refreshStageGeometry() {
                 const r = stage.getBoundingClientRect();
                 stageCenterX = r.left + r.width / 2;
                 stageCenterY = r.top + r.height / 2;
+                stageHalfW = r.width / 2;
+                stageHalfH = r.height / 2;
                 maxDist = Math.max(r.width, r.height) * 0.85;
                 buildDriftRecipes(r.width, r.height);
+                if (links[0]) iconRadius = links[0].getBoundingClientRect().width / 2;
+                if (!phys.length) {
+                    phys = links.map((_, i) => ({ x: drift[i].homeX, y: drift[i].homeY, vx: 0, vy: 0 }));
+                }
             }
             refreshStageGeometry();
             // ResizeObserver (rather than window's resize event) catches every reason the bar's
@@ -2717,24 +2913,119 @@ body.dark-theme[data-palette="mint"] {
                 tooltip.style.top = r.top + 'px';
             }
 
+            // Spring pull toward the sine-wave home target, damping so it doesn't oscillate
+            // forever, and how bouncy wall/icon collisions are (1 = perfectly elastic). Constants
+            // are in proper per-second units and dt is converted to seconds below -- mixing
+            // millisecond dt into both the velocity AND position update (as an earlier version of
+            // this did) effectively squares dt into the stiffness, which is wildly unstable at a
+            // ~16ms frame time and is what made the whole bar look like it was glitching.
+            const SPRING_K = 10;
+            const DAMPING_PER_SEC = 7;
+            const RESTITUTION = 0.55;
+            const MAX_SPEED = 260; // px/s, safety cap so no single frame can fling an icon far
+            let lastT = null;
             function frame(t) {
-                links.forEach((link, i) => {
-                    // The locked (hovered) icon freezes in place instead of continuing to drift.
-                    if (i === lockedIndex) return;
+                if (lastT === null) lastT = t;
+                // Clamp dt so a dropped/backgrounded tab resuming doesn't feed the integrator one
+                // giant time step and fling every icon across the bar.
+                const dt = Math.min(0.032, Math.max(0, (t - lastT) / 1000));
+                lastT = t;
+                const dampFactor = Math.exp(-DAMPING_PER_SEC * dt);
 
+                links.forEach((link, i) => {
                     const d = drift[i];
-                    const x = d.homeX + d.ax1 * Math.sin(t * d.fx1 + d.px1) + d.ax2 * Math.sin(t * d.fx2 + d.px2);
-                    const y = d.homeY + d.ay1 * Math.cos(t * d.fy1 + d.py1) + d.ay2 * Math.sin(t * d.fy2 + d.py2);
+                    const p = phys[i];
+                    const targetX = d.homeX + d.ax1 * Math.sin(t * d.fx1 + d.px1) + d.ax2 * Math.sin(t * d.fx2 + d.px2);
+                    const targetY = d.homeY + d.ay1 * Math.cos(t * d.fy1 + d.py1) + d.ay2 * Math.sin(t * d.fy2 + d.py2);
+
+                    if (i === lockedIndex) {
+                        // The locked (hovered) icon freezes in place -- but stays put as a real
+                        // obstacle, so other icons still collide against it instead of drifting
+                        // through the spot it's sitting in.
+                        p.vx = 0; p.vy = 0;
+                    } else {
+                        p.vx = (p.vx + (targetX - p.x) * SPRING_K * dt) * dampFactor;
+                        p.vy = (p.vy + (targetY - p.y) * SPRING_K * dt) * dampFactor;
+                        const speed = Math.hypot(p.vx, p.vy);
+                        if (speed > MAX_SPEED) { const s = MAX_SPEED / speed; p.vx *= s; p.vy *= s; }
+                        p.x += p.vx * dt;
+                        p.y += p.vy * dt;
+
+                        // Bounce off the stage's own bounds (the rounded pill), same restitution
+                        // as icon-icon collisions so it reads as one consistent "box".
+                        const minX = -stageHalfW + iconRadius, maxX = stageHalfW - iconRadius;
+                        const minY = -stageHalfH + iconRadius, maxY = stageHalfH - iconRadius;
+                        if (p.x < minX) { p.x = minX; p.vx = Math.abs(p.vx) * RESTITUTION; }
+                        else if (p.x > maxX) { p.x = maxX; p.vx = -Math.abs(p.vx) * RESTITUTION; }
+                        if (p.y < minY) { p.y = minY; p.vy = Math.abs(p.vy) * RESTITUTION; }
+                        else if (p.y > maxY) { p.y = maxY; p.vy = -Math.abs(p.vy) * RESTITUTION; }
+                    }
+                });
+
+                // Pairwise collision resolution -- circles of equal radius/mass, so an elastic
+                // collision just swaps the velocity component along the line between them, plus a
+                // positional correction so they don't visibly sink into each other first. Run as
+                // several constraint-solving passes per frame (not just one): with this many icons
+                // in a fairly narrow bar, three or more can be mutually overlapping at once, and a
+                // single pass only partly separates a chain like that -- it takes a few passes in
+                // the same frame to fully resolve, otherwise a residual overlap lingers/jitters
+                // instead of snapping apart immediately.
+                // The hovered icon renders 1.35x bigger (see .sidebar-link.is-locked) -- its
+                // collision radius has to grow to match, or neighbors would stop short of the old
+                // (smaller) radius and visibly overlap the enlarged hover circle instead of being
+                // pushed clear of it.
+                const radiusFor = (idx) => idx === lockedIndex ? iconRadius * 1.35 : iconRadius;
+                for (let pass = 0; pass < 4; pass++) {
+                    for (let i = 0; i < phys.length; i++) {
+                        for (let j = i + 1; j < phys.length; j++) {
+                            const a = phys[i], b = phys[j];
+                            const minSep = radiusFor(i) + radiusFor(j);
+                            let dx = b.x - a.x, dy = b.y - a.y;
+                            let dist = Math.hypot(dx, dy);
+                            if (dist === 0) { dx = 0.01; dy = 0; dist = 0.01; }
+                            if (dist >= minSep) continue;
+                            const nx = dx / dist, ny = dy / dist;
+                            const overlap = minSep - dist;
+                            const aLocked = i === lockedIndex, bLocked = j === lockedIndex;
+                            // A locked icon doesn't get pushed itself, but still pushes the other one
+                            // out fully (all of the overlap correction goes to whichever isn't locked).
+                            const aShare = bLocked ? 1 : aLocked ? 0 : 0.5;
+                            const bShare = 1 - aShare;
+                            a.x -= nx * overlap * aShare; a.y -= ny * overlap * aShare;
+                            b.x += nx * overlap * bShare; b.y += ny * overlap * bShare;
+
+                            if (!aLocked && !bLocked) {
+                                const relVx = b.vx - a.vx, relVy = b.vy - a.vy;
+                                const rel = relVx * nx + relVy * ny;
+                                if (rel < 0) {
+                                    const impulse = -(1 + RESTITUTION) * rel / 2;
+                                    a.vx -= impulse * nx; a.vy -= impulse * ny;
+                                    b.vx += impulse * nx; b.vy += impulse * ny;
+                                }
+                            } else if (!aLocked) {
+                                const rel = a.vx * nx + a.vy * ny;
+                                if (rel > 0) { a.vx -= (1 + RESTITUTION) * rel * nx; a.vy -= (1 + RESTITUTION) * rel * ny; }
+                            } else if (!bLocked) {
+                                const rel = b.vx * nx + b.vy * ny;
+                                if (rel < 0) { b.vx -= (1 + RESTITUTION) * rel * nx; b.vy -= (1 + RESTITUTION) * rel * ny; }
+                            }
+                        }
+                    }
+                }
+
+                links.forEach((link, i) => {
+                    const d = drift[i];
+                    const p = phys[i];
                     const pulse = 1 + d.sizeAmp * Math.sin(t * d.sizeFreq + d.sizePhase);
 
-                    items[i].style.transform = 'translate(calc(-50% + ' + x.toFixed(2) + 'px), calc(-50% + ' + y.toFixed(2) + 'px))';
+                    items[i].style.transform = 'translate(calc(-50% + ' + p.x.toFixed(2) + 'px), calc(-50% + ' + p.y.toFixed(2) + 'px))';
                     // Depth-sort by vertical position so drifting icons pass in front of / behind each other, pool-ball style.
-                    items[i].style.zIndex = String(60 + Math.round(y));
+                    items[i].style.zIndex = String(60 + Math.round(p.y));
                     link.style.setProperty('--pulse', pulse.toFixed(3));
 
                     if (mouse) {
                         // Same x/y we just used for the transform -- no DOM read needed to know where the icon is.
-                        const cx = stageCenterX + x, cy = stageCenterY + y;
+                        const cx = stageCenterX + p.x, cy = stageCenterY + p.y;
                         const dist = Math.hypot(mouse.x - cx, mouse.y - cy);
                         const tt = Math.max(0, 1 - dist / maxDist);
                         link.style.setProperty('--mag', (1 + tt * 0.5).toFixed(3));
@@ -3285,6 +3576,7 @@ body.dark-theme[data-palette="mint"] {
                     if (typeof classItem.color === 'undefined') classItem.color = '';
                     if (typeof classItem.teacher === 'undefined') classItem.teacher = '';
                     if (typeof classItem.room === 'undefined') classItem.room = '';
+                    if (!Array.isArray(classItem.links)) classItem.links = [];
                     if (!classItem.noteId) {
                         classItem.noteId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
                         assignedNewIds = true;
@@ -3437,25 +3729,59 @@ body.dark-theme[data-palette="mint"] {
             const noteId = classItem.noteId || '';
             const noteValue = classNotes[noteId] || '';
             const hasNote = !!noteValue;
+            const extraLinks = (classItem.links || []).filter(l => l.url);
             return `
-                <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}${classPopupAttr(classItem)}
+                <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}
                      onclick="window.location.href='${escapeJsAttr(classItem.url)}'">
                     <div class="flex items-start justify-between gap-2 mb-2 pr-8">
                         <h4 class="text-xl font-bold">${escapeHtml(classItem.title)}</h4>
-                        <button class="class-note-toggle ${hasNote ? 'has-note' : ''}" data-note-id="${noteId}" onclick="event.stopPropagation(); toggleClassNote('${noteId}')" title="Quick note">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                        </button>
                     </div>
-                    ${classMetaChipsHTML(classItem)}
+                    <div class="class-meta-row">
+                        ${getClassMetaChips(classItem).map(c => `<span class="class-meta-chip">${escapeHtml(c)}</span>`).join('')}
+                        ${extraLinks.length ? `<span class="class-meta-chip class-links-badge" onclick="event.stopPropagation(); toggleClassLinksDropdown(this)" title="More links">${classItemTypeIconSvg('link')}${extraLinks.length}</span>` : ''}
+                    </div>
+                    ${extraLinks.length ? `
+                        <div class="class-links-dropdown" onclick="event.stopPropagation()">
+                            ${extraLinks.map(l => `<a href="${escapeAttr(l.url)}" target="_blank" rel="noopener">${classItemTypeIconSvg(l.type)}<span>${escapeHtml(l.label || l.url)}</span></a>`).join('')}
+                        </div>
+                    ` : ''}
                     <div class="class-note-box ${hasNote ? '' : 'hidden'}" id="note-box-${noteId}" onclick="event.stopPropagation()">
-                        <textarea class="class-note-textarea" placeholder="Quick note..." onchange="saveClassNote('${noteId}', this.value)">${escapeHtml(noteValue)}</textarea>
+                        <div class="class-note-box-header">
+                            <span>Quick Note</span>
+                            <span class="class-note-charcount" id="note-charcount-${noteId}">${noteValue.length}</span>
+                        </div>
+                        <textarea class="class-note-textarea" placeholder="Quick note..." oninput="autoGrowTextarea(this); document.getElementById('note-charcount-${noteId}').textContent = this.value.length;" onchange="saveClassNote('${noteId}', this.value)">${escapeHtml(noteValue)}</textarea>
                     </div>
                     <button class="new-tab-button" onclick="event.stopPropagation(); window.open('${escapeJsAttr(classItem.url)}', '_blank');" title="Open in new tab">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     </button>
                     <div class="class-url-display" title="${escapeAttr(classItem.url)}">${escapeHtml(classItem.url)}</div>
+                    <div class="class-card-footer">
+                        <button class="class-note-toggle ${hasNote ? 'has-note' : ''}" data-note-id="${noteId}" onclick="event.stopPropagation(); toggleClassNote('${noteId}')" title="Quick note">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </button>
+                    </div>
                 </div>
             `;
+        }
+
+        function toggleClassLinksDropdown(el) {
+            const scope = el.closest('.class-card') || document;
+            const dropdown = scope.querySelector('.class-links-dropdown');
+            if (!dropdown) return;
+            const wasOpen = dropdown.classList.contains('show');
+            document.querySelectorAll('.class-links-dropdown.show').forEach(d => d.classList.remove('show'));
+            if (!wasOpen) dropdown.classList.add('show');
+        }
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.class-links-badge') && !e.target.closest('.class-links-dropdown')) {
+                document.querySelectorAll('.class-links-dropdown.show').forEach(d => d.classList.remove('show'));
+            }
+        });
+        // Grows a textarea to fit its content instead of scrolling internally.
+        function autoGrowTextarea(el) {
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
         }
 
         // --- INLINE CLASS EDITOR (rendered directly on the main screen) ---
@@ -3653,8 +3979,54 @@ body.dark-theme[data-palette="mint"] {
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                         </button>
                     </div>
+                    <div class="class-extra-links-editor">
+                        ${(classItem.links || []).map((link, linkIndex) => `
+                            <div class="flex items-center gap-2 mt-2">
+                                <select class="form-select" style="max-width:120px;" onchange="updateClassLink(${categoryIndex}, ${classIndex}, ${linkIndex}, 'type', this.value)">
+                                    ${Object.keys(CLASS_ITEM_TYPES).map(t => `<option value="${t}" ${(link.type || 'link') === t ? 'selected' : ''}>${CLASS_ITEM_TYPES[t].label}</option>`).join('')}
+                                </select>
+                                <input type="text" value="${escapeAttr(link.label || '')}" placeholder="Label (e.g. Zoom)" class="form-input" style="max-width:120px;" onchange="updateClassLink(${categoryIndex}, ${classIndex}, ${linkIndex}, 'label', this.value)">
+                                <input type="url" value="${escapeAttr(link.url || '')}" placeholder="URL" class="form-input flex-grow" onchange="updateClassLink(${categoryIndex}, ${classIndex}, ${linkIndex}, 'url', this.value)">
+                                <button type="button" class="remove-class-btn p-2" onclick="removeClassLink(${categoryIndex}, ${classIndex}, ${linkIndex})" title="Remove item">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                                </button>
+                            </div>
+                        `).join('')}
+                        <button type="button" class="modal-footer-button is-secondary mt-2" style="height:2rem; padding:0 0.9rem; font-size:0.75rem;" onclick="addClassLink(${categoryIndex}, ${classIndex})">+ Add Item</button>
+                    </div>
                 </div>
             `;
+        }
+
+        // --- EXTRA CLASS ITEMS (beyond the one primary URL) ---
+        // Each item is a typed link -- the type just picks an icon/label so a Zoom meeting reads
+        // differently from a syllabus doc at a glance, without needing separate data shapes.
+        const CLASS_ITEM_TYPES = {
+            link: { label: 'Link', icon: '<path d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 015.656 5.656l-1.5 1.5"/>' },
+            document: { label: 'Document', icon: '<path d="M7 3h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M14 3v5h5"/>' },
+            video: { label: 'Video', icon: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/>' },
+            meeting: { label: 'Meeting', icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/>' },
+            contact: { label: 'Contact', icon: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>' }
+        };
+        function classItemTypeIconSvg(type) {
+            const t = CLASS_ITEM_TYPES[type] || CLASS_ITEM_TYPES.link;
+            return `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">${t.icon}</svg>`;
+        }
+        function addClassLink(categoryIndex, classIndex) {
+            const classItem = classData[categoryIndex].classes[classIndex];
+            if (!Array.isArray(classItem.links)) classItem.links = [];
+            classItem.links.push({ type: 'link', label: '', url: '' });
+            renderClassEditor(document.getElementById('class-links-container'));
+            saveToLocalStorage();
+        }
+        function updateClassLink(categoryIndex, classIndex, linkIndex, field, value) {
+            classData[categoryIndex].classes[classIndex].links[linkIndex][field] = value;
+            saveToLocalStorage();
+        }
+        function removeClassLink(categoryIndex, classIndex, linkIndex) {
+            classData[categoryIndex].classes[classIndex].links.splice(linkIndex, 1);
+            renderClassEditor(document.getElementById('class-links-container'));
+            saveToLocalStorage();
         }
 
         // --- CLASS EDITOR: ACTIONS ---
@@ -3689,7 +4061,7 @@ body.dark-theme[data-palette="mint"] {
                 console.error("Invalid categoryIndex:", categoryIndex);
                 return;
             }
-            classData[categoryIndex].classes.push({ title: '', url: '', scheduleSlot: '', color: '', teacher: '', room: '', canvasCourseCode: '' });
+            classData[categoryIndex].classes.push({ title: '', url: '', scheduleSlot: '', color: '', teacher: '', room: '', canvasCourseCode: '', links: [] });
             renderClassEditor(document.getElementById('class-links-container'));
             saveToLocalStorage();
         }
@@ -4249,7 +4621,7 @@ body.dark-theme[data-palette="mint"] {
             const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: hour12 });
             const formattedDate = `${date.getMonth() + 1}.${date.getDate()}.${date.getFullYear()}`;
             const text = `Time: ${time} | Date: ${formattedDate}`;
-            ['Time', 'home-time', 'calendar-time'].forEach(id => {
+            ['Time', 'home-time', 'calendar-time', 'reminders-time'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.textContent = text;
             });
@@ -4360,7 +4732,7 @@ body.dark-theme[data-palette="mint"] {
             const container = document.getElementById('home-due-soon-content');
             if (!container) return;
             const now = Date.now();
-            const upcoming = canvasAssignments.filter(a => a.dueAt >= now).slice(0, 8);
+            const upcoming = canvasAssignments.filter(a => a.dueAt >= now && !isAssignmentDismissed(a)).slice(0, 8);
             if (!upcoming.length) {
                 container.innerHTML = `<p class="home-widget-empty">Nothing due soon.</p>`;
                 return;
@@ -4399,7 +4771,12 @@ body.dark-theme[data-palette="mint"] {
                                     <p class="home-item-sub">${a.courseCode ? escapeHtml(a.courseCode) + ' · ' : ''}${timeStr}</p>
                                 </div>
                             </div>
-                            <span class="home-due-countdown" style="color:${color};">${formatDueCountdown(msLeft)}</span>
+                            <div class="home-due-item-actions">
+                                <span class="home-due-countdown" style="color:${color};">${formatDueCountdown(msLeft)}</span>
+                                <button type="button" class="home-assignment-done-btn" onclick="event.stopPropagation(); markAssignmentDone('${escapeJsAttr(assignmentKey(a))}')" title="Mark as done">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+                                </button>
+                            </div>
                         </div>
                     `;
                 }).join('');
@@ -4762,12 +5139,23 @@ body.dark-theme[data-palette="mint"] {
         function getClassesForDateFiltered(date) {
             return calendarShowClasses ? getClassesForDate(date) : [];
         }
+        let calendarShowReminders = localStorage.getItem('calendarShowReminders') !== 'false';
+        function toggleCalendarRemindersFilter() {
+            calendarShowReminders = !calendarShowReminders;
+            localStorage.setItem('calendarShowReminders', String(calendarShowReminders));
+            renderCalendarCategoryFilterChips();
+            renderCalendar();
+        }
+        function getRemindersForDateFiltered(date) {
+            return calendarShowReminders ? getRemindersForDate(date) : [];
+        }
         function renderCalendarCategoryFilterChips() {
             const container = document.getElementById('calendar-category-filters');
             if (!container) return;
             container.querySelectorAll('.category-filter-chip').forEach(chip => {
                 const group = chip.dataset.group;
-                chip.classList.toggle('active', group === 'classes' ? calendarShowClasses : !!calendarCategoryFilter[group]);
+                const isActive = group === 'classes' ? calendarShowClasses : group === 'reminders' ? calendarShowReminders : !!calendarCategoryFilter[group];
+                chip.classList.toggle('active', isActive);
             });
         }
         function getFilteredExternalEventsForDate(date) {
@@ -4855,6 +5243,39 @@ body.dark-theme[data-palette="mint"] {
             setTimeout(() => toast.classList.add('hidden'), 450);
         }
 
+        // Generic "you just did X — Undo" toast, same look as the no-school toast, for any
+        // quick reversible action (currently just marking an assignment done).
+        let actionToastHideTimer = null;
+        function showActionToast(message, undoFn) {
+            const toast = document.getElementById('action-toast');
+            if (!toast) return;
+            toast.innerHTML = `
+                <div class="toast-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>
+                <div class="min-w-0">
+                    <p class="toast-title">${escapeHtml(message)}</p>
+                </div>
+                ${undoFn ? `<button type="button" class="toast-undo-btn" aria-label="Undo">Undo</button>` : ''}
+                <button type="button" class="toast-close" onclick="hideActionToast()" aria-label="Dismiss">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            `;
+            // The undo button needs a real closure over undoFn, which an inline onclick string
+            // can't carry -- wire it up directly instead of templating a function reference in.
+            const undoBtn = toast.querySelector('.toast-undo-btn');
+            if (undoBtn) undoBtn.onclick = () => { hideActionToast(); undoFn(); };
+            toast.classList.remove('hidden');
+            requestAnimationFrame(() => toast.classList.add('is-visible'));
+            clearTimeout(actionToastHideTimer);
+            actionToastHideTimer = setTimeout(hideActionToast, 6000);
+        }
+        function hideActionToast() {
+            const toast = document.getElementById('action-toast');
+            if (!toast) return;
+            clearTimeout(actionToastHideTimer);
+            toast.classList.remove('is-visible');
+            setTimeout(() => toast.classList.add('hidden'), 450);
+        }
+
         // --- CLASSES SCHEDULED FOR A GIVEN CALENDAR DATE ---
         function getSlotTimeRange(slotValue, isHalfDay) {
             const opt = userScheduleSlotOptions.find(o => o.value === slotValue);
@@ -4924,10 +5345,17 @@ body.dark-theme[data-palette="mint"] {
         function buildClassPopupHtml(classItem) {
             const chips = getClassMetaChips(classItem);
             const note = classNoteText(classItem);
+            const extraLinks = (classItem.links || []).filter(l => l.url);
             return `
                 <p class="day-hover-tooltip-date">${classDotHtml(classItem)}${classNameHtml(classItem)}</p>
                 ${chips.length ? `<div class="class-meta-row" style="margin:0 0 0.5rem;">${chips.map(c => `<span class="class-meta-chip">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
                 ${note ? `<p class="day-hover-tooltip-item" style="color:var(--text-muted); white-space:pre-wrap;">${escapeHtml(note)}</p>` : `<p class="day-hover-tooltip-empty">No notes for this class.</p>`}
+                ${extraLinks.length ? `
+                    <div class="day-hover-tooltip-section">
+                        <p class="day-hover-tooltip-section-title">Links</p>
+                        ${extraLinks.map(l => `<p class="day-hover-tooltip-item">${escapeHtml(l.label || l.url)}</p>`).join('')}
+                    </div>
+                ` : ''}
             `;
         }
         function setupClassHoverPopup() {
@@ -4984,6 +5412,58 @@ body.dark-theme[data-palette="mint"] {
             document.addEventListener('click', hideAllHoverPopups, true);
         }
 
+        // ===================== GLOBAL KEYBOARD SHORTCUTS =====================
+        // 0-8 jump straight to a class by period (0 = Advisory, matching today's A/B day),
+        // D/W/M/A/T mirror Google Calendar's own view shortcuts, N quick-adds a reminder.
+        // Bound once on document so these fire from any screen, not just the relevant one.
+        function isTypingTarget(el) {
+            if (!el) return false;
+            const tag = el.tagName;
+            return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+        }
+        function findClassBySlot(slot) {
+            for (const category of classData) {
+                for (const classItem of category.classes) {
+                    if (classItem.scheduleSlot === slot) return classItem;
+                }
+            }
+            return null;
+        }
+        function openClassForPeriodShortcut(n) {
+            if (n === 0) {
+                const advisory = findClassBySlot('ADVISORY');
+                if (advisory && advisory.url && advisory.url !== '#') window.location.href = advisory.url;
+                return;
+            }
+            const dayType = getDayType(new Date());
+            if (!dayType) return;
+            const classItem = findClassBySlot(`${dayType}_P${n}`);
+            if (classItem && classItem.url && classItem.url !== '#') window.location.href = classItem.url;
+        }
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                if (e.metaKey || e.ctrlKey || e.altKey) return;
+                if (isTypingTarget(e.target)) return;
+                // Any modal already open gets to keep the keyboard (e.g. Enter in the reminder
+                // modal) -- shortcuts shouldn't fire underneath it.
+                if (document.querySelector('.modal:not(.hidden)')) return;
+
+                if (/^[0-8]$/.test(e.key)) {
+                    e.preventDefault();
+                    openClassForPeriodShortcut(parseInt(e.key, 10));
+                    return;
+                }
+                switch (e.key.toLowerCase()) {
+                    case 'd': switchAppView('calendar'); switchView('day'); break;
+                    case 'w': switchAppView('calendar'); switchView('week'); break;
+                    case 'm': switchAppView('calendar'); switchView('month'); break;
+                    case 'a': switchAppView('calendar'); switchView('agenda'); break;
+                    case 't': switchAppView('calendar'); goToday(); break;
+                    case 'n': e.preventDefault(); openReminderModal(); break;
+                }
+            });
+        }
+
         const defaultADays = userADays;
         const defaultBDays = userBDays;
 
@@ -5008,6 +5488,170 @@ body.dark-theme[data-palette="mint"] {
         function renderClassesCalendarPreview() {
             renderMiniCalendarPreviewInto('classes-calendar-preview');
             renderMiniCalendarPreviewInto('home-calendar-preview');
+        }
+
+        // ===================== REMINDERS (recurring per-weekday quick notes) =====================
+        // Each reminder can optionally be attached to either a class (attachType 'class',
+        // attachValue = that class's noteId) or an event category (attachType 'category',
+        // attachValue = one of the calendar's own category keys) -- purely for display: a
+        // colored/labeled tag, and for classes a click-through to that class's URL.
+        const REMINDER_CATEGORY_OPTIONS = ['assignment', 'school-event', 'club', 'sports', 'event'];
+        let reminders = [];
+        function loadReminders() {
+            try { reminders = JSON.parse(localStorage.getItem('remindersV1') || '[]'); } catch (e) { reminders = []; }
+            reminders.forEach(r => { if (!r.attachType) r.attachType = 'none'; });
+        }
+        function saveReminders() {
+            localStorage.setItem('remindersV1', JSON.stringify(reminders));
+        }
+        function getRemindersForDate(date) {
+            const dow = date.getDay();
+            return reminders.filter(r => r.weekdays.includes(dow));
+        }
+        function getTodaysReminders() {
+            return getRemindersForDate(new Date());
+        }
+        function removeReminder(id) {
+            reminders = reminders.filter(r => r.id !== id);
+            saveReminders();
+            renderDigestBanner();
+            if (activeAppView === 'reminders') renderRemindersView();
+            if (activeAppView === 'calendar') renderCalendar();
+        }
+        // A ready-to-render {label, color, url} for a reminder's attachment, or null if it has
+        // none / points at something that no longer exists (a deleted class).
+        function reminderAttachmentInfo(reminder) {
+            if (reminder.attachType === 'class') {
+                const classItem = findClassByNoteId(reminder.attachValue);
+                if (!classItem) return null;
+                return { label: classItem.title, color: classItem.color || null, url: classItem.url && classItem.url !== '#' ? classItem.url : null };
+            }
+            if (reminder.attachType === 'category') {
+                return { label: categoryLabel(reminder.attachValue), color: CATEGORY_COLORS[reminder.attachValue] || null, url: null };
+            }
+            return null;
+        }
+        // The color a reminder should render in wherever it shows up on the calendar -- the
+        // color of whatever it's attached to, or a neutral default (still yellow-ish, just
+        // muted) when it isn't attached to anything.
+        function reminderDisplayColor(reminder) {
+            const info = reminderAttachmentInfo(reminder);
+            return (info && info.color) || '#eab308';
+        }
+
+        let reminderModalSelectedDays = new Set();
+        let editingReminderId = null;
+        function openReminderModal(reminderId) {
+            editingReminderId = reminderId || null;
+            const existing = editingReminderId ? reminders.find(r => r.id === editingReminderId) : null;
+            reminderModalSelectedDays = new Set(existing ? existing.weekdays : [new Date().getDay()]);
+            const input = document.getElementById('reminder-text-input');
+            input.value = existing ? existing.text : '';
+            document.getElementById('reminder-modal-title').textContent = existing ? 'Edit Reminder' : 'Add Reminder';
+            document.getElementById('reminder-attach-type').value = existing ? existing.attachType : 'none';
+            renderReminderWeekdayPicker();
+            renderReminderAttachValueOptions(existing ? existing.attachValue : null);
+            const modal = document.getElementById('reminder-modal');
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('show');
+            });
+            setTimeout(() => input.focus(), 50);
+        }
+        function hideReminderModal(event) {
+            if (event && event.target.id !== 'reminder-modal') return;
+            const modal = document.getElementById('reminder-modal');
+            modal.classList.add('opacity-0');
+            modal.classList.remove('show');
+            modal.addEventListener('transitionend', () => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, { once: true });
+        }
+        function renderReminderWeekdayPicker() {
+            const labels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            const container = document.getElementById('reminder-weekday-picker');
+            container.innerHTML = labels.map((l, i) => `<button type="button" class="weekday-chip ${reminderModalSelectedDays.has(i) ? 'active' : ''}" onclick="toggleReminderWeekday(${i})">${l}</button>`).join('');
+        }
+        function toggleReminderWeekday(day) {
+            if (reminderModalSelectedDays.has(day)) reminderModalSelectedDays.delete(day); else reminderModalSelectedDays.add(day);
+            renderReminderWeekdayPicker();
+        }
+        function renderReminderAttachValueOptions(selectedValue) {
+            const type = document.getElementById('reminder-attach-type').value;
+            const wrap = document.getElementById('reminder-attach-value-wrap');
+            if (type === 'class') {
+                const options = [];
+                classData.forEach(category => category.classes.forEach(c => {
+                    if (c.noteId) options.push(`<option value="${escapeAttr(c.noteId)}" ${selectedValue === c.noteId ? 'selected' : ''}>${escapeHtml(c.title)}</option>`);
+                }));
+                wrap.innerHTML = `<select id="reminder-attach-value" class="form-select">${options.join('')}</select>`;
+            } else if (type === 'category') {
+                wrap.innerHTML = `<select id="reminder-attach-value" class="form-select">${REMINDER_CATEGORY_OPTIONS.map(c => `<option value="${c}" ${selectedValue === c ? 'selected' : ''}>${categoryLabel(c)}</option>`).join('')}</select>`;
+            } else {
+                wrap.innerHTML = '';
+            }
+        }
+        function saveReminderFromModal() {
+            const text = document.getElementById('reminder-text-input').value.trim();
+            if (!text || !reminderModalSelectedDays.size) return;
+            const attachType = document.getElementById('reminder-attach-type').value;
+            const attachValueEl = document.getElementById('reminder-attach-value');
+            const attachValue = attachType !== 'none' && attachValueEl ? attachValueEl.value : null;
+            if (editingReminderId) {
+                const r = reminders.find(x => x.id === editingReminderId);
+                Object.assign(r, { text, weekdays: [...reminderModalSelectedDays], attachType, attachValue });
+            } else {
+                reminders.push({
+                    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+                    text,
+                    weekdays: [...reminderModalSelectedDays],
+                    attachType,
+                    attachValue
+                });
+            }
+            saveReminders();
+            hideReminderModal();
+            renderDigestBanner();
+            if (activeAppView === 'reminders') renderRemindersView();
+            if (activeAppView === 'calendar') renderCalendar();
+        }
+
+        const WEEKDAY_SHORT_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        function reminderWeekdaysLabel(weekdays) {
+            if (weekdays.length === 7) return 'Every day';
+            const sorted = [...weekdays].sort();
+            return sorted.map(d => WEEKDAY_SHORT_LABELS[d]).join(', ');
+        }
+        function renderRemindersView() {
+            const container = document.getElementById('reminders-list-container');
+            if (!container) return;
+            if (!reminders.length) {
+                container.innerHTML = `<p class="home-widget-empty">No reminders yet. Add one to get started.</p>`;
+                return;
+            }
+            container.innerHTML = `<div class="home-list">${reminders.map(r => {
+                const info = reminderAttachmentInfo(r);
+                return `
+                    <div class="home-list-item" style="${info && info.color ? `border-color:${escapeAttr(info.color)};` : ''}">
+                        <span class="home-dot" style="background:${info && info.color ? escapeAttr(info.color) : 'var(--accent-2)'};"></span>
+                        <div class="min-w-0" style="flex-grow:1;">
+                            <p class="home-item-title">${escapeHtml(r.text)}</p>
+                            <p class="home-item-sub">${reminderWeekdaysLabel(r.weekdays)}${info ? ` · ${escapeHtml(info.label)}` : ''}</p>
+                        </div>
+                        <div class="home-due-item-actions" style="opacity:1;">
+                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="openReminderModal('${escapeJsAttr(r.id)}')" title="Edit reminder">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="removeReminder('${escapeJsAttr(r.id)}')" title="Delete reminder">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('')}</div>`;
         }
 
         function renderMiniCalendarPreviewInto(containerId) {
@@ -5289,6 +5933,8 @@ body.dark-theme[data-palette="mint"] {
                     </div>
                 ` : '';
                 const classesPreviewHtml = classesToday.length ? `<p class="day-classes-preview">${classesToday.map(c => `<span${classPopupAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>` : '';
+                const remindersToday = getRemindersForDateFiltered(cursor);
+                const remindersPreviewHtml = remindersToday.length ? `<p class="day-classes-preview">${remindersToday.map(r => `📌 <span style="color:${reminderDisplayColor(r)};">${escapeHtml(r.text)}</span>`).join(', ')}</p>` : '';
                 cells += `
                     <div class="day-cell p-2 rounded-lg border ${isOutside ? 'outside-month' : ''} ${isToday ? 'is-today' : ''}" data-date="${dateKey(cursor)}" onclick="openDay('${dateKey(cursor)}')">
                         <div class="flex justify-between items-center">
@@ -5297,6 +5943,7 @@ body.dark-theme[data-palette="mint"] {
                         </div>
                         ${titleHtml}
                         ${classesPreviewHtml}
+                        ${remindersPreviewHtml}
                         ${externalDotsHtml}
                         ${dotHtml}
                     </div>
@@ -5341,6 +5988,12 @@ body.dark-theme[data-palette="mint"] {
                         ${classesToday.map(c => `<p class="week-class-row"${classPopupAttr(c.classItem)}><span class="flex items-center gap-1.5 min-w-0">${classDotHtml(c.classItem)}<span class="truncate">${classNameHtml(c.classItem)}</span></span>${c.timeRange ? `<span class="week-class-time">${escapeHtml(formatTimeOnly(c.timeRange.split(' - ')[0]))}</span>` : ''}</p>`).join('')}
                     </div>
                 ` : '';
+                const remindersToday = getRemindersForDateFiltered(d);
+                const remindersHtml = remindersToday.length ? `
+                    <div class="week-classes-list">
+                        ${remindersToday.map(r => `<p class="week-class-row"><span class="flex items-center gap-1.5 min-w-0"><span class="truncate" style="color:${reminderDisplayColor(r)};">📌 ${escapeHtml(r.text)}</span></span></p>`).join('')}
+                    </div>
+                ` : '';
                 cols += `
                     <div class="week-day-col p-3 rounded-lg border ${isToday ? 'is-today' : ''}" data-date="${dateKey(d)}" onclick="openDay('${dateKey(d)}')">
                         <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">${d.toLocaleDateString('en-US', { weekday: 'short' })}</p>
@@ -5351,6 +6004,7 @@ body.dark-theme[data-palette="mint"] {
                         ${titleHtml}
                         ${notesHtml}
                         ${classesHtml}
+                        ${remindersHtml}
                         ${externalHtml}
                     </div>
                 `;
@@ -5403,11 +6057,26 @@ body.dark-theme[data-palette="mint"] {
                     </div>
                 </div>
             ` : '';
+            const remindersToday = getRemindersForDateFiltered(currentDate);
+            const remindersDayHtml = remindersToday.length ? `
+                <div class="mb-6">
+                    <p class="text-sm font-semibold mb-2">Reminders</p>
+                    <div class="space-y-1">
+                        ${remindersToday.map(r => `
+                            <div class="flex items-center gap-2 text-sm">
+                                <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${reminderDisplayColor(r)}"></span>
+                                <span style="color:${reminderDisplayColor(r)};">📌 ${escapeHtml(r.text)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : '';
 
             return `
                 <div class="max-w-2xl mx-auto">
                     <div class="flex justify-center mb-6">${badgeHtml}</div>
                     ${classesHtml}
+                    ${remindersDayHtml}
                     ${externalHtml}
                     <label class="block text-sm font-semibold mb-2" for="day-title-input">Title</label>
                     <input type="text" id="day-title-input" class="form-input mb-6" placeholder="e.g. Field Trip, Quiz in German" value="${escapeAttr(note.title)}">
@@ -5498,7 +6167,8 @@ body.dark-theme[data-palette="mint"] {
                 const note = dayNotes[key];
                 const externalEvents = getFilteredExternalEventsForDate(entry.date);
                 const hasNote = note && (note.title || note.notes);
-                const hasEntries = dayType || noSchool || hasNote || externalEvents.length;
+                const remindersToday = getRemindersForDateFiltered(entry.date);
+                const hasEntries = dayType || noSchool || hasNote || externalEvents.length || remindersToday.length;
                 if (!hasEntries) return;
 
                 const monthLabel = entry.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -5533,6 +6203,9 @@ body.dark-theme[data-palette="mint"] {
                 const classesHtml = classesToday.length ? `
                     <p class="text-xs mt-1 text-gray-500 dark:text-gray-400 truncate">${classesToday.map(c => `<span${classPopupAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>
                 ` : '';
+                const remindersHtml = remindersToday.length ? `
+                    <p class="text-xs mt-1 truncate">${remindersToday.map(r => `📌 <span style="color:${reminderDisplayColor(r)};">${escapeHtml(r.text)}</span>`).join(', ')}</p>
+                ` : '';
                 const externalHtml = externalEvents.length ? `
                     <div class="mt-2 space-y-1">
                         ${externalEvents.map(e => `
@@ -5559,6 +6232,7 @@ body.dark-theme[data-palette="mint"] {
                                 ${titleHtml}
                                 ${notesHtml}
                                 ${classesHtml}
+                                ${remindersHtml}
                                 ${externalHtml}
                             </div>
                         </div>
@@ -6360,6 +7034,10 @@ body.dark-theme[data-palette="mint"] {
         }
 
         const CATEGORY_LABELS = { assignment: 'Assignment', 'canvas-event': 'Event', event: 'Event', sports: 'Sports', 'school-event': 'School Event', club: 'Club' };
+        // Matches the calendar's own filter-chip/legend colors (see the category-filter-chip
+        // buttons and renderCalendarLegend) so a reminder tagged with a category reads
+        // consistently with how that category looks everywhere else.
+        const CATEGORY_COLORS = { assignment: '#ef4444', 'school-event': '#38bdf8', club: '#f97316', sports: '#a855f7', event: '#a3e635' };
         function categoryLabel(category) {
             return CATEGORY_LABELS[category] || 'Event';
         }
@@ -6482,18 +7160,68 @@ body.dark-theme[data-palette="mint"] {
                         description: ev.description,
                         dueAt: ev.timestamp,
                         allDay: !!ev.allDay,
-                        feedLabel: feed.label
+                        feedLabel: feed.label,
+                        // Stable id for "mark as done" -- prefixed with the feed id since a bare
+                        // ICS UID is only guaranteed unique within its own feed.
+                        uid: feed.id + '|' + (ev.uid || '')
                     });
                 });
             });
             list.sort((a, b) => a.dueAt - b.dueAt);
             canvasAssignments = list;
+            pruneDismissedAssignments();
         }
 
         // The next assignment due at or after now, if any (canvasAssignments is kept sorted).
+        // Marked-done assignments are skipped everywhere through this + the filters below, not
+        // removed from canvasAssignments itself -- the calendar's own assignment dots are a
+        // separate, factual data pipeline (externalEventsByDate) and stay untouched; "done" only
+        // curates the actionable Due Soon / Today-brief lists.
         function getNextDueAssignment() {
             const now = Date.now();
-            return canvasAssignments.find(a => a.dueAt >= now) || null;
+            return canvasAssignments.find(a => a.dueAt >= now && !isAssignmentDismissed(a)) || null;
+        }
+
+        // ===================== MARK ASSIGNMENT AS DONE =====================
+        function assignmentKey(a) {
+            return a.uid || (a.rawTitle + '|' + a.dueAt);
+        }
+        let dismissedAssignmentKeys = new Set();
+        function loadDismissedAssignments() {
+            try {
+                dismissedAssignmentKeys = new Set(JSON.parse(localStorage.getItem('dismissedAssignmentKeys') || '[]'));
+            } catch (e) {
+                dismissedAssignmentKeys = new Set();
+            }
+        }
+        function saveDismissedAssignments() {
+            localStorage.setItem('dismissedAssignmentKeys', JSON.stringify([...dismissedAssignmentKeys]));
+        }
+        function isAssignmentDismissed(a) {
+            return dismissedAssignmentKeys.has(assignmentKey(a));
+        }
+        function markAssignmentDone(key) {
+            dismissedAssignmentKeys.add(key);
+            saveDismissedAssignments();
+            renderHomeDueSoon();
+            renderDigestBanner();
+            showActionToast('Marked as done', () => {
+                dismissedAssignmentKeys.delete(key);
+                saveDismissedAssignments();
+                renderHomeDueSoon();
+                renderDigestBanner();
+            });
+        }
+        // Drops keys for assignments that no longer appear in canvasAssignments at all (past
+        // their due date and aged out of the feed) so this set doesn't grow forever.
+        function pruneDismissedAssignments() {
+            if (!dismissedAssignmentKeys.size) return;
+            const validKeys = new Set(canvasAssignments.map(assignmentKey));
+            let changed = false;
+            dismissedAssignmentKeys.forEach(k => {
+                if (!validKeys.has(k)) { dismissedAssignmentKeys.delete(k); changed = true; }
+            });
+            if (changed) saveDismissedAssignments();
         }
 
         // --- CALENDAR SETTINGS MODAL ---
@@ -6909,6 +7637,7 @@ body.dark-theme[data-palette="mint"] {
             const noSchool = isNoSchoolDay(date);
             const note = getNote(date);
             const classesToday = getClassesForDateFiltered(date);
+            const remindersToday = getRemindersForDateFiltered(date);
             const events = getFilteredExternalEventsForDate(date);
             const dateLabel = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
@@ -6958,12 +7687,19 @@ body.dark-theme[data-palette="mint"] {
                 </div>
             ` : '';
 
-            const nothingHtml = !noteHasContent && !classesToday.length && !events.length && !dayType && !noSchool
+            const remindersHtml = remindersToday.length ? `
+                <div class="day-hover-tooltip-section">
+                    <p class="day-hover-tooltip-section-title">Reminders</p>
+                    ${remindersToday.map(r => `<p class="day-hover-tooltip-item">📌 <span style="color:${reminderDisplayColor(r)};">${escapeHtml(r.text)}</span></p>`).join('')}
+                </div>
+            ` : '';
+
+            const nothingHtml = !noteHasContent && !classesToday.length && !events.length && !dayType && !noSchool && !remindersToday.length
                 ? `<p class="day-hover-tooltip-empty">Nothing scheduled.</p>` : '';
 
             return `
                 <p class="day-hover-tooltip-date">${escapeHtml(dateLabel)} ${badgeHtml}</p>
-                ${noteHtml}${classesHtml}${eventsHtml}${nothingHtml}
+                ${noteHtml}${classesHtml}${remindersHtml}${eventsHtml}${nothingHtml}
             `;
         }
 
@@ -7284,7 +8020,7 @@ body.dark-theme[data-palette="mint"] {
 
             if (!dailyDismissed) {
                 const today = new Date();
-                const dueToday = canvasAssignments.filter(a => dateKey(new Date(a.dueAt)) === todayKey);
+                const dueToday = canvasAssignments.filter(a => dateKey(new Date(a.dueAt)) === todayKey && !isAssignmentDismissed(a));
                 const eventsToday = getExternalEventsForDate(today).filter(ev => ev.category !== 'assignment');
                 const dayType = getDayType(today);
                 const noSchool = isNoSchoolDay(today);
@@ -7294,7 +8030,8 @@ body.dark-theme[data-palette="mint"] {
                 // schedule already lives in the Next Class widget and Today's Classes list, so
                 // this brief only calls out the ones with something worth reading.
                 const classesWithNotes = getClassesForDate(today).filter(c => classNoteText(c.classItem));
-                const hasAny = dueToday.length || eventsToday.length || dayType || noSchool || hasDayNote || classesWithNotes.length;
+                const todaysReminders = getTodaysReminders();
+                const hasAny = dueToday.length || eventsToday.length || dayType || noSchool || hasDayNote || classesWithNotes.length || todaysReminders.length;
 
                 // A day-type badge and/or day note reads as one "Day" fact, not a list item, so
                 // it gets its own compact header row instead of living inside .digest-items.
@@ -7332,6 +8069,13 @@ body.dark-theme[data-palette="mint"] {
                         </span>
                     </div>
                 `).join('');
+                const remindersHtml = todaysReminders.map(r => `
+                    <div class="digest-item">
+                        <span class="home-dot" style="background:var(--accent-2);"></span>
+                        <span class="min-w-0">${escapeHtml(r.text)}</span>
+                        <button type="button" class="digest-dismiss-btn" onclick="removeReminder('${escapeJsAttr(r.id)}')" title="Delete reminder">&times;</button>
+                    </div>
+                `).join('');
 
                 // Same section-header pattern as the calendar's day-hover-tooltip (see
                 // buildDayTooltipHtml) so a class's info reads the same wherever it shows up.
@@ -7339,6 +8083,7 @@ body.dark-theme[data-palette="mint"] {
                     ? `<div class="digest-section"><p class="digest-section-title">${title}</p><div class="digest-items">${itemsHtml}</div></div>`
                     : '';
                 const sections = [
+                    digestSection('Reminders', remindersHtml),
                     digestSection('Assignments Due', dueHtml),
                     digestSection('Events', eventsHtml),
                     digestSection('Classes', classesHtml)
@@ -7377,6 +8122,8 @@ body.dark-theme[data-palette="mint"] {
 
             renderClassLinks();
             loadDayNotes();
+            loadReminders();
+            loadDismissedAssignments();
             loadExternalFeeds();
             rebuildExternalEventsIndex();
             refreshExternalFeeds(false);
@@ -7396,6 +8143,7 @@ body.dark-theme[data-palette="mint"] {
             setupClickEffects();
             setupCalendarSearchDismiss();
             setupClassHoverPopup();
+            setupKeyboardShortcuts();
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
                 if (currentThemeState === 'system') applyTheme('system');
             });
