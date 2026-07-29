@@ -1820,46 +1820,89 @@ body.dark-theme[data-palette="mint"] {
         .settings-tab-btn.active { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
         .settings-category.hidden { display: none; }
 
-        /* ===================== CUSTOMIZE HOME MODAL ===================== */
-        .customize-home-row {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.6rem 0.75rem;
-            border-radius: 0.75rem;
-            border: 1px solid var(--glass-border);
-            background: var(--glass-bg-strong);
-            margin-bottom: 0.5rem;
+        /* ===================== HOME SCREEN EDITOR (in-place, iOS-springboard-style) ===================== */
+        /* Editing needs explicit columns (not auto-fit) so a widget can deliberately span 2. */
+        .home-widget-grid.is-editing {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
-        .customize-home-row.is-hidden { opacity: 0.5; }
-        .customize-home-row label {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            flex-grow: 1;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.9rem;
+        @media (max-width: 640px) {
+            .home-widget-grid.is-editing { grid-template-columns: 1fr; }
         }
-        .customize-home-row-arrows {
-            display: flex;
-            gap: 0.25rem;
-        }
-        .customize-home-arrow-btn {
-            width: 1.9rem;
-            height: 1.9rem;
+        .home-widget-size-wide { grid-column: span 2; }
+        .home-widget { position: relative; transform-origin: center; }
+        .ios-remove-dot, .ios-add-dot {
+            flex-shrink: 0;
+            width: 1.6rem;
+            height: 1.6rem;
             border-radius: 9999px;
-            border: 1px solid var(--glass-border);
-            background: transparent;
-            color: var(--text-secondary);
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 800;
+            line-height: 1;
             cursor: pointer;
+            color: #fff;
+        }
+        .ios-remove-dot { background: #ef4444; padding-bottom: 2px; }
+        .ios-add-dot { background: #22c55e; }
+        .ios-remove-dot:hover, .ios-add-dot:hover { filter: brightness(1.1); }
+        .home-widget-remove-badge {
+            position: absolute;
+            top: -0.5rem;
+            left: -0.5rem;
+            z-index: 5;
+            box-shadow: 0 2px 8px rgba(0,0,0,.25);
+        }
+        .home-widget-resize-handle {
+            position: absolute;
+            bottom: 0.4rem;
+            right: 0.4rem;
+            z-index: 5;
+            width: 1.5rem;
+            height: 1.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 9999px;
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            cursor: ew-resize;
+            touch-action: none;
         }
-        .customize-home-arrow-btn:hover { color: var(--text-primary); border-color: var(--accent-2); }
-        .customize-home-arrow-btn:disabled { opacity: 0.3; cursor: default; }
-        .customize-home-arrow-btn:disabled:hover { color: var(--text-secondary); border-color: var(--glass-border); }
+        .home-widget-resize-handle svg { width: 0.85rem; height: 0.85rem; }
+        /* Springboard-style wiggle -- each widget gets a slightly different animation-delay (set
+           inline per element) so they don't all rock in lockstep like a single rigid grid. */
+        @keyframes ios-jiggle {
+            0%, 100% { transform: rotate(-0.6deg); }
+            50% { transform: rotate(0.6deg); }
+        }
+        .home-widget-grid.is-editing > .home-widget {
+            animation: ios-jiggle 0.22s ease-in-out infinite;
+        }
+        .home-widget-grid.is-editing > .home-widget.is-dragging {
+            opacity: 0.4;
+            animation: none;
+        }
+        .home-widget-add-tile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-height: 6rem;
+            border-radius: 1.25rem;
+            border: 2px dashed var(--glass-border);
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .home-widget-add-tile:hover { border-color: var(--accent-2); color: var(--text-primary); }
+        #customize-home-button.is-done { background: var(--accent-2); color: #fff; }
         .note-dot {
             width: 0.4rem;
             height: 0.4rem;
@@ -2338,19 +2381,6 @@ body.dark-theme[data-palette="mint"] {
         </div>
     </div>
 
-    <!-- Customize Home modal: show/hide + reorder Home widgets (see openCustomizeHomeModal) -->
-    <div id="customize-home-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="closeCustomizeHomeModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-8 border" onclick="event.stopPropagation()">
-            <h3 class="text-2xl font-bold mb-2">Customize Home</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Show or hide widgets, and reorder them with the arrows.</p>
-            <div id="customize-home-list" class="mb-6"></div>
-            <div class="flex justify-end gap-4">
-                <button type="button" class="modal-footer-button is-secondary" onclick="resetCustomizeHomeLayout()">Reset to Default</button>
-                <button type="button" class="modal-footer-button bg-indigo-600" onclick="closeCustomizeHomeModal()">Done</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Onboarding tour overlay: spotlight + tooltip, driven entirely by JS (see startOnboardingTour) -->
     <div id="tour-dim" class="hidden"></div>
     <div id="tour-spotlight" class="hidden"></div>
@@ -2470,9 +2500,13 @@ body.dark-theme[data-palette="mint"] {
                             <h1 class="gradient-text text-5xl sm:text-6xl font-extrabold tracking-tight">Home</h1>
                             <h3 class="text-xl sm:text-2xl font-medium tracking-wide mt-1" id="home-time"></h3>
                         </div>
-                        <button type="button" id="customize-home-button" class="icon-btn p-3 rounded-full" onclick="openCustomizeHomeModal()" title="Customize Home">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="home-reset-layout-button" class="modal-footer-button is-secondary hidden" onclick="resetCustomizeHomeLayout()">Reset Layout</button>
+                            <button type="button" id="customize-home-button" class="icon-btn p-3 rounded-full" onclick="toggleHomeEditMode()" title="Customize Home">
+                                <svg class="home-edit-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                <svg class="home-done-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                            </button>
+                        </div>
                     </div>
 
                     <div id="digest-banner-container"></div>
@@ -5146,9 +5180,11 @@ body.dark-theme[data-palette="mint"] {
             applyHomeWidgetLayout();
         }
 
-        // ===================== CUSTOMIZE HOME (widget show/hide + reorder) =====================
-        // Layout is just an ordered list of widget ids with a visible flag -- DOM nodes are
-        // physically reordered (not just re-styled) so tab order and print/export stay sane.
+        // ===================== HOME SCREEN EDITOR (iOS-springboard-style in-place editing) =====================
+        // No modal -- "Edit" turns the actual Home grid itself into an editor: widgets jiggle,
+        // each gets a red remove badge and a drag handle to reposition, a corner grip lets you
+        // drag to resize between one and two grid columns, and hidden widgets appear as dashed
+        // "add" tiles right in the grid. "Done" commits and turns editing back off.
         const HOME_WIDGET_DEFS = [
             { id: 'next-class', label: 'Next Class', el: 'home-widget-next-class' },
             { id: 'due-soon', label: 'Due Soon', el: 'home-widget-due-soon' },
@@ -5157,19 +5193,22 @@ body.dark-theme[data-palette="mint"] {
             { id: 'upcoming', label: 'Upcoming Events', el: 'home-widget-upcoming' },
             { id: 'calendar-preview', label: 'Calendar Preview', el: 'home-calendar-preview' }
         ];
+        const HOME_WIDGET_DEFAULT_SIZES = { upcoming: 'wide', 'calendar-preview': 'wide' };
         function defaultHomeWidgetLayout() {
-            return HOME_WIDGET_DEFS.map(w => ({ id: w.id, visible: true }));
+            return HOME_WIDGET_DEFS.map(w => ({ id: w.id, visible: true, size: HOME_WIDGET_DEFAULT_SIZES[w.id] || 'small' }));
         }
         function loadHomeWidgetLayout() {
             let layout;
             try { layout = JSON.parse(localStorage.getItem('homeWidgetLayoutV1') || 'null'); } catch (e) { layout = null; }
             if (!Array.isArray(layout)) return defaultHomeWidgetLayout();
             // Reconcile against HOME_WIDGET_DEFS so a future widget added to the app (or one
-            // whose id changed) doesn't silently disappear or crash the reorder logic.
+            // whose id changed) doesn't silently disappear or crash the layout logic.
             const knownIds = new Set(HOME_WIDGET_DEFS.map(w => w.id));
-            const cleaned = layout.filter(entry => entry && knownIds.has(entry.id));
+            const cleaned = layout.filter(entry => entry && knownIds.has(entry.id)).map(entry => ({
+                id: entry.id, visible: !!entry.visible, size: entry.size === 'wide' ? 'wide' : 'small'
+            }));
             HOME_WIDGET_DEFS.forEach(w => {
-                if (!cleaned.some(entry => entry.id === w.id)) cleaned.push({ id: w.id, visible: true });
+                if (!cleaned.some(entry => entry.id === w.id)) cleaned.push({ id: w.id, visible: true, size: HOME_WIDGET_DEFAULT_SIZES[w.id] || 'small' });
             });
             return cleaned;
         }
@@ -5184,73 +5223,193 @@ body.dark-theme[data-palette="mint"] {
                 const el = def && document.getElementById(def.el);
                 if (!el) return;
                 el.classList.toggle('hidden', !entry.visible);
+                el.classList.toggle('home-widget-size-wide', entry.size === 'wide');
                 // Widgets inside the grid get reordered there; the full-width calendar preview
                 // lives outside the grid and stays pinned below it regardless of list position.
                 if (grid && el.parentElement === grid) grid.appendChild(el);
             });
+            if (isHomeEditModeActive()) renderHomeEditExtras();
         }
-        function openCustomizeHomeModal() {
-            renderCustomizeHomeList();
-            const modal = document.getElementById('customize-home-modal');
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-            requestAnimationFrame(() => {
-                modal.classList.remove('opacity-0');
-                modal.classList.add('show');
+
+        let homeEditMode = false;
+        function isHomeEditModeActive() { return homeEditMode; }
+        function toggleHomeEditMode() {
+            homeEditMode ? exitHomeEditMode() : enterHomeEditMode();
+        }
+        function enterHomeEditMode() {
+            homeEditMode = true;
+            const grid = document.querySelector('.home-widget-grid');
+            grid.classList.add('is-editing');
+            const btn = document.getElementById('customize-home-button');
+            if (btn) {
+                btn.classList.add('is-done');
+                btn.title = 'Done editing';
+                btn.querySelector('.home-edit-icon').classList.add('hidden');
+                btn.querySelector('.home-done-icon').classList.remove('hidden');
+            }
+            const resetBtn = document.getElementById('home-reset-layout-button');
+            if (resetBtn) resetBtn.classList.remove('hidden');
+
+            Array.from(grid.children).forEach((el, i) => {
+                if (!el.classList.contains('home-widget')) return;
+                el.setAttribute('draggable', 'true');
+                el.style.animationDelay = ((i % 5) * 0.045) + 's';
+                el.ondragstart = (e) => handleHomeWidgetDragStart(e, el);
+                el.ondragover = (e) => handleHomeWidgetDragOver(e, el);
+                el.ondrop = (e) => e.preventDefault();
+                el.ondragend = () => handleHomeWidgetDragEnd();
+
+                if (!el.querySelector('.home-widget-remove-badge')) {
+                    const badge = document.createElement('button');
+                    badge.type = 'button';
+                    badge.className = 'home-widget-remove-badge ios-remove-dot';
+                    badge.title = 'Hide widget';
+                    badge.textContent = '−';
+                    badge.onclick = (ev) => { ev.stopPropagation(); hideHomeWidgetById(el.id); };
+                    el.appendChild(badge);
+                }
+                if (!el.querySelector('.home-widget-resize-handle')) {
+                    const handle = document.createElement('div');
+                    handle.className = 'home-widget-resize-handle';
+                    handle.title = 'Drag to resize';
+                    handle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 4L4 20M20 12l-8 8M20 20h-4"></path></svg>';
+                    handle.addEventListener('pointerdown', (ev) => startHomeWidgetResize(ev, el));
+                    el.appendChild(handle);
+                }
+            });
+            renderHomeEditExtras();
+        }
+        function exitHomeEditMode() {
+            homeEditMode = false;
+            const grid = document.querySelector('.home-widget-grid');
+            grid.classList.remove('is-editing');
+            const btn = document.getElementById('customize-home-button');
+            if (btn) {
+                btn.classList.remove('is-done');
+                btn.title = 'Customize Home';
+                btn.querySelector('.home-edit-icon').classList.remove('hidden');
+                btn.querySelector('.home-done-icon').classList.add('hidden');
+            }
+            const resetBtn = document.getElementById('home-reset-layout-button');
+            if (resetBtn) resetBtn.classList.add('hidden');
+            Array.from(grid.children).forEach(el => {
+                if (!el.classList.contains('home-widget')) return;
+                el.removeAttribute('draggable');
+                el.style.removeProperty('animation-delay');
+                el.ondragstart = el.ondragover = el.ondrop = el.ondragend = null;
+                const badge = el.querySelector('.home-widget-remove-badge');
+                if (badge) badge.remove();
+                const handle = el.querySelector('.home-widget-resize-handle');
+                if (handle) handle.remove();
+            });
+            document.querySelectorAll('.home-widget-add-tile').forEach(t => t.remove());
+        }
+        // Dashed "+ Add Widget" tiles for anything currently hidden, appended into the live grid
+        // right alongside the real widgets -- tapping one un-hides it in place, no separate list.
+        function renderHomeEditExtras() {
+            document.querySelectorAll('.home-widget-add-tile').forEach(t => t.remove());
+            const grid = document.querySelector('.home-widget-grid');
+            const layout = loadHomeWidgetLayout();
+            layout.filter(e => !e.visible).forEach(entry => {
+                const def = HOME_WIDGET_DEFS.find(w => w.id === entry.id);
+                if (!def) return;
+                const tile = document.createElement('button');
+                tile.type = 'button';
+                tile.className = 'home-widget-add-tile';
+                tile.innerHTML = `<span class="ios-add-dot" aria-hidden="true">+</span><span>${escapeHtml(def.label)}</span>`;
+                tile.onclick = () => showHomeWidgetById(def.id);
+                grid.appendChild(tile);
             });
         }
-        function closeCustomizeHomeModal(event) {
-            if (event && event.target.id !== 'customize-home-modal') return;
-            const modal = document.getElementById('customize-home-modal');
-            modal.classList.add('opacity-0');
-            modal.classList.remove('show');
-            modal.addEventListener('transitionend', () => {
-                modal.classList.add('hidden');
-                document.body.style.overflow = '';
-            }, { once: true });
-        }
-        function renderCustomizeHomeList() {
+        function hideHomeWidgetById(elId) {
+            const def = HOME_WIDGET_DEFS.find(w => w.el === elId);
+            if (!def) return;
             const layout = loadHomeWidgetLayout();
-            const container = document.getElementById('customize-home-list');
-            container.innerHTML = layout.map((entry, i) => {
-                const def = HOME_WIDGET_DEFS.find(w => w.id === entry.id);
-                if (!def) return '';
-                return `
-                    <div class="customize-home-row ${entry.visible ? '' : 'is-hidden'}">
-                        <label>
-                            <input type="checkbox" ${entry.visible ? 'checked' : ''} onchange="toggleHomeWidgetVisible('${def.id}', this.checked)">
-                            ${escapeHtml(def.label)}
-                        </label>
-                        <div class="customize-home-row-arrows">
-                            <button type="button" class="customize-home-arrow-btn" ${i === 0 ? 'disabled' : ''} onclick="moveHomeWidget('${def.id}', -1)" title="Move up">&uarr;</button>
-                            <button type="button" class="customize-home-arrow-btn" ${i === layout.length - 1 ? 'disabled' : ''} onclick="moveHomeWidget('${def.id}', 1)" title="Move down">&darr;</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            const entry = layout.find(e => e.id === def.id);
+            if (entry) entry.visible = false;
+            saveHomeWidgetLayout(layout);
+            document.getElementById(elId).classList.add('hidden');
+            renderHomeEditExtras();
         }
-        function toggleHomeWidgetVisible(id, visible) {
+        function showHomeWidgetById(id) {
             const layout = loadHomeWidgetLayout();
             const entry = layout.find(e => e.id === id);
-            if (entry) entry.visible = visible;
+            if (entry) {
+                entry.visible = true;
+                layout.splice(layout.indexOf(entry), 1);
+                layout.push(entry);
+            }
             saveHomeWidgetLayout(layout);
             applyHomeWidgetLayout();
-            renderCustomizeHomeList();
-        }
-        function moveHomeWidget(id, direction) {
-            const layout = loadHomeWidgetLayout();
-            const i = layout.findIndex(e => e.id === id);
-            const j = i + direction;
-            if (i < 0 || j < 0 || j >= layout.length) return;
-            [layout[i], layout[j]] = [layout[j], layout[i]];
-            saveHomeWidgetLayout(layout);
-            applyHomeWidgetLayout();
-            renderCustomizeHomeList();
+            if (homeEditMode) enterHomeEditMode();
         }
         function resetCustomizeHomeLayout() {
             saveHomeWidgetLayout(defaultHomeWidgetLayout());
             applyHomeWidgetLayout();
-            renderCustomizeHomeList();
+            if (homeEditMode) enterHomeEditMode();
+        }
+
+        // --- DRAG TO REPOSITION (live grid) ---
+        let draggedHomeWidgetEl = null;
+        function handleHomeWidgetDragStart(e, el) {
+            draggedHomeWidgetEl = el;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', el.id);
+            requestAnimationFrame(() => el.classList.add('is-dragging'));
+        }
+        function handleHomeWidgetDragOver(e, targetEl) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (!draggedHomeWidgetEl || targetEl === draggedHomeWidgetEl) return;
+            const grid = document.querySelector('.home-widget-grid');
+            const rect = targetEl.getBoundingClientRect();
+            const before = e.clientX < rect.left + rect.width / 2;
+            grid.insertBefore(draggedHomeWidgetEl, before ? targetEl : targetEl.nextSibling);
+        }
+        function handleHomeWidgetDragEnd() {
+            if (draggedHomeWidgetEl) draggedHomeWidgetEl.classList.remove('is-dragging');
+            draggedHomeWidgetEl = null;
+            commitHomeGridOrderToLayout();
+        }
+        function commitHomeGridOrderToLayout() {
+            const grid = document.querySelector('.home-widget-grid');
+            const domIds = Array.from(grid.children)
+                .filter(el => el.classList.contains('home-widget'))
+                .map(el => HOME_WIDGET_DEFS.find(w => w.el === el.id))
+                .filter(Boolean)
+                .map(w => w.id);
+            const layout = loadHomeWidgetLayout();
+            const calendarPreviewEntries = layout.filter(e => e.id === 'calendar-preview');
+            const reordered = domIds.map(id => layout.find(e => e.id === id)).filter(Boolean);
+            saveHomeWidgetLayout(reordered.concat(calendarPreviewEntries));
+        }
+
+        // --- DRAG TO RESIZE (small <-> wide, via the corner grip) ---
+        function startHomeWidgetResize(e, el) {
+            e.preventDefault();
+            e.stopPropagation();
+            const startX = e.clientX;
+            const startedWide = el.classList.contains('home-widget-size-wide');
+            el.setAttribute('draggable', 'false'); // don't fight the native drag-reorder while resizing
+            function onMove(ev) {
+                const dx = ev.clientX - startX;
+                const shouldBeWide = startedWide ? dx > -60 : dx > 60;
+                el.classList.toggle('home-widget-size-wide', shouldBeWide);
+            }
+            function onUp() {
+                document.removeEventListener('pointermove', onMove);
+                document.removeEventListener('pointerup', onUp);
+                el.setAttribute('draggable', 'true');
+                const def = HOME_WIDGET_DEFS.find(w => w.el === el.id);
+                if (def) {
+                    const layout = loadHomeWidgetLayout();
+                    const entry = layout.find(en => en.id === def.id);
+                    if (entry) entry.size = el.classList.contains('home-widget-size-wide') ? 'wide' : 'small';
+                    saveHomeWidgetLayout(layout);
+                }
+            }
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp, { once: true });
         }
 
         // Only surfaces a "next" (not yet started) class once it's within 10 minutes of its
