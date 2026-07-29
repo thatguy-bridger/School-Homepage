@@ -178,7 +178,7 @@ body.dark-theme[data-palette="mint"] {
     left: 50%;
     transform: translateX(-50%);
 
-    width: clamp(253px, 50vw, 506px);
+    width: 85vw;
     height: 4rem;
     padding: 0 1rem;
 
@@ -1700,6 +1700,166 @@ body.dark-theme[data-palette="mint"] {
         }
         .countdown-chip.is-current .countdown-dot { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
         .countdown-chip strong { color: var(--text-primary); font-weight: 800; }
+        .countdown-suggestion-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+        .countdown-suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .countdown-suggestion-chip {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.35rem;
+            padding: 0.3rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            background: var(--glass-bg-strong);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: border-color 0.15s ease, color 0.15s ease;
+        }
+        .countdown-suggestion-chip:hover {
+            border-color: var(--accent-2);
+            color: var(--text-primary);
+        }
+        .countdown-suggestion-chip .countdown-suggestion-when {
+            font-weight: 700;
+            color: var(--accent-2);
+        }
+
+        /* ===================== ONBOARDING TOUR ===================== */
+        #tour-dim {
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            background: rgba(0, 0, 0, 0.6);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        #tour-dim.show { opacity: 1; }
+        #tour-spotlight {
+            position: fixed;
+            z-index: 9999;
+            border-radius: 0.9rem;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6), 0 0 0 3px var(--accent-2), 0 0 24px 4px var(--accent-2);
+            pointer-events: none;
+            transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease, opacity 0.2s ease;
+            opacity: 0;
+        }
+        #tour-spotlight.show { opacity: 1; }
+        #tour-spotlight.centered { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6); }
+        #tour-tooltip {
+            position: fixed;
+            z-index: 10000;
+            width: min(90vw, 340px);
+            background: var(--modal-bg, #1f2430);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.25rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 0.2s ease, transform 0.2s ease, top 0.25s ease, left 0.25s ease;
+            pointer-events: none;
+        }
+        #tour-tooltip.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .tour-step-count {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+        .tour-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 0.4rem; }
+        .tour-body { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 1rem; }
+        .tour-hint { font-size: 0.75rem; font-weight: 700; color: var(--accent-2); margin-bottom: 0.9rem; }
+        .tour-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+        .tour-nav-buttons { display: flex; gap: 0.5rem; }
+        .tour-btn {
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 0.4rem 0.85rem;
+            border-radius: 9999px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-strong);
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+        .tour-btn.is-primary { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
+        .tour-btn.is-skip { background: transparent; border: none; color: var(--text-secondary); text-decoration: underline; padding: 0.4rem 0.2rem; }
+
+        /* ===================== SETTINGS TABS (merged Settings modal) ===================== */
+        .settings-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+            flex-shrink: 0;
+        }
+        .settings-tab-btn {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.45rem 0.95rem;
+            border-radius: 9999px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-strong);
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .settings-tab-btn:hover { color: var(--text-primary); }
+        .settings-tab-btn.active { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
+        .settings-category.hidden { display: none; }
+
+        /* ===================== CUSTOMIZE HOME MODAL ===================== */
+        .customize-home-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 0.75rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-strong);
+            margin-bottom: 0.5rem;
+        }
+        .customize-home-row.is-hidden { opacity: 0.5; }
+        .customize-home-row label {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-grow: 1;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .customize-home-row-arrows {
+            display: flex;
+            gap: 0.25rem;
+        }
+        .customize-home-arrow-btn {
+            width: 1.9rem;
+            height: 1.9rem;
+            border-radius: 9999px;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .customize-home-arrow-btn:hover { color: var(--text-primary); border-color: var(--accent-2); }
+        .customize-home-arrow-btn:disabled { opacity: 0.3; cursor: default; }
+        .customize-home-arrow-btn:disabled:hover { color: var(--text-secondary); border-color: var(--glass-border); }
         .note-dot {
             width: 0.4rem;
             height: 0.4rem;
@@ -2178,12 +2338,31 @@ body.dark-theme[data-palette="mint"] {
         </div>
     </div>
 
+    <!-- Customize Home modal: show/hide + reorder Home widgets (see openCustomizeHomeModal) -->
+    <div id="customize-home-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="closeCustomizeHomeModal(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-8 border" onclick="event.stopPropagation()">
+            <h3 class="text-2xl font-bold mb-2">Customize Home</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Show or hide widgets, and reorder them with the arrows.</p>
+            <div id="customize-home-list" class="mb-6"></div>
+            <div class="flex justify-end gap-4">
+                <button type="button" class="modal-footer-button is-secondary" onclick="resetCustomizeHomeLayout()">Reset to Default</button>
+                <button type="button" class="modal-footer-button bg-indigo-600" onclick="closeCustomizeHomeModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onboarding tour overlay: spotlight + tooltip, driven entirely by JS (see startOnboardingTour) -->
+    <div id="tour-dim" class="hidden"></div>
+    <div id="tour-spotlight" class="hidden"></div>
+    <div id="tour-tooltip" class="hidden"></div>
+
     <!-- Countdown quick-add modal (opened from the Countdowns widget's + button) -->
     <div id="countdown-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="hideCountdownModal(event)">
         <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-8 border" onclick="event.stopPropagation()">
             <h3 class="text-2xl font-bold mb-4" id="countdown-modal-title">Add Countdown</h3>
             <label class="block text-sm font-semibold mb-2" for="countdown-label-input">Label</label>
-            <input type="text" id="countdown-label-input" class="form-input mb-4" placeholder="e.g. Winter Break, Finals">
+            <input type="text" id="countdown-label-input" class="form-input mb-2" placeholder="e.g. Winter Break, Finals">
+            <div id="countdown-suggestions" class="mb-4"></div>
             <label class="block text-sm font-semibold mb-2">Count down to</label>
             <select id="countdown-type-select" class="form-select mb-3" onchange="renderCountdownTypeValueInput()">
                 <option value="date">A specific date</option>
@@ -2254,6 +2433,13 @@ body.dark-theme[data-palette="mint"] {
             </div>
 
             <div class="orbit-item">
+                <a href="#grades" data-view="grades" class="sidebar-link" onclick="event.preventDefault(); switchAppView('grades')" title="Grades">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0v7m-9-5v5a1 1 0 001 1h16a1 1 0 001-1v-5"></path></svg>
+                    <span class="sr-only">Grades</span>
+                </a>
+            </div>
+
+            <div class="orbit-item">
                 <button type="button" id="theme-toggle" class="sidebar-link" aria-haspopup="true" aria-expanded="false" onclick="event.preventDefault(); toggleThemePopover()" title="Theme">
                     <svg id="moon-icon" class="hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9 9 0 008.354-5.646z"></path></svg>
                     <svg id="sun-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
@@ -2284,6 +2470,9 @@ body.dark-theme[data-palette="mint"] {
                             <h1 class="gradient-text text-5xl sm:text-6xl font-extrabold tracking-tight">Home</h1>
                             <h3 class="text-xl sm:text-2xl font-medium tracking-wide mt-1" id="home-time"></h3>
                         </div>
+                        <button type="button" id="customize-home-button" class="icon-btn p-3 rounded-full" onclick="openCustomizeHomeModal()" title="Customize Home">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </button>
                     </div>
 
                     <div id="digest-banner-container"></div>
@@ -2335,7 +2524,7 @@ body.dark-theme[data-palette="mint"] {
                             <button id="edit-classes-button" class="icon-btn p-3 rounded-full" onclick="toggleClassEditMode()" title="Edit Classes">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
-                            <button id="settings-button" class="icon-btn p-3 rounded-full" onclick="openSchedulingSettingsModal()" title="Settings">
+                            <button id="settings-button" class="icon-btn p-3 rounded-full" onclick="openAllSettingsModal('classes')" title="Settings">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             </button>
                         </div>
@@ -2367,7 +2556,7 @@ body.dark-theme[data-palette="mint"] {
                             <button type="button" id="calendar-legend-toggle-btn" class="icon-btn p-3 rounded-full" onclick="toggleCalendarLegend()" title="Legend">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </button>
-                            <button id="calendar-settings-button" class="icon-btn p-3 rounded-full" onclick="openCalendarSettingsModal()" title="Settings">
+                            <button id="calendar-settings-button" class="icon-btn p-3 rounded-full" onclick="openAllSettingsModal('calendar')" title="Settings">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             </button>
                         </div>
@@ -2437,6 +2626,19 @@ body.dark-theme[data-palette="mint"] {
                         <button type="button" class="modal-footer-button bg-indigo-600" onclick="openReminderModal()">+ Add Reminder</button>
                     </div>
                     <div id="reminders-list-container"></div>
+                </div>
+            </section>
+
+            <!-- ===================== GRADES VIEW ===================== -->
+            <section id="view-grades" class="app-view hidden">
+                <div class="main-container rounded-3xl p-6 sm:p-10 border relative">
+                    <div class="flex flex-wrap justify-between items-start gap-6 mb-10">
+                        <div>
+                            <h1 class="gradient-text text-5xl sm:text-6xl font-extrabold tracking-tight">Grades</h1>
+                            <h3 class="text-xl sm:text-2xl font-medium tracking-wide mt-1" id="grades-time"></h3>
+                        </div>
+                    </div>
+                    <div id="grades-view-content"></div>
                 </div>
             </section>
         </main>
@@ -2715,26 +2917,55 @@ body.dark-theme[data-palette="mint"] {
                 </button>
             </div>
 
+            <div class="settings-tabs" id="settings-tabs" role="tablist"></div>
+
             <div class="flex-grow overflow-y-auto pr-4 -mr-4">
-                <h4 class="text-2xl font-semibold mb-3">Classes &amp; Schedule</h4>
-                <div id="all-settings-scheduling-slot" class="mb-4"></div>
+                <div class="settings-category" data-settings-category="classes">
+                    <h4 class="text-2xl font-semibold mb-3">Classes &amp; Schedule</h4>
+                    <div id="all-settings-scheduling-slot" class="mb-4"></div>
+                </div>
 
-                <hr class="border-0 h-px bg-gradient-to-r from-transparent via-current opacity-20 my-8">
+                <div class="settings-category" data-settings-category="calendar">
+                    <h4 class="text-2xl font-semibold mb-3">Calendar</h4>
+                    <div id="all-settings-calendar-slot" class="mb-4"></div>
+                </div>
 
-                <h4 class="text-2xl font-semibold mb-3">Calendar</h4>
-                <div id="all-settings-calendar-slot" class="mb-4"></div>
+                <div class="settings-category" data-settings-category="help">
+                    <div class="mb-4">
+                        <h4 class="text-2xl font-semibold mb-3">Help</h4>
+                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                            Replay the guided walkthrough of the app's main screens and widgets.
+                        </p>
+                        <button type="button" class="modal-footer-button bg-indigo-600" onclick="closeAllSettingsModal(); startOnboardingTour();">Take the Tour</button>
+                    </div>
+                </div>
 
-                <hr class="border-0 h-px bg-gradient-to-r from-transparent via-current opacity-20 my-8">
+                <div class="settings-category" data-settings-category="backup">
+                    <div class="mb-4">
+                        <h4 class="text-2xl font-semibold mb-3">Backup &amp; Restore</h4>
+                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                            Export everything in this app -- classes, schedule dates, notes, calendar feeds, and preferences -- as one file, and re-import it later on this or another device. The export includes your GitHub sync token if you've set one up, so keep the file as private as you would a password.
+                        </p>
+                        <div class="flex flex-wrap gap-3 items-center">
+                            <button type="button" class="modal-footer-button bg-indigo-600" onclick="exportAllData()">Export All Data</button>
+                            <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="document.getElementById('all-data-import-input').click()">Import All Data</button>
+                            <input type="file" id="all-data-import-input" accept="application/json,.json" class="hidden">
+                        </div>
+                    </div>
+                </div>
 
-                <div class="mb-4">
-                    <h4 class="text-2xl font-semibold mb-3">Backup &amp; Restore</h4>
-                    <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
-                        Export everything in this app -- classes, schedule dates, notes, calendar feeds, and preferences -- as one file, and re-import it later on this or another device. The export includes your GitHub sync token if you've set one up, so keep the file as private as you would a password.
-                    </p>
-                    <div class="flex flex-wrap gap-3 items-center">
-                        <button type="button" class="modal-footer-button bg-indigo-600" onclick="exportAllData()">Export All Data</button>
-                        <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="document.getElementById('all-data-import-input').click()">Import All Data</button>
-                        <input type="file" id="all-data-import-input" accept="application/json,.json" class="hidden">
+                <div class="settings-category" data-settings-category="portal-sync">
+                    <div class="mb-4">
+                        <h4 class="text-2xl font-semibold mb-3">Portal Sync</h4>
+                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                            For schools like Skyward with no API access: install the companion browser extension (in this app's <code>portal-sync-extension</code> folder), browse to your Skyward assignments and Canvas grades pages while logged in, then export the merged JSON from the extension's popup and import it here. Assignments with a date the app can understand are folded into Due Soon; the rest still show below so you can check them manually.
+                        </p>
+                        <div class="flex flex-wrap gap-3 items-center">
+                            <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="document.getElementById('portal-sync-import-input').click()">Import Portal Sync JSON</button>
+                            <input type="file" id="portal-sync-import-input" accept="application/json,.json" class="hidden">
+                        </div>
+                        <div id="portal-sync-status" class="text-xs text-gray-600 dark:text-gray-300 mt-2"></div>
+                        <div id="portal-sync-unmatched-list" class="mt-3"></div>
                     </div>
                 </div>
             </div>
@@ -2780,8 +3011,9 @@ body.dark-theme[data-palette="mint"] {
                 document.getElementById('view-classes').classList.toggle('hidden', view !== 'classes');
                 document.getElementById('view-calendar').classList.toggle('hidden', view !== 'calendar');
                 document.getElementById('view-reminders').classList.toggle('hidden', view !== 'reminders');
+                document.getElementById('view-grades').classList.toggle('hidden', view !== 'grades');
                 document.querySelectorAll('.sidebar-link').forEach(a => a.classList.toggle('active', a.dataset.view === view));
-                document.title = view === 'calendar' ? 'School Calendar' : view === 'reminders' ? 'Planner' : view === 'home' ? 'Home' : 'School Dashboard';
+                document.title = view === 'calendar' ? 'School Calendar' : view === 'reminders' ? 'Planner' : view === 'grades' ? 'Grades' : view === 'home' ? 'Home' : 'School Dashboard';
                 if (view === 'calendar' && !calendarInitialized) {
                     calendarInitialized = true;
                     initCalendar();
@@ -2791,6 +3023,7 @@ body.dark-theme[data-palette="mint"] {
                     renderPlannerCountdownsList();
                     renderRemindersView();
                 }
+                if (view === 'grades') renderGradesView();
                 if (location.hash.replace('#', '') !== view) {
                     history.replaceState(null, '', '#' + view);
                 }
@@ -2813,8 +3046,34 @@ body.dark-theme[data-palette="mint"] {
             openAllSettingsModal();
         }
 
-        // ===================== MERGED SETTINGS MODAL (hub dock button only) =====================
-        function openAllSettingsModal() {
+        // ===================== MERGED SETTINGS MODAL (single entry point for every "Settings"
+        // button in the app -- Classes/Calendar/hub dock all open this same modal, each just
+        // passing which category should be showing when it opens) =====================
+        const SETTINGS_CATEGORIES = [
+            { id: 'classes', label: 'Classes & Schedule' },
+            { id: 'calendar', label: 'Calendar' },
+            { id: 'help', label: 'Help' },
+            { id: 'backup', label: 'Backup & Restore' },
+            { id: 'portal-sync', label: 'Portal Sync' }
+        ];
+        function renderSettingsTabs() {
+            const tabs = document.getElementById('settings-tabs');
+            if (!tabs || tabs.childElementCount) return; // static once built, no need to rebuild per open
+            tabs.innerHTML = SETTINGS_CATEGORIES.map(cat =>
+                `<button type="button" class="settings-tab-btn" data-settings-tab="${cat.id}" onclick="showSettingsCategory('${cat.id}')">${escapeHtml(cat.label)}</button>`
+            ).join('');
+        }
+        function showSettingsCategory(category) {
+            const valid = SETTINGS_CATEGORIES.some(c => c.id === category) ? category : 'classes';
+            document.querySelectorAll('.settings-category').forEach(el => {
+                el.classList.toggle('hidden', el.dataset.settingsCategory !== valid);
+            });
+            document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.settingsTab === valid);
+            });
+            document.querySelector('#all-settings-modal .flex-grow.overflow-y-auto').scrollTop = 0;
+        }
+        function openAllSettingsModal(defaultCategory) {
             // Same prep each individual modal's own opener does, so every field is fresh.
             loadUserScheduleDates();
             loadUserScheduleSlotOptions();
@@ -2826,9 +3085,13 @@ body.dark-theme[data-palette="mint"] {
             document.getElementById('ics-include-class-events').checked = localStorage.getItem('icsIncludeClassEvents') === 'true';
             renderExternalFeedsList();
             updateGistSyncUI();
+            renderPortalSyncUnmatchedList();
 
             document.getElementById('all-settings-scheduling-slot').appendChild(document.getElementById('scheduling-settings-body'));
             document.getElementById('all-settings-calendar-slot').appendChild(document.getElementById('calendar-settings-body'));
+
+            renderSettingsTabs();
+            showSettingsCategory(defaultCategory || 'classes');
 
             const modal = document.getElementById('all-settings-modal');
             modal.classList.remove('hidden');
@@ -4667,20 +4930,11 @@ body.dark-theme[data-palette="mint"] {
             ]);
         }
 
-        function openSchedulingSettingsModal() {
-            loadUserScheduleDates();
-            loadUserScheduleSlotOptions();
-            renderSchedulingSettingsForm();
-            loadPreferences();
-            const modal = document.getElementById("scheduling-settings-modal");
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-            requestAnimationFrame(() => {
-                modal.classList.remove('opacity-0');
-                modal.classList.add('show');
-            });
-        }
-
+        // scheduling-settings-modal is no longer opened directly -- every "Settings" button in
+        // the app opens the merged all-settings-modal (see openAllSettingsModal), which borrows
+        // this modal's body div for its "Classes & Schedule" tab. The shell below still exists
+        // purely as that borrow/return target; close/save stay wired for when the body is
+        // docked back home between opens.
         function closeSchedulingSettingsModal(event) {
             const modal = document.getElementById("scheduling-settings-modal");
             const modalContent = modal.querySelector('.modal-content');
@@ -4846,7 +5100,7 @@ body.dark-theme[data-palette="mint"] {
             const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: hour12 });
             const formattedDate = `${date.getMonth() + 1}.${date.getDate()}.${date.getFullYear()}`;
             const text = `Time: ${time} | Date: ${formattedDate}`;
-            ['Time', 'home-time', 'calendar-time', 'reminders-time'].forEach(id => {
+            ['Time', 'home-time', 'calendar-time', 'reminders-time', 'grades-time'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.textContent = text;
             });
@@ -4889,6 +5143,114 @@ body.dark-theme[data-palette="mint"] {
             renderHomeReminders();
             renderMiniCalendarPreviewInto('home-calendar-preview');
             renderDigestBanner();
+            applyHomeWidgetLayout();
+        }
+
+        // ===================== CUSTOMIZE HOME (widget show/hide + reorder) =====================
+        // Layout is just an ordered list of widget ids with a visible flag -- DOM nodes are
+        // physically reordered (not just re-styled) so tab order and print/export stay sane.
+        const HOME_WIDGET_DEFS = [
+            { id: 'next-class', label: 'Next Class', el: 'home-widget-next-class' },
+            { id: 'due-soon', label: 'Due Soon', el: 'home-widget-due-soon' },
+            { id: 'countdowns', label: 'Countdowns', el: 'home-widget-countdowns' },
+            { id: 'reminders', label: 'Reminders', el: 'home-widget-reminders' },
+            { id: 'upcoming', label: 'Upcoming Events', el: 'home-widget-upcoming' },
+            { id: 'calendar-preview', label: 'Calendar Preview', el: 'home-calendar-preview' }
+        ];
+        function defaultHomeWidgetLayout() {
+            return HOME_WIDGET_DEFS.map(w => ({ id: w.id, visible: true }));
+        }
+        function loadHomeWidgetLayout() {
+            let layout;
+            try { layout = JSON.parse(localStorage.getItem('homeWidgetLayoutV1') || 'null'); } catch (e) { layout = null; }
+            if (!Array.isArray(layout)) return defaultHomeWidgetLayout();
+            // Reconcile against HOME_WIDGET_DEFS so a future widget added to the app (or one
+            // whose id changed) doesn't silently disappear or crash the reorder logic.
+            const knownIds = new Set(HOME_WIDGET_DEFS.map(w => w.id));
+            const cleaned = layout.filter(entry => entry && knownIds.has(entry.id));
+            HOME_WIDGET_DEFS.forEach(w => {
+                if (!cleaned.some(entry => entry.id === w.id)) cleaned.push({ id: w.id, visible: true });
+            });
+            return cleaned;
+        }
+        function saveHomeWidgetLayout(layout) {
+            localStorage.setItem('homeWidgetLayoutV1', JSON.stringify(layout));
+        }
+        function applyHomeWidgetLayout() {
+            const layout = loadHomeWidgetLayout();
+            const grid = document.querySelector('.home-widget-grid');
+            layout.forEach(entry => {
+                const def = HOME_WIDGET_DEFS.find(w => w.id === entry.id);
+                const el = def && document.getElementById(def.el);
+                if (!el) return;
+                el.classList.toggle('hidden', !entry.visible);
+                // Widgets inside the grid get reordered there; the full-width calendar preview
+                // lives outside the grid and stays pinned below it regardless of list position.
+                if (grid && el.parentElement === grid) grid.appendChild(el);
+            });
+        }
+        function openCustomizeHomeModal() {
+            renderCustomizeHomeList();
+            const modal = document.getElementById('customize-home-modal');
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('show');
+            });
+        }
+        function closeCustomizeHomeModal(event) {
+            if (event && event.target.id !== 'customize-home-modal') return;
+            const modal = document.getElementById('customize-home-modal');
+            modal.classList.add('opacity-0');
+            modal.classList.remove('show');
+            modal.addEventListener('transitionend', () => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, { once: true });
+        }
+        function renderCustomizeHomeList() {
+            const layout = loadHomeWidgetLayout();
+            const container = document.getElementById('customize-home-list');
+            container.innerHTML = layout.map((entry, i) => {
+                const def = HOME_WIDGET_DEFS.find(w => w.id === entry.id);
+                if (!def) return '';
+                return `
+                    <div class="customize-home-row ${entry.visible ? '' : 'is-hidden'}">
+                        <label>
+                            <input type="checkbox" ${entry.visible ? 'checked' : ''} onchange="toggleHomeWidgetVisible('${def.id}', this.checked)">
+                            ${escapeHtml(def.label)}
+                        </label>
+                        <div class="customize-home-row-arrows">
+                            <button type="button" class="customize-home-arrow-btn" ${i === 0 ? 'disabled' : ''} onclick="moveHomeWidget('${def.id}', -1)" title="Move up">&uarr;</button>
+                            <button type="button" class="customize-home-arrow-btn" ${i === layout.length - 1 ? 'disabled' : ''} onclick="moveHomeWidget('${def.id}', 1)" title="Move down">&darr;</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        function toggleHomeWidgetVisible(id, visible) {
+            const layout = loadHomeWidgetLayout();
+            const entry = layout.find(e => e.id === id);
+            if (entry) entry.visible = visible;
+            saveHomeWidgetLayout(layout);
+            applyHomeWidgetLayout();
+            renderCustomizeHomeList();
+        }
+        function moveHomeWidget(id, direction) {
+            const layout = loadHomeWidgetLayout();
+            const i = layout.findIndex(e => e.id === id);
+            const j = i + direction;
+            if (i < 0 || j < 0 || j >= layout.length) return;
+            [layout[i], layout[j]] = [layout[j], layout[i]];
+            saveHomeWidgetLayout(layout);
+            applyHomeWidgetLayout();
+            renderCustomizeHomeList();
+        }
+        function resetCustomizeHomeLayout() {
+            saveHomeWidgetLayout(defaultHomeWidgetLayout());
+            applyHomeWidgetLayout();
+            renderCustomizeHomeList();
         }
 
         // Only surfaces a "next" (not yet started) class once it's within 10 minutes of its
@@ -7608,9 +7970,130 @@ body.dark-theme[data-palette="mint"] {
                     });
                 });
             });
+            list.push(...loadPortalSyncParsedAssignments());
             list.sort((a, b) => a.dueAt - b.dueAt);
             canvasAssignments = list;
             pruneDismissedAssignments();
+        }
+
+        // ===================== PORTAL SYNC (Skyward/Canvas via companion browser extension) =====================
+        // The extension can't inject into a local file:// dashboard directly, so the bridge is a
+        // JSON export/import: see portal-sync-extension/popup.js for the export side. Entries
+        // whose scraped date string parses cleanly get folded into canvasAssignments (so they
+        // show up in Due Soon/countdown chips just like a real Canvas feed item); the rest are
+        // listed as-is in Settings for the user to check by hand.
+        function loadPortalSyncParsedAssignments() {
+            try { return JSON.parse(localStorage.getItem('portalSyncParsedV1') || '[]'); } catch (e) { return []; }
+        }
+        function loadPortalSyncUnparsed() {
+            try { return JSON.parse(localStorage.getItem('portalSyncUnparsedV1') || '[]'); } catch (e) { return []; }
+        }
+        function renderPortalSyncUnmatchedList() {
+            const container = document.getElementById('portal-sync-unmatched-list');
+            if (!container) return;
+            const unparsed = loadPortalSyncUnparsed();
+            if (!unparsed.length) { container.innerHTML = ''; return; }
+            container.innerHTML = `
+                <p class="text-xs font-semibold mb-2">Couldn't auto-parse a date for ${unparsed.length} item(s) -- check these manually:</p>
+                <div class="home-list">${unparsed.map(a => `
+                    <div class="home-list-item">
+                        <div class="min-w-0" style="flex-grow:1;">
+                            <p class="home-item-title">${escapeHtml(a.title)}</p>
+                            <p class="home-item-sub">${escapeHtml(a.course || '')}${a.dueDate ? ' · ' + escapeHtml(a.dueDate) : ''}${a.score ? ' · ' + escapeHtml(a.score) : ''}</p>
+                        </div>
+                    </div>
+                `).join('')}</div>
+            `;
+        }
+        function importPortalSyncFile(file) {
+            const statusEl = document.getElementById('portal-sync-status');
+            const reader = new FileReader();
+            reader.onload = () => {
+                let payload;
+                try { payload = JSON.parse(reader.result); } catch (e) {
+                    if (statusEl) statusEl.textContent = 'That file is not valid JSON.';
+                    return;
+                }
+                const assignments = Array.isArray(payload.assignments) ? payload.assignments : (Array.isArray(payload) ? payload : null);
+                if (!assignments) {
+                    if (statusEl) statusEl.textContent = 'That file doesn\'t look like a Portal Sync export.';
+                    return;
+                }
+                const parsed = [];
+                const unparsed = [];
+                assignments.forEach(a => {
+                    const dueAt = a.dueDate ? Date.parse(a.dueDate) : NaN;
+                    if (!isNaN(dueAt)) {
+                        parsed.push({
+                            title: a.title,
+                            courseCode: a.course || null,
+                            rawTitle: a.title,
+                            description: '',
+                            dueAt,
+                            allDay: true,
+                            feedLabel: 'Portal Sync',
+                            score: a.score || '',
+                            uid: 'portal-sync|' + normalizePortalSyncKey(a)
+                        });
+                    } else {
+                        unparsed.push(a);
+                    }
+                });
+                localStorage.setItem('portalSyncParsedV1', JSON.stringify(parsed));
+                localStorage.setItem('portalSyncUnparsedV1', JSON.stringify(unparsed));
+                rebuildExternalEventsIndex();
+                if (activeAppView === 'home') renderHomeDashboard();
+                if (activeAppView === 'grades') renderGradesView();
+                renderPortalSyncUnmatchedList();
+                if (statusEl) statusEl.textContent = `Imported ${parsed.length} assignment(s) with a usable date, ${unparsed.length} need a manual check.`;
+            };
+            reader.readAsText(file);
+        }
+        function normalizePortalSyncKey(a) {
+            return `${(a.course || '').toLowerCase()}|${(a.title || '').toLowerCase()}`.replace(/\s+/g, ' ').trim();
+        }
+
+        // ===================== GRADES VIEW =====================
+        // Grades don't come through Canvas's ICS calendar feed (no score data in an .ics file),
+        // so the only source right now is Portal Sync imports -- both the ones that got a usable
+        // due date (folded into canvasAssignments) and the ones that didn't but still carry a score.
+        function renderGradesView() {
+            const container = document.getElementById('grades-view-content');
+            if (!container) return;
+            const scored = canvasAssignments
+                .filter(a => a.score)
+                .map(a => ({ title: a.title, course: a.courseCode || 'Uncategorized', dueDate: a.dueAt ? new Date(a.dueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '', score: a.score }))
+                .concat(loadPortalSyncUnparsed().filter(a => a.score).map(a => ({ title: a.title, course: a.course || 'Uncategorized', dueDate: a.dueDate || '', score: a.score })));
+
+            if (!scored.length) {
+                container.innerHTML = `
+                    <p class="home-widget-empty">No grade data yet. Grades come in through Portal Sync (Settings &gt; Portal Sync) since Canvas's calendar feed doesn't carry scores.</p>
+                `;
+                return;
+            }
+
+            const byCourse = {};
+            scored.forEach(a => {
+                if (!byCourse[a.course]) byCourse[a.course] = [];
+                byCourse[a.course].push(a);
+            });
+
+            container.innerHTML = Object.keys(byCourse).sort().map(course => `
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold mb-3">${escapeHtml(course)}</h2>
+                    <div class="home-list">
+                        ${byCourse[course].map(a => `
+                            <div class="home-list-item">
+                                <div class="min-w-0" style="flex-grow:1;">
+                                    <p class="home-item-title">${escapeHtml(a.title)}</p>
+                                    <p class="home-item-sub">${escapeHtml(a.dueDate)}</p>
+                                </div>
+                                <span class="home-due-countdown">${escapeHtml(a.score)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
         }
 
         // The next assignment due at or after now, if any (canvasAssignments is kept sorted).
@@ -7665,23 +8148,9 @@ body.dark-theme[data-palette="mint"] {
             if (changed) saveDismissedAssignments();
         }
 
-        // --- CALENDAR SETTINGS MODAL ---
-        function openCalendarSettingsModal() {
-            document.getElementById('pref-default-view-select').value = localStorage.getItem('calendarView') || 'month';
-            document.getElementById('pref-week-start-select').value = localStorage.getItem('weekStart') || '0';
-            document.getElementById('ics-include-day-events').checked = localStorage.getItem('icsIncludeDayEvents') !== 'false';
-            document.getElementById('ics-include-class-events').checked = localStorage.getItem('icsIncludeClassEvents') === 'true';
-            renderExternalFeedsList();
-            updateGistSyncUI();
-            const modal = document.getElementById('calendar-settings-modal');
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-            requestAnimationFrame(() => {
-                modal.classList.remove('opacity-0');
-                modal.classList.add('show');
-            });
-        }
-
+        // calendar-settings-modal is no longer opened directly -- every "Settings" button opens
+        // the merged all-settings-modal (see openAllSettingsModal), which borrows this modal's
+        // body div for its "Calendar" tab. The shell below exists purely as that target.
         function closeCalendarSettingsModal(event) {
             const modal = document.getElementById('calendar-settings-modal');
             const modalContent = modal.querySelector('.modal-content');
@@ -8336,6 +8805,7 @@ body.dark-theme[data-palette="mint"] {
         }
         function skipOnboardingSync() {
             hideOnboardingSyncModal();
+            startOnboardingTour();
         }
         // No "Confirm import?" step here (unlike the Settings restore) -- on a truly empty
         // device there's nothing of the user's to lose, so pulling straight in is safe.
@@ -8368,6 +8838,183 @@ body.dark-theme[data-palette="mint"] {
             }
         }
 
+        // ===================== ONBOARDING TOUR =====================
+        // A guided walkthrough of the app's main screens, built around actually clicking things
+        // rather than reading static text: most steps require the real interaction (nav click,
+        // opening a widget's modal) to advance, with a "Skip" escape hatch always available.
+        // Triggered once after "Start Fresh" on the first-run sync modal (see skipOnboardingSync),
+        // and replayable any time via Settings > Help > Take the Tour.
+        let tourStepIndex = 0;
+        let tourAdvanceCleanup = null;
+        const TOUR_STEPS = [
+            {
+                title: 'Welcome to your dashboard',
+                body: "Quick tour of the main screens and widgets -- a couple minutes, and you can skip out any time.",
+                centered: true
+            },
+            {
+                target: '[data-view="classes"]',
+                title: 'Your classes',
+                body: 'Click here to open your class list -- quick links to each class\'s page.',
+                hint: 'Click the Classes icon to continue',
+                view: 'home',
+                advance: { selector: '[data-view="classes"]', event: 'click' }
+            },
+            {
+                target: '#view-classes',
+                title: 'Class links',
+                body: "Each class you've set up shows up here with a one-tap link. Add or edit classes from Settings.",
+                view: 'classes'
+            },
+            {
+                target: '[data-view="home"]',
+                title: 'Back to Home',
+                body: 'Home is your daily dashboard -- what\'s due, what\'s next, and quick-add widgets.',
+                hint: 'Click the Home icon to continue',
+                advance: { selector: '[data-view="home"]', event: 'click' }
+            },
+            {
+                target: '#home-widget-due-soon',
+                title: 'Due Soon',
+                body: 'Assignments synced from Canvas show up here, closest deadline first.',
+                view: 'home'
+            },
+            {
+                target: '#home-widget-countdowns',
+                title: 'Countdowns',
+                body: 'Try it: tap the + to add a countdown. It\'ll even suggest breaks and events straight from your calendar.',
+                hint: 'Tap + on Countdowns to continue',
+                advance: { selector: '#home-widget-countdowns .home-widget-add-btn', event: 'click' }
+            },
+            {
+                target: '#home-widget-reminders',
+                title: 'Reminders',
+                body: 'One-off or recurring reminders -- "bring gym clothes on Mondays," that sort of thing.'
+            },
+            {
+                target: '[data-view="calendar"]',
+                title: 'Full calendar',
+                body: 'Click here for the full month/week/day calendar view, with A/B days, no-school days, and any synced feeds.',
+                hint: 'Click the Calendar icon to continue',
+                advance: { selector: '[data-view="calendar"]', event: 'click' }
+            },
+            {
+                target: '#view-calendar',
+                title: 'Calendar view',
+                body: 'Tap any day for details, or use Settings in this view to subscribe external calendars and set A/B day patterns.',
+                view: 'calendar'
+            },
+            {
+                title: "That's it!",
+                body: 'You can replay this tour any time from Settings > Help. Explore away.',
+                centered: true
+            }
+        ];
+        function startOnboardingTour() {
+            tourStepIndex = 0;
+            document.getElementById('tour-dim').classList.remove('hidden');
+            document.getElementById('tour-spotlight').classList.remove('hidden');
+            document.getElementById('tour-tooltip').classList.remove('hidden');
+            requestAnimationFrame(() => document.getElementById('tour-dim').classList.add('show'));
+            renderTourStep();
+        }
+        function endOnboardingTour() {
+            if (tourAdvanceCleanup) { tourAdvanceCleanup(); tourAdvanceCleanup = null; }
+            ['tour-dim', 'tour-spotlight', 'tour-tooltip'].forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.remove('show');
+                el.classList.add('hidden');
+            });
+        }
+        function tourNext() {
+            if (tourAdvanceCleanup) { tourAdvanceCleanup(); tourAdvanceCleanup = null; }
+            tourStepIndex++;
+            if (tourStepIndex >= TOUR_STEPS.length) { endOnboardingTour(); return; }
+            renderTourStep();
+        }
+        function tourPrev() {
+            if (tourAdvanceCleanup) { tourAdvanceCleanup(); tourAdvanceCleanup = null; }
+            tourStepIndex = Math.max(0, tourStepIndex - 1);
+            renderTourStep();
+        }
+        function renderTourStep() {
+            const step = TOUR_STEPS[tourStepIndex];
+            if (step.view && step.view !== activeAppView) switchAppView(step.view);
+
+            const spotlight = document.getElementById('tour-spotlight');
+            const tooltip = document.getElementById('tour-tooltip');
+            const targetEl = step.target ? document.querySelector(step.target) : null;
+
+            const positionAndShow = () => {
+                if (targetEl) {
+                    const r = targetEl.getBoundingClientRect();
+                    const pad = 8;
+                    spotlight.classList.remove('centered');
+                    spotlight.style.top = `${r.top - pad}px`;
+                    spotlight.style.left = `${r.left - pad}px`;
+                    spotlight.style.width = `${r.width + pad * 2}px`;
+                    spotlight.style.height = `${r.height + pad * 2}px`;
+                    spotlight.classList.add('show');
+
+                    const spaceBelow = window.innerHeight - r.bottom;
+                    const tooltipTop = spaceBelow > 220 ? r.bottom + 16 : Math.max(16, r.top - 16 - 260);
+                    let tooltipLeft = r.left;
+                    tooltipLeft = Math.min(tooltipLeft, window.innerWidth - 356);
+                    tooltipLeft = Math.max(16, tooltipLeft);
+                    tooltip.style.top = `${tooltipTop}px`;
+                    tooltip.style.left = `${tooltipLeft}px`;
+                } else {
+                    spotlight.style.top = '50%';
+                    spotlight.style.left = '50%';
+                    spotlight.style.width = '0px';
+                    spotlight.style.height = '0px';
+                    spotlight.classList.add('centered', 'show');
+                    tooltip.style.top = '50%';
+                    tooltip.style.left = '50%';
+                    tooltip.style.transform = 'translate(-50%, -50%)';
+                }
+
+                const isFirst = tourStepIndex === 0;
+                const isLast = tourStepIndex === TOUR_STEPS.length - 1;
+                tooltip.innerHTML = `
+                    <div class="tour-step-count">Step ${tourStepIndex + 1} of ${TOUR_STEPS.length}</div>
+                    <div class="tour-title">${escapeHtml(step.title)}</div>
+                    <div class="tour-body">${escapeHtml(step.body)}</div>
+                    ${step.hint ? `<div class="tour-hint">${escapeHtml(step.hint)}</div>` : ''}
+                    <div class="tour-actions">
+                        <button type="button" class="tour-btn is-skip" onclick="endOnboardingTour()">Skip tour</button>
+                        <div class="tour-nav-buttons">
+                            ${!isFirst ? `<button type="button" class="tour-btn" onclick="tourPrev()">Back</button>` : ''}
+                            ${!step.advance ? `<button type="button" class="tour-btn is-primary" onclick="tourNext()">${isLast ? 'Done' : 'Next'}</button>` : ''}
+                        </div>
+                    </div>
+                `;
+                tooltip.classList.add('show');
+                if (!targetEl) tooltip.style.transform = 'translate(-50%, -50%)';
+                else tooltip.style.transform = '';
+            };
+
+            if (targetEl) {
+                targetEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                setTimeout(positionAndShow, 220);
+            } else {
+                positionAndShow();
+            }
+
+            if (step.advance) {
+                const advanceTarget = document.querySelector(step.advance.selector);
+                if (advanceTarget) {
+                    const handler = () => tourNext();
+                    advanceTarget.addEventListener(step.advance.event, handler, { once: true });
+                    tourAdvanceCleanup = () => advanceTarget.removeEventListener(step.advance.event, handler);
+                }
+            }
+        }
+        window.addEventListener('resize', () => {
+            const tooltip = document.getElementById('tour-tooltip');
+            if (tooltip && tooltip.classList.contains('show') && !tooltip.classList.contains('hidden')) renderTourStep();
+        });
+
         // ===================== COUNTDOWNS (Home widget) =====================
         // Each countdown counts down to either a specific date you pick, or a dynamically
         // computed target -- currently just "the next No School day" -- picked from a type
@@ -8395,6 +9042,84 @@ body.dark-theme[data-palette="mint"] {
                 return new Date(y, m - 1, d);
             }
             return null;
+        }
+        // Suggests countdown targets by scanning calendar data for notable future dates:
+        // clusters of consecutive No School days (breaks) and titled day notes (events).
+        // Each cluster/note becomes a one-click chip that fills the label + date fields.
+        function computeCountdownSuggestions() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const maxDate = new Date(today);
+            maxDate.setDate(maxDate.getDate() + 240);
+
+            const noSchoolKeys = new Set(userNoSchoolDaysCal);
+            Object.keys(dayNotes).forEach(k => { if (dayNotes[k].title === 'No School') noSchoolKeys.add(k); });
+            const noSchoolDates = [...noSchoolKeys].map(parseDateKey)
+                .filter(d => d >= today && d <= maxDate)
+                .sort((a, b) => a - b);
+
+            // Group consecutive/near-consecutive (<=3 day gap, to bridge weekends) dates into clusters.
+            const clusters = [];
+            noSchoolDates.forEach(d => {
+                const last = clusters[clusters.length - 1];
+                if (last && (d - last.end) / 86400000 <= 3) {
+                    last.end = d;
+                    last.dates.push(d);
+                } else {
+                    clusters.push({ start: d, end: d, dates: [d] });
+                }
+            });
+
+            const existingKeys = new Set(countdowns.filter(cd => cd.date).map(cd => {
+                const [y, m, d] = cd.date.split('-').map(Number);
+                return `${m}.${d}.${y}`;
+            }));
+            const suggestions = [];
+
+            clusters.forEach(cluster => {
+                if (cluster.dates.length < 2) return; // single stray no-school day isn't a "break"
+                const key = dateKey(cluster.start);
+                if (existingKeys.has(key)) return;
+                const note = dayNotes[key];
+                const label = note && note.title && note.title !== 'No School' ? note.title : 'Break';
+                suggestions.push({ label, date: cluster.start, key });
+            });
+
+            Object.keys(dayNotes).forEach(key => {
+                const note = dayNotes[key];
+                if (!note || !note.title || note.title === 'No School') return;
+                const d = parseDateKey(key);
+                if (d < today || d > maxDate) return;
+                if (existingKeys.has(key)) return;
+                if (suggestions.some(s => s.key === key)) return;
+                suggestions.push({ label: note.title, date: d, key });
+            });
+
+            suggestions.sort((a, b) => a.date - b.date);
+            return suggestions.slice(0, 6);
+        }
+        function renderCountdownSuggestions() {
+            const wrap = document.getElementById('countdown-suggestions');
+            if (!wrap) return;
+            const suggestions = computeCountdownSuggestions();
+            if (!suggestions.length) { wrap.innerHTML = ''; return; }
+            wrap.innerHTML = `
+                <p class="countdown-suggestion-label">Suggested from your calendar</p>
+                <div class="countdown-suggestion-chips">
+                    ${suggestions.map(s => `
+                        <button type="button" class="countdown-suggestion-chip" onclick="applyCountdownSuggestion('${escapeJsAttr(s.label)}', '${dateKey(s.date)}')">
+                            ${escapeHtml(s.label)} <span class="countdown-suggestion-when">${s.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+        function applyCountdownSuggestion(label, dateStr) {
+            document.getElementById('countdown-label-input').value = label;
+            document.getElementById('countdown-type-select').value = 'date';
+            const d = parseDateKey(dateStr);
+            const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            renderCountdownTypeValueInput(iso);
         }
         function daysUntil(targetDate) {
             const today = new Date();
@@ -8484,6 +9209,7 @@ body.dark-theme[data-palette="mint"] {
             document.getElementById('countdown-label-input').value = existing ? existing.label : '';
             document.getElementById('countdown-type-select').value = existing ? existing.type : 'date';
             renderCountdownTypeValueInput(existing ? existing.date : null);
+            renderCountdownSuggestions();
             const modal = document.getElementById('countdown-modal');
             modal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
@@ -9125,6 +9851,12 @@ body.dark-theme[data-palette="mint"] {
                     e.target.value = '';
                 }
             });
+            document.getElementById('portal-sync-import-input').addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    importPortalSyncFile(e.target.files[0]);
+                    e.target.value = '';
+                }
+            });
 
             const style = document.createElement('style');
             style.textContent = `
@@ -9153,18 +9885,25 @@ body.dark-theme[data-palette="mint"] {
 
             // Determine initial view from URL hash (supports deep-linking / bookmarks)
             const initialHash = location.hash.replace('#', '');
-            const initialView = initialHash === 'calendar' || initialHash === 'classes' ? initialHash : 'home';
+            const initialView = ['calendar', 'classes', 'reminders', 'grades'].includes(initialHash) ? initialHash : 'home';
             activeAppView = initialView;
             document.getElementById('view-home').classList.toggle('hidden', initialView !== 'home');
             document.getElementById('view-classes').classList.toggle('hidden', initialView !== 'classes');
             document.getElementById('view-calendar').classList.toggle('hidden', initialView !== 'calendar');
+            document.getElementById('view-reminders').classList.toggle('hidden', initialView !== 'reminders');
+            document.getElementById('view-grades').classList.toggle('hidden', initialView !== 'grades');
             document.querySelectorAll('.sidebar-link').forEach(a => a.classList.toggle('active', a.dataset.view === initialView));
-            document.title = initialView === 'calendar' ? 'School Calendar' : initialView === 'home' ? 'Home' : 'School Dashboard';
+            document.title = initialView === 'calendar' ? 'School Calendar' : initialView === 'reminders' ? 'Planner' : initialView === 'grades' ? 'Grades' : initialView === 'home' ? 'Home' : 'School Dashboard';
             if (initialView === 'calendar') {
                 calendarInitialized = true;
                 initCalendar();
             }
             if (initialView === 'home') renderHomeDashboard();
+            if (initialView === 'reminders') {
+                renderPlannerCountdownsList();
+                renderRemindersView();
+            }
+            if (initialView === 'grades') renderGradesView();
 
             // Note: the "Open Current Class?" prompt is handled by checkScheduledClassPrompt(),
             // called every tick from displayTime() above -- not just once here at load -- so it
