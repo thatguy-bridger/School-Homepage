@@ -2510,6 +2510,14 @@ body.dark-theme[data-palette="mint"] {
                     <button type="button" class="modal-footer-button bg-green-600" onclick="pushAppDataToGist(true)">Push My Data</button>
                     <button type="button" class="modal-footer-button bg-indigo-600" onclick="restoreAppDataFromGist()">Restore My Data</button>
                 </div>
+
+                <hr class="border-0 h-px bg-gradient-to-r from-transparent via-current opacity-20 my-4">
+
+                <h4 class="text-lg font-semibold mb-2">Set as Site Defaults</h4>
+                <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                    Password-protected. Commits your current classes, schedule, theme, reminders, and calendar feeds straight to GitHub as the new defaults every fresh install of this app starts from. This edits the live source file directly and can't be undone from here.
+                </p>
+                <button type="button" class="modal-footer-button bg-red-600" onclick="promptSetAsSiteDefaults()">Set as Site Defaults</button>
             </div>
 
             <div>
@@ -2753,9 +2761,12 @@ body.dark-theme[data-palette="mint"] {
         }
 
         // ===================== THEME (shared) =====================
-        let currentThemeState = localStorage.getItem('theme') || 'system';
-        let currentPaletteState = localStorage.getItem('themePalette') || 'indigo';
-        let currentMotionState = localStorage.getItem('motionPref') || 'auto';
+        /*DEFAULTS:THEME_START*/
+        const DEFAULT_THEME_STATE = { mode: 'system', palette: 'indigo', motion: 'auto' };
+        /*DEFAULTS:THEME_END*/
+        let currentThemeState = localStorage.getItem('theme') || DEFAULT_THEME_STATE.mode;
+        let currentPaletteState = localStorage.getItem('themePalette') || DEFAULT_THEME_STATE.palette;
+        let currentMotionState = localStorage.getItem('motionPref') || DEFAULT_THEME_STATE.motion;
 
         function isReducedMotion() {
             return document.body.classList.contains('reduce-motion');
@@ -3538,6 +3549,7 @@ body.dark-theme[data-palette="mint"] {
         let userADays = [""]
         let userBDays = [""]
         let userNoSchoolDays = []
+        /*DEFAULTS:SCHEDULE_SLOTS_START*/
         const defaultScheduleSlotOptions = [
             { label: 'None (Not Scheduled)', value: '' },
             { label: 'Advisory',              value: 'ADVISORY', fullDayTime: '09:05 - 09:45', halfDayTime: null },
@@ -3550,12 +3562,14 @@ body.dark-theme[data-palette="mint"] {
             { label: 'Period 7 - B Day',      value: 'B_P7',     fullDayTime: '11:05 - 13:00', halfDayTime: '10:00 - 11:10' },
             { label: 'Period 8 - B Day',      value: 'B_P8',     fullDayTime: '13:00 - 14:25', halfDayTime: '11:10 - 12:20' },
         ];
+        /*DEFAULTS:SCHEDULE_SLOTS_END*/
 
         let userScheduleSlotOptions = [];
 
         // Mock data (not blank fields) so a fresh install shows what a filled-in schedule
         // actually looks like instead of a wall of empty "Period N" cards. All obviously
         // placeholder -- meant to be edited/replaced with the user's real schedule.
+        /*DEFAULTS:CLASS_DATA_START*/
         const defaultClassData = [
             {
                 categoryName: 'A Day',
@@ -3587,6 +3601,7 @@ body.dark-theme[data-palette="mint"] {
                 isSideStacked: false
             }
         ];
+        /*DEFAULTS:CLASS_DATA_END*/
 
         let classData = [];
         let classEditMode = false;
@@ -5530,9 +5545,12 @@ body.dark-theme[data-palette="mint"] {
         // attachValue = one of the calendar's own category keys) -- purely for display: a
         // colored/labeled tag, and for classes a click-through to that class's URL.
         const REMINDER_CATEGORY_OPTIONS = ['assignment', 'school-event', 'club', 'sports', 'event'];
+        /*DEFAULTS:REMINDERS_START*/
+        const DEFAULT_REMINDERS = [];
+        /*DEFAULTS:REMINDERS_END*/
         let reminders = [];
         function loadReminders() {
-            try { reminders = JSON.parse(localStorage.getItem('remindersV1') || '[]'); } catch (e) { reminders = []; }
+            try { reminders = JSON.parse(localStorage.getItem('remindersV1') || JSON.stringify(DEFAULT_REMINDERS)); } catch (e) { reminders = JSON.parse(JSON.stringify(DEFAULT_REMINDERS)); }
             reminders.forEach(r => { if (!r.attachType) r.attachType = 'none'; });
         }
         function saveReminders() {
@@ -6675,6 +6693,7 @@ body.dark-theme[data-palette="mint"] {
         // The default feed set every install starts with. Google's "Canvas Assignments" mirror
         // lives on calendar.google.com rather than *.instructure.com, so it can't be auto-detected
         // as Canvas by domain -- isCanvas is forced true here instead of left to isCanvasFeedUrl.
+        /*DEFAULTS:EXTERNAL_FEEDS_START*/
         const DEFAULT_EXTERNAL_FEEDS = [
             { id: 'altahawks', label: 'Alta Events', url: 'https://www.calendarwiz.com/CalendarWiz_iCal.php?crd=altahawks', color: '#a855f7' },
             { id: 'agilixbuzz', label: 'CVA Assignments', url: 'https://api.agilixbuzz.com/ical/~0~prObHCX.wEg28NaXxE2J3.VuXpEWjdZzfVNB4mDxpG8!/calendar.ics' },
@@ -6683,6 +6702,7 @@ body.dark-theme[data-palette="mint"] {
             { id: 'google-canvas-assignments', label: 'Canvas Assignments', url: 'https://calendar.google.com/calendar/ical/7stkhs6ht7m5e4mt2d3b0mi1karkss4c%40import.calendar.google.com/public/basic.ics', isCanvas: true },
             { id: 'google-holidays', label: 'Holiday Events', url: 'https://calendar.google.com/calendar/ical/en.usa%23holiday%40group.v.calendar.google.com/public/basic.ics' }
         ];
+        /*DEFAULTS:EXTERNAL_FEEDS_END*/
 
         // Old installs may already have these two feeds saved under their previous labels; keep
         // their saved settings (color, enabled, id) but bring the label in line with the rename.
@@ -7723,6 +7743,109 @@ body.dark-theme[data-palette="mint"] {
                 showActionToast('Add a GitHub token in Calendar Settings first', null);
             } else {
                 showActionToast(after || before || 'Push attempted.', null);
+            }
+        }
+
+        // ===================== SET AS SITE DEFAULTS (commits straight to the GitHub repo) =====================
+        // Unlike the Gist push (your own personal backup/sync), this rewrites the live source
+        // file on GitHub -- the defaultClassData / defaultScheduleSlotOptions / DEFAULT_EXTERNAL_FEEDS
+        // / DEFAULT_THEME_STATE / DEFAULT_REMINDERS blocks -- so a brand new install of this app
+        // (anyone's, including a future you on a fresh browser) starts from what you have right
+        // now instead of the placeholder demo data. Deliberately password-gated since it's a
+        // one-way, repo-wide change with no built-in "undo" -- the "password" is just a soft
+        // confirmation gate against a stray click, not real security (anyone with the page source
+        // can read it), which is fine for a personal tool but worth knowing.
+        const SET_DEFAULTS_PASSWORD = 'orbit-defaults-42';
+        const DEFAULTS_REPO_OWNER = 'thatguy-bridger';
+        const DEFAULTS_REPO_NAME = 'thatguy-bridger.github.io';
+        const DEFAULTS_FILE_PATH = 'School-Dashboard/index.html';
+
+        // atob/btoa are byte-oriented (Latin-1), so a straight round trip mangles any non-ASCII
+        // character (curly quotes, emoji, etc.) that might be sitting in a note or class title.
+        // Going through TextEncoder/TextDecoder keeps it UTF-8 safe both ways.
+        function utf8ToBase64(str) {
+            const bytes = new TextEncoder().encode(str);
+            let binary = '';
+            bytes.forEach(b => { binary += String.fromCharCode(b); });
+            return btoa(binary);
+        }
+        function base64ToUtf8(b64) {
+            const binary = atob(b64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return new TextDecoder().decode(bytes);
+        }
+
+        // Swaps the literal value of a `const NAME = ...;` declaration sitting between a matching
+        // pair of /*DEFAULTS:KEY_START*/ /*DEFAULTS:KEY_END*/ markers for a freshly-serialized one
+        // -- replacing only that one clearly-delimited region instead of trying to regex-match
+        // arbitrary JS, which is what makes rewriting the app's own source file from itself safe
+        // enough to do.
+        function replaceDefaultsRegion(source, key, declaration) {
+            const marker = new RegExp(`(/\\*DEFAULTS:${key}_START\\*/)([\\s\\S]*?)(/\\*DEFAULTS:${key}_END\\*/)`);
+            if (!marker.test(source)) throw new Error(`Couldn't find the ${key} defaults markers in the file.`);
+            return source.replace(marker, `$1\n        ${declaration}\n        $3`);
+        }
+
+        function buildUpdatedDefaultsSource(fileText) {
+            let out = fileText;
+            out = replaceDefaultsRegion(out, 'CLASS_DATA', `const defaultClassData = ${JSON.stringify(classData, null, 4)};`);
+            out = replaceDefaultsRegion(out, 'SCHEDULE_SLOTS', `const defaultScheduleSlotOptions = ${JSON.stringify(userScheduleSlotOptions, null, 4)};`);
+            out = replaceDefaultsRegion(out, 'EXTERNAL_FEEDS', `const DEFAULT_EXTERNAL_FEEDS = ${JSON.stringify(externalFeeds, null, 4)};`);
+            out = replaceDefaultsRegion(out, 'THEME', `const DEFAULT_THEME_STATE = ${JSON.stringify({ mode: currentThemeState, palette: currentPaletteState, motion: currentMotionState })};`);
+            out = replaceDefaultsRegion(out, 'REMINDERS', `const DEFAULT_REMINDERS = ${JSON.stringify(reminders, null, 4)};`);
+            return out;
+        }
+
+        function promptSetAsSiteDefaults() {
+            const entered = prompt('Enter the password to make your current classes, schedule, theme, reminders, and calendar feeds the new defaults for every fresh install of this app:');
+            if (entered === null) return;
+            if (entered !== SET_DEFAULTS_PASSWORD) {
+                showActionToast('Wrong password -- nothing changed.', null);
+                return;
+            }
+            showConfirmationModal(`This will commit directly to ${DEFAULTS_REPO_OWNER}/${DEFAULTS_REPO_NAME} (${DEFAULTS_FILE_PATH}) on GitHub, replacing the app's default classes, schedule, theme, reminders, and calendar feeds with what you have right now. This can't be undone from here. Continue?`, [
+                { text: 'Confirm', action: () => setAsSiteDefaults() },
+                { text: 'Cancel', action: () => {} }
+            ]);
+        }
+
+        async function setAsSiteDefaults() {
+            const token = localStorage.getItem('githubGistToken');
+            if (!token) {
+                showActionToast('Add a GitHub token in Calendar Settings first (needs repo scope too).', null);
+                return;
+            }
+            showActionToast('Committing new defaults to GitHub...', null);
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json'
+            };
+            try {
+                const getUrl = `https://api.github.com/repos/${DEFAULTS_REPO_OWNER}/${DEFAULTS_REPO_NAME}/contents/${DEFAULTS_FILE_PATH}`;
+                const getRes = await fetch(getUrl, { headers });
+                if (!getRes.ok) throw new Error(`Couldn't read the file (${getRes.status}). Check the repo/path and that your token has repo access.`);
+                const fileData = await getRes.json();
+                const currentText = base64ToUtf8(fileData.content.replace(/\n/g, ''));
+                const updatedText = buildUpdatedDefaultsSource(currentText);
+
+                const putRes = await fetch(getUrl, {
+                    method: 'PUT',
+                    headers: { ...headers, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'Update site defaults from the live app',
+                        content: utf8ToBase64(updatedText),
+                        sha: fileData.sha
+                    })
+                });
+                if (!putRes.ok) {
+                    const errBody = await putRes.text();
+                    throw new Error(`GitHub API ${putRes.status}: ${errBody}`);
+                }
+                showActionToast('New defaults committed to GitHub.', null);
+            } catch (err) {
+                console.error('Set as site defaults failed:', err);
+                showActionToast(`Failed: ${err.message}`, null);
             }
         }
 
