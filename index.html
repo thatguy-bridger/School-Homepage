@@ -220,15 +220,20 @@ body.dark-theme[data-palette="mint"] {
             flex-shrink: 0;
             width: 3rem;
             height: 3rem;
+            padding: 0;
+            border: none;
             border-radius: 0.9rem;
             background: var(--accent-grad);
             display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: 0 6px 18px var(--glow-accent);
-            transition: background-color 0.5s ease-in-out, box-shadow 0.5s ease-in-out;
+            cursor: pointer;
+            transition: background-color 0.5s ease-in-out, box-shadow 0.5s ease-in-out, transform 0.15s ease-in-out;
         }
-        .topbar-logo img { width: 3rem; height: 3rem; }
+        .topbar-logo:hover { transform: scale(1.06); }
+        .topbar-logo:active { transform: scale(0.94); }
+        .topbar-logo img { width: 3rem; height: 3rem; pointer-events: none; }
 
         /* Position/depth are driven per-frame from JS (organic drift, not a fixed CSS loop) */
         .orbit-item {
@@ -2026,6 +2031,23 @@ body.dark-theme[data-palette="mint"] {
     <div id="no-school-toast" class="no-school-toast hidden" role="status" aria-live="polite"></div>
     <div id="action-toast" class="no-school-toast hidden" role="status" aria-live="polite"></div>
 
+    <!-- First-run onboarding: only shown when no local data exists yet at all (see isFirstRun in
+         DOMContentLoaded) -- deliberately no backdrop-click dismiss, this is a one-time prompt. -->
+    <div id="onboarding-sync-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-50 hidden opacity-0">
+        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-lg p-8 border">
+            <h3 class="text-2xl font-bold mb-3">Welcome!</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                Hey, you probably want to sync up your data with another app! Enter your GitHub Gist token below to sync -- if you've already used this app somewhere else, this pulls your classes, schedule, notes, and reminders right over.
+            </p>
+            <input type="password" id="onboarding-token-input" class="form-input mb-3" placeholder="github_pat_..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault(); submitOnboardingSync();}">
+            <div id="onboarding-status" class="text-xs text-gray-600 dark:text-gray-300 mb-4"></div>
+            <div class="flex justify-end gap-3">
+                <button type="button" class="modal-footer-button is-secondary" onclick="skipOnboardingSync()">Start Fresh</button>
+                <button type="button" class="modal-footer-button bg-indigo-600" onclick="submitOnboardingSync()">Sync</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Reminders quick-add modal (opened via the "N" keyboard shortcut or a button) -->
     <div id="reminder-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="hideReminderModal(event)">
         <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-8 border" onclick="event.stopPropagation()">
@@ -2050,7 +2072,9 @@ body.dark-theme[data-palette="mint"] {
 
     <!-- Top bar: app-level navigation -->
     <header class="app-topbar">
-        <div class="topbar-logo" aria-hidden="true"><img src="Resources/logo.svg" alt="" class="orbit-hub-logo"></div>
+        <button type="button" class="topbar-logo" onclick="pushAppDataFromLogo()" title="Push your data to your gist">
+            <img src="Resources/logo.svg" alt="Push data to gist" class="orbit-hub-logo">
+        </button>
         <div class="orbit-stage" id="orbit-stage">
             <div class="orbit-item">
                 <a href="#home" data-view="home" class="sidebar-link active" onclick="event.preventDefault(); switchAppView('home')" title="Home">
@@ -2456,7 +2480,10 @@ body.dark-theme[data-palette="mint"] {
                     </label>
                 </div>
                 <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">GitHub Token (Gist read/write scope)</label>
-                <input type="password" id="pref-github-token" class="form-input mb-3" placeholder="github_pat_..." onchange="saveGithubTokenPref(this.value)" autocomplete="off">
+                <div class="flex gap-2 mb-3">
+                    <input type="password" id="pref-github-token" class="form-input flex-grow" placeholder="github_pat_..." onchange="saveGithubTokenPref(this.value)" autocomplete="off">
+                    <button type="button" class="modal-footer-button is-secondary" onclick="copyGithubToken()" title="Copy this token so you can paste it into the app on another device">Copy Token</button>
+                </div>
                 <div id="gist-sync-status" class="text-xs text-gray-600 dark:text-gray-300 mb-3">Not connected yet.</div>
                 <div id="gist-sync-url-row" class="hidden mb-3">
                     <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Subscribe in Google Calendar (Other calendars → + → From URL)</label>
@@ -2472,6 +2499,17 @@ body.dark-theme[data-palette="mint"] {
                 <p class="text-xs text-gray-600 dark:text-gray-300 mt-2">
                     If your calendar app stops picking up new changes, use Reset Sync — it deletes the old feed and creates a fresh one. You'll need to re-subscribe with the new URL afterward; the old link stops working.
                 </p>
+
+                <hr class="border-0 h-px bg-gradient-to-r from-transparent via-current opacity-20 my-4">
+
+                <h4 class="text-lg font-semibold mb-2">App Data Backup &amp; Sync</h4>
+                <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                    Pushes everything this app stores -- classes, schedule dates, notes, reminders, calendar feeds, preferences -- into the same private gist as a second file, so you can pull it down on another device with just this same token. Manual, not live: whichever side you sync last wins, so push before you switch devices and restore right after.
+                </p>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <button type="button" class="modal-footer-button bg-green-600" onclick="pushAppDataToGist(true)">Push My Data</button>
+                    <button type="button" class="modal-footer-button bg-indigo-600" onclick="restoreAppDataFromGist()">Restore My Data</button>
+                </div>
             </div>
 
             <div>
@@ -2705,11 +2743,7 @@ body.dark-theme[data-palette="mint"] {
                 }
                 showConfirmationModal('Import this backup? It will overwrite your current classes, schedule dates, notes, calendar feeds, and preferences on this device.', [
                     { text: 'Confirm', action: () => {
-                        ALL_DATA_KEYS.forEach((key) => {
-                            if (Object.prototype.hasOwnProperty.call(data, key)) {
-                                localStorage.setItem(key, data[key]);
-                            }
-                        });
+                        applyImportedDataObject(data, ALL_DATA_KEYS);
                         window.location.reload();
                     }},
                     { text: 'Cancel', action: () => {} }
@@ -7569,6 +7603,261 @@ body.dark-theme[data-palette="mint"] {
             });
         }
 
+        // So the same token can be pasted into this app on another device to restore data.
+        function copyGithubToken() {
+            const tokenInput = document.getElementById('pref-github-token');
+            const statusEl = document.getElementById('gist-sync-status');
+            if (!tokenInput.value) {
+                if (statusEl) statusEl.textContent = 'No token to copy yet.';
+                return;
+            }
+            navigator.clipboard.writeText(tokenInput.value).then(() => {
+                if (statusEl) {
+                    const prev = statusEl.textContent;
+                    statusEl.textContent = 'Token copied!';
+                    setTimeout(() => { statusEl.textContent = prev; }, 1500);
+                }
+            });
+        }
+
+        // ===================== APP DATA BACKUP/SYNC (same gist as the .ics feed, a second file) =====================
+        // Reuses ALL_DATA_KEYS (see exportAllData) but drops the credential fields -- syncing your
+        // own token back to yourself via a restore is circular and those three are device-specific
+        // anyway, not "data" worth round-tripping.
+        const APP_DATA_GIST_FILENAME = 'school-dashboard-data.json';
+        const APP_DATA_SYNC_KEYS = ALL_DATA_KEYS.filter(k => !['githubGistToken', 'githubGistId', 'githubGistRawUrl'].includes(k));
+
+        function buildAppDataPayload() {
+            const data = {};
+            APP_DATA_SYNC_KEYS.forEach((key) => {
+                const value = localStorage.getItem(key);
+                if (value !== null) data[key] = value;
+            });
+            return JSON.stringify({ app: 'school-dashboard', exportedAt: new Date().toISOString(), data }, null, 2);
+        }
+
+        // Shared by both the file-based Import and the gist-based Restore -- applies a decoded
+        // {key: value} object straight into localStorage for whichever key list is relevant.
+        function applyImportedDataObject(data, keys) {
+            keys.forEach((key) => {
+                if (Object.prototype.hasOwnProperty.call(data, key)) {
+                    localStorage.setItem(key, data[key]);
+                }
+            });
+        }
+
+        async function pushAppDataToGist(showStatus) {
+            const token = localStorage.getItem('githubGistToken');
+            const statusEl = document.getElementById('gist-sync-status');
+            if (!token) {
+                if (showStatus && statusEl) statusEl.textContent = 'Add a GitHub token above first.';
+                return;
+            }
+            if (gistSyncInFlight) return;
+            gistSyncInFlight = true;
+            if (showStatus && statusEl) statusEl.textContent = 'Pushing your data...';
+
+            try {
+                const payload = buildAppDataPayload();
+                let gistId = localStorage.getItem('githubGistId');
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github+json',
+                    'Content-Type': 'application/json'
+                };
+
+                let response;
+                if (gistId) {
+                    response = await fetch(`https://api.github.com/gists/${gistId}`, {
+                        method: 'PATCH',
+                        headers,
+                        body: JSON.stringify({ files: { [APP_DATA_GIST_FILENAME]: { content: payload } } })
+                    });
+                    if (response.status === 404) {
+                        localStorage.removeItem('githubGistId');
+                        gistId = null;
+                        response = null;
+                    }
+                }
+
+                if (!response) {
+                    response = await fetch('https://api.github.com/gists', {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({
+                            description: 'School Dashboard (private backup/sync)',
+                            public: false,
+                            files: { [APP_DATA_GIST_FILENAME]: { content: payload } }
+                        })
+                    });
+                }
+
+                if (!response.ok) {
+                    const errBody = await response.text();
+                    throw new Error(`GitHub API ${response.status}: ${errBody}`);
+                }
+
+                const data = await response.json();
+                localStorage.setItem('githubGistId', data.id);
+                localStorage.setItem('githubGistRawUrl', stableGistRawUrl(data));
+
+                if (showStatus && statusEl) statusEl.textContent = 'Data pushed just now.';
+                updateGistSyncUI();
+            } catch (err) {
+                console.error('App data push failed:', err);
+                if (statusEl) statusEl.textContent = `Push failed: ${err.message}`;
+            } finally {
+                gistSyncInFlight = false;
+            }
+        }
+
+        // The app logo doubles as a "push my data" button (see .topbar-logo) -- it's reachable
+        // from any screen, unlike the Settings modal's own status line, so this surfaces the same
+        // result as a toast instead of silently updating text the user probably can't see.
+        async function pushAppDataFromLogo() {
+            const statusEl = document.getElementById('gist-sync-status');
+            const before = statusEl ? statusEl.textContent : '';
+            await pushAppDataToGist(true);
+            const after = statusEl ? statusEl.textContent : '';
+            if (!localStorage.getItem('githubGistToken')) {
+                showActionToast('Add a GitHub token in Calendar Settings first', null);
+            } else {
+                showActionToast(after || before || 'Push attempted.', null);
+            }
+        }
+
+        // A fresh device won't have githubGistId saved locally yet, so restoring there has to
+        // find the right gist by searching this token's own gists for our data filename instead.
+        async function findAppDataGistId(token) {
+            const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' };
+            const res = await fetch('https://api.github.com/gists', { headers });
+            if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+            const gists = await res.json();
+            const match = gists.find(g => g.files && g.files[APP_DATA_GIST_FILENAME]);
+            return match ? match.id : null;
+        }
+
+        async function fetchAppDataFromGist(token, gistId) {
+            const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' };
+            const res = await fetch(`https://api.github.com/gists/${gistId}`, { headers });
+            if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+            const data = await res.json();
+            const file = data.files && data.files[APP_DATA_GIST_FILENAME];
+            if (!file) throw new Error('No app data file found in that gist.');
+            let content = file.content;
+            if (file.truncated) {
+                const rawRes = await fetch(file.raw_url);
+                content = await rawRes.text();
+            }
+            return { gistId: data.id, content };
+        }
+
+        async function restoreAppDataFromGist() {
+            const token = localStorage.getItem('githubGistToken');
+            const statusEl = document.getElementById('gist-sync-status');
+            if (!token) {
+                if (statusEl) statusEl.textContent = 'Add a GitHub token above first.';
+                return;
+            }
+            if (gistSyncInFlight) return;
+            gistSyncInFlight = true;
+            if (statusEl) statusEl.textContent = 'Looking for your data...';
+
+            let content, gistId;
+            try {
+                gistId = localStorage.getItem('githubGistId');
+                if (!gistId) gistId = await findAppDataGistId(token);
+                if (!gistId) throw new Error('No synced data found for this token.');
+                const result = await fetchAppDataFromGist(token, gistId);
+                content = result.content;
+                gistId = result.gistId;
+            } catch (err) {
+                console.error('App data restore failed:', err);
+                if (statusEl) statusEl.textContent = `Restore failed: ${err.message}`;
+                gistSyncInFlight = false;
+                return;
+            }
+            gistSyncInFlight = false;
+
+            let payload;
+            try {
+                payload = JSON.parse(content);
+            } catch (err) {
+                if (statusEl) statusEl.textContent = 'Restore failed: that gist file is not valid JSON.';
+                return;
+            }
+            const data = payload && payload.data ? payload.data : payload;
+            if (!data || typeof data !== 'object') {
+                if (statusEl) statusEl.textContent = 'Restore failed: that gist file is not a School Dashboard backup.';
+                return;
+            }
+
+            localStorage.setItem('githubGistId', gistId);
+            if (statusEl) statusEl.textContent = 'Found your data — confirm to restore.';
+            showConfirmationModal('Restore data from your gist? This will overwrite your current classes, schedule dates, notes, reminders, calendar feeds, and preferences on this device.', [
+                { text: 'Confirm', action: () => {
+                    applyImportedDataObject(data, APP_DATA_SYNC_KEYS);
+                    window.location.reload();
+                }},
+                { text: 'Cancel', action: () => {} }
+            ]);
+        }
+
+        // ===================== FIRST-RUN ONBOARDING (only when there's no local data at all) =====================
+        function showOnboardingSyncModal() {
+            const modal = document.getElementById('onboarding-sync-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('show');
+            });
+        }
+        function hideOnboardingSyncModal() {
+            const modal = document.getElementById('onboarding-sync-modal');
+            if (!modal) return;
+            modal.classList.add('opacity-0');
+            modal.classList.remove('show');
+            modal.addEventListener('transitionend', () => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, { once: true });
+        }
+        function skipOnboardingSync() {
+            hideOnboardingSyncModal();
+        }
+        // No "Confirm import?" step here (unlike the Settings restore) -- on a truly empty
+        // device there's nothing of the user's to lose, so pulling straight in is safe.
+        async function submitOnboardingSync() {
+            const input = document.getElementById('onboarding-token-input');
+            const statusEl = document.getElementById('onboarding-status');
+            const token = input.value.trim();
+            if (!token) { statusEl.textContent = 'Enter a token first.'; return; }
+            localStorage.setItem('githubGistToken', token);
+            statusEl.textContent = 'Looking for your data...';
+            try {
+                const gistId = await findAppDataGistId(token);
+                if (!gistId) {
+                    statusEl.textContent = 'No synced data found for this token. You can still use "Restore My Data" later from Settings.';
+                    return;
+                }
+                const result = await fetchAppDataFromGist(token, gistId);
+                const payload = JSON.parse(result.content);
+                const data = payload && payload.data ? payload.data : payload;
+                if (!data || typeof data !== 'object') {
+                    statusEl.textContent = 'That gist file is not a School Dashboard backup.';
+                    return;
+                }
+                localStorage.setItem('githubGistId', result.gistId);
+                applyImportedDataObject(data, APP_DATA_SYNC_KEYS);
+                window.location.reload();
+            } catch (err) {
+                console.error('Onboarding sync failed:', err);
+                statusEl.textContent = `Sync failed: ${err.message}`;
+            }
+        }
+
         function confirmClearAllNotes() {
             showConfirmationModal('Clear all calendar notes? This cannot be undone.', [
                 { text: 'Confirm', action: () => {
@@ -8114,6 +8403,13 @@ body.dark-theme[data-palette="mint"] {
         // ===================== INITIALIZATION =====================
         // =====================================================================================
         document.addEventListener('DOMContentLoaded', () => {
+            // Has to be read before loadClassData() runs -- that call seeds and saves default
+            // class data on a truly empty device, so classDataV3 would already exist by the time
+            // we could check for it afterward. isFirstRun basically means "loaded this app on
+            // this browser for the very first time ever" (or previously chose "Start Fresh" and
+            // has genuinely made no changes since).
+            const isFirstRun = !localStorage.getItem('classDataV3');
+
             loadClassData();
             loadClassNotes();
             loadUserScheduleDates();
@@ -8200,6 +8496,8 @@ body.dark-theme[data-palette="mint"] {
             // Note: the "Open Current Class?" prompt is handled by checkScheduledClassPrompt(),
             // called every tick from displayTime() above -- not just once here at load -- so it
             // still fires if a period starts while the tab is already open.
+
+            if (isFirstRun) showOnboardingSyncModal();
         });
     </script>
 </body>
