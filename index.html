@@ -658,6 +658,13 @@ body.dark-theme[data-palette="mint"] {
             padding: 0.9rem 1.1rem;
             margin-bottom: 1rem;
         }
+        .digest-config-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.75rem;
+        }
+        .digest-config-bar-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
         .digest-banner-header { display: flex; justify-content: space-between; align-items: center; }
         .digest-banner-title { font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--accent-2); }
         .digest-banner-summary { font-size: 0.9rem; margin-top: 0.3rem; }
@@ -768,9 +775,9 @@ body.dark-theme[data-palette="mint"] {
         }
 
         .home-widget-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.25rem;
+            /* display/flex-wrap/etc. set below under HOME SCREEN EDITOR -- kept together there
+               since the free-form widget sizing only makes sense as a flex layout. */
         }
         .home-widget {
             background: var(--glass-bg);
@@ -864,9 +871,6 @@ body.dark-theme[data-palette="mint"] {
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
-        }
-        #home-widget-upcoming {
-            grid-column: span 2;
         }
         .home-list-item {
             display: flex;
@@ -1821,15 +1825,80 @@ body.dark-theme[data-palette="mint"] {
         .settings-category.hidden { display: none; }
 
         /* ===================== HOME SCREEN EDITOR (in-place, iOS-springboard-style) ===================== */
-        /* Editing needs explicit columns (not auto-fit) so a widget can deliberately span 2. */
-        .home-widget-grid.is-editing {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+        /* Flexbox, not CSS Grid -- each widget carries its own free-form width% and height(px)
+           as inline styles (see applyHomeWidgetLayout), set by dragging the resize handle to
+           whatever size you want rather than snapping to fixed fractions. flex-wrap just flows
+           widgets left-to-right, wrapping whenever the next one doesn't fit the remaining row
+           width, closest to how Control Center's own free-size widgets tile. Always on (not
+           just while editing) so a widget's chosen size looks the same in and out of edit mode. */
+        .home-widget-grid {
+            position: relative;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
         }
         @media (max-width: 640px) {
-            .home-widget-grid.is-editing { grid-template-columns: 1fr; }
+            .home-widget-grid .home-widget { width: 100% !important; }
         }
-        .home-widget-size-wide { grid-column: span 2; }
-        .home-widget { position: relative; transform-origin: center; }
+        /* overflow:hidden so a freely-chosen height actually clips/contains content instead of
+           the widget silently growing taller than what you dragged it to. */
+        .home-widget {
+            position: relative;
+            transform-origin: center;
+            overflow: hidden;
+            box-sizing: border-box;
+            /* Lets the CSS below key off THIS widget's own box size, not the viewport -- so
+               content actually scales with whatever size you drag it to, tiny or huge, instead
+               of every widget rendering identically regardless of its footprint. */
+            container-type: size; /* both axes, not just inline-size -- min-height queries below
+                                      need the block-size to be tracked too, and every widget's
+                                      own JS-set height (applyHomeWidgetLayout) makes that safe. */
+            container-name: homewidget;
+        }
+        /* ---- Content scaling: tiers keyed off the widget's own width, matched to what fits
+           without wrapping/clipping at each size (checked against the tightest real content --
+           "No classes scheduled right now.", a countdown row's day count, etc). ---- */
+        @container homewidget (max-width: 200px) {
+            .home-widget h2 { font-size: 0.82rem; margin-bottom: 0.5rem; }
+            .home-widget-add-btn { width: 1.3rem; height: 1.3rem; font-size: 0.8rem; }
+            .home-item-title { font-size: 0.78rem; }
+            .home-item-sub { font-size: 0.68rem; }
+            .home-widget-empty { font-size: 0.75rem; }
+            .home-next-class-big { font-size: 1.1rem; }
+            .home-due-countdown { font-size: 0.85rem; }
+            .home-list { gap: 0.4rem; }
+        }
+        @container homewidget (min-width: 201px) and (max-width: 340px) {
+            .home-widget h2 { font-size: 0.98rem; }
+            .home-next-class-big { font-size: 1.35rem; }
+        }
+        @container homewidget (min-width: 560px) {
+            .home-widget h2 { font-size: 1.3rem; margin-bottom: 1.25rem; }
+            .home-item-title { font-size: 1rem; }
+            .home-item-sub { font-size: 0.85rem; }
+            .home-next-class-big { font-size: 2rem; }
+            .home-due-countdown { font-size: 1.15rem; }
+            .home-list { gap: 1rem; }
+        }
+        @container homewidget (min-height: 340px) {
+            .home-widget-compact-list { max-height: none; }
+        }
+        .home-widget-resize-skeleton {
+            /* No transition -- this is a free-form 1:1 drag, not snapping between a few discrete
+               sizes, so it needs to track the pointer immediately rather than ease toward it. */
+            position: absolute;
+            z-index: 50;
+            border-radius: 1.1rem;
+            border: 2px dashed var(--accent-2);
+            background: color-mix(in srgb, var(--accent-2) 14%, transparent);
+            pointer-events: none;
+        }
+        /* Solid border while magnet-snapped to a clean fraction/row height, dashed otherwise --
+           a quick visual "it caught" cue, same idea as alignment guides going solid on snap. */
+        .home-widget-resize-skeleton.is-snapped {
+            border-style: solid;
+            background: color-mix(in srgb, var(--accent-2) 22%, transparent);
+        }
         .ios-remove-dot, .ios-add-dot {
             flex-shrink: 0;
             width: 1.6rem;
@@ -1849,9 +1918,11 @@ body.dark-theme[data-palette="mint"] {
         .ios-add-dot { background: #22c55e; }
         .ios-remove-dot:hover, .ios-add-dot:hover { filter: brightness(1.1); }
         .home-widget-remove-badge {
+            /* Fully inside the widget's own box, not poking outside -- overflow:hidden (needed
+               so a freely-chosen height actually clips content) would otherwise cut it off. */
             position: absolute;
-            top: -0.5rem;
-            left: -0.5rem;
+            top: 0.6rem;
+            left: 0.6rem;
             z-index: 5;
             box-shadow: 0 2px 8px rgba(0,0,0,.25);
         }
@@ -1869,7 +1940,7 @@ body.dark-theme[data-palette="mint"] {
             background: var(--glass-bg-strong);
             border: 1px solid var(--glass-border);
             color: var(--text-secondary);
-            cursor: ew-resize;
+            cursor: nwse-resize;
             touch-action: none;
         }
         .home-widget-resize-handle svg { width: 0.85rem; height: 0.85rem; }
@@ -1881,12 +1952,22 @@ body.dark-theme[data-palette="mint"] {
         }
         .home-widget-grid.is-editing > .home-widget {
             animation: ios-jiggle 0.22s ease-in-out infinite;
+            /* Overrides any normal-mode is-clickable cursor/hover -- while editing, nothing in
+               a tile responds to a plain click except the remove badge and resize handle
+               (matches iOS: content underneath a jiggling icon doesn't react to taps). */
+            cursor: grab;
+        }
+        .home-widget-grid.is-editing > .home-widget:active { cursor: grabbing; }
+        .home-widget-grid.is-editing > .home-widget.is-clickable:hover {
+            background: var(--glass-bg);
         }
         .home-widget-grid.is-editing > .home-widget.is-dragging {
             opacity: 0.4;
             animation: none;
         }
         .home-widget-add-tile {
+            width: 33%; /* a reasonable default footprint -- unlike real widgets it isn't resizable */
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1957,6 +2038,48 @@ body.dark-theme[data-palette="mint"] {
         body.dark-theme .mini-calendar-panel { box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3); }
         .mini-calendar-title { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
         .mini-calendar-subtitle { font-size: 0.72rem; color: var(--text-muted); }
+        .mini-calendar-config-btn {
+            width: 2.1rem;
+            height: 2.1rem;
+            border-radius: 9999px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-strong);
+            color: var(--text-secondary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .mini-calendar-config-btn:hover { color: var(--text-primary); border-color: var(--accent-2); }
+        .mini-calendar-config-btn svg { width: 1.1rem; height: 1.1rem; }
+        .mini-cal-config-panel {
+            margin-bottom: 1rem;
+            padding: 0.85rem 1rem;
+            border-radius: 0.9rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-strong);
+        }
+        .mini-cal-config-panel-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 0.6rem;
+        }
+        .mini-cal-config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 0.4rem 0.75rem;
+        }
+        .mini-cal-config-row {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
         .mini-calendar-open-btn {
             padding: 0.5rem 0.9rem;
             border-radius: 9999px;
@@ -2501,6 +2624,7 @@ body.dark-theme[data-palette="mint"] {
                             <h3 class="text-xl sm:text-2xl font-medium tracking-wide mt-1" id="home-time"></h3>
                         </div>
                         <div class="flex items-center gap-2">
+                            <select id="home-preset-select" class="form-select hidden" style="font-size:0.8rem;padding:0.45rem 0.7rem;width:auto;" onchange="applyHomePreset(this.value)" title="Layout preset"></select>
                             <button type="button" id="home-reset-layout-button" class="modal-footer-button is-secondary hidden" onclick="resetCustomizeHomeLayout()">Reset Layout</button>
                             <button type="button" id="customize-home-button" class="icon-btn p-3 rounded-full" onclick="toggleHomeEditMode()" title="Customize Home">
                                 <svg class="home-edit-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
@@ -2620,6 +2744,11 @@ body.dark-theme[data-palette="mint"] {
                             <input type="text" id="calendar-search-input" class="form-input calendar-search-input" placeholder="Search assignments &amp; events..." oninput="handleCalendarSearchInput(this.value)" onfocus="handleCalendarSearchInput(this.value)">
                             <div id="calendar-search-results" class="calendar-search-results hidden"></div>
                         </div>
+                    </div>
+                    <div class="flex justify-end mb-4">
+                        <button type="button" class="modal-footer-button is-secondary" style="font-size:0.75rem;padding:0.4rem 0.85rem;" onclick="syncCalPreviewToCurrentFilters()" title="Copy these shown/hidden filters into the Home and Classes calendar previews, one time">
+                            Sync Preview Calendars to Current Filters
+                        </button>
                     </div>
                     <div id="calendar-legend-panel" class="calendar-legend-panel hidden"></div>
 
@@ -5185,6 +5314,102 @@ body.dark-theme[data-palette="mint"] {
         // each gets a red remove badge and a drag handle to reposition, a corner grip lets you
         // drag to resize between one and two grid columns, and hidden widgets appear as dashed
         // "add" tiles right in the grid. "Done" commits and turns editing back off.
+        // ===================== HOME DIGEST CONFIG (which digest sections show) =====================
+        const HOME_DIGEST_DEFAULT_CONFIG = { showWeekly: true, showDaily: true, sections: { reminders: true, due: true, events: true, classes: true } };
+        function loadHomeDigestConfig() {
+            let cfg;
+            try { cfg = JSON.parse(localStorage.getItem('homeDigestConfigV1') || 'null'); } catch (e) { cfg = null; }
+            if (!cfg || typeof cfg !== 'object') return JSON.parse(JSON.stringify(HOME_DIGEST_DEFAULT_CONFIG));
+            return {
+                showWeekly: cfg.showWeekly !== false,
+                showDaily: cfg.showDaily !== false,
+                sections: {
+                    reminders: !cfg.sections || cfg.sections.reminders !== false,
+                    due: !cfg.sections || cfg.sections.due !== false,
+                    events: !cfg.sections || cfg.sections.events !== false,
+                    classes: !cfg.sections || cfg.sections.classes !== false
+                }
+            };
+        }
+        function saveHomeDigestConfig(cfg) {
+            localStorage.setItem('homeDigestConfigV1', JSON.stringify(cfg));
+        }
+        let homeDigestPanelOpen = false;
+        function toggleHomeDigestPanel() {
+            homeDigestPanelOpen = !homeDigestPanelOpen;
+            renderDigestBanner();
+        }
+        function setHomeDigestOption(path, value) {
+            const cfg = loadHomeDigestConfig();
+            if (path === 'showWeekly' || path === 'showDaily') cfg[path] = value;
+            else cfg.sections[path] = value;
+            saveHomeDigestConfig(cfg);
+            renderDigestBanner();
+            markHomeLayoutCustom();
+        }
+
+        // ===================== CALENDAR PREVIEW CONFIG (shared by every mini calendar preview --
+        // the Home widget AND the Classes screen's preview both read this one config, so a change
+        // in either place shows up in both. Mirrors the main Calendar view's own category filter
+        // shape (see calendarCategoryFilter) so "Sync to Current Filters" on the Calendar screen
+        // can just copy that live state across, one time, on request. =====================
+        const CAL_PREVIEW_DEFAULT_CONFIG = {
+            categories: { assignment: true, 'school-event': true, club: true, sports: true, event: true },
+            showClasses: true,
+            showReminders: true,
+            showDayBadges: true,
+            showNotes: true
+        };
+        function loadCalPreviewConfig() {
+            let cfg;
+            try { cfg = JSON.parse(localStorage.getItem('calendarPreviewConfigV1') || 'null'); } catch (e) { cfg = null; }
+            if (!cfg || typeof cfg !== 'object') return JSON.parse(JSON.stringify(CAL_PREVIEW_DEFAULT_CONFIG));
+            return {
+                categories: Object.assign({}, CAL_PREVIEW_DEFAULT_CONFIG.categories, cfg.categories || {}),
+                showClasses: cfg.showClasses !== false,
+                showReminders: cfg.showReminders !== false,
+                showDayBadges: cfg.showDayBadges !== false,
+                showNotes: cfg.showNotes !== false
+            };
+        }
+        function saveCalPreviewConfig(cfg) {
+            localStorage.setItem('calendarPreviewConfigV1', JSON.stringify(cfg));
+        }
+        function rerenderAllCalendarPreviews() {
+            renderMiniCalendarPreviewInto('home-calendar-preview');
+            renderMiniCalendarPreviewInto('classes-calendar-preview');
+        }
+        let homeCalPreviewPanelOpen = false;
+        function toggleHomeCalPreviewPanel() {
+            homeCalPreviewPanelOpen = !homeCalPreviewPanelOpen;
+            renderMiniCalendarPreviewInto('home-calendar-preview');
+        }
+        function toggleCalPreviewCategory(group, visible) {
+            const cfg = loadCalPreviewConfig();
+            cfg.categories[group] = visible;
+            saveCalPreviewConfig(cfg);
+            rerenderAllCalendarPreviews();
+            markHomeLayoutCustom();
+        }
+        function setCalPreviewOption(key, value) {
+            const cfg = loadCalPreviewConfig();
+            cfg[key] = value;
+            saveCalPreviewConfig(cfg);
+            rerenderAllCalendarPreviews();
+            markHomeLayoutCustom();
+        }
+        // One-time copy from the Calendar screen's own live filter state -- not a live binding,
+        // just "make the previews match what I currently have shown/hidden right now."
+        function syncCalPreviewToCurrentFilters() {
+            const cfg = loadCalPreviewConfig();
+            cfg.categories = { ...calendarCategoryFilter };
+            cfg.showClasses = calendarShowClasses;
+            cfg.showReminders = calendarShowReminders;
+            saveCalPreviewConfig(cfg);
+            rerenderAllCalendarPreviews();
+            showActionToast('Preview calendars updated to match your current filters.');
+        }
+
         const HOME_WIDGET_DEFS = [
             { id: 'next-class', label: 'Next Class', el: 'home-widget-next-class' },
             { id: 'due-soon', label: 'Due Soon', el: 'home-widget-due-soon' },
@@ -5193,9 +5418,23 @@ body.dark-theme[data-palette="mint"] {
             { id: 'upcoming', label: 'Upcoming Events', el: 'home-widget-upcoming' },
             { id: 'calendar-preview', label: 'Calendar Preview', el: 'home-calendar-preview' }
         ];
-        const HOME_WIDGET_DEFAULT_SIZES = { upcoming: 'wide', 'calendar-preview': 'wide' };
+        // Free-form size: widthPct is a percentage (10-100) of the grid's own width, heightPx is
+        // an absolute pixel height. No snapping, no fixed menu -- drag the corner handle to
+        // whatever footprint you want, same as Control Center's continuous widget resize.
+        const HOME_WIDGET_SIZE_LIMITS = { minWidthPct: 15, maxWidthPct: 100, minHeightPx: 100, maxHeightPx: 800 };
+        const HOME_WIDGET_DEFAULT_SIZES = {
+            upcoming: { widthPct: 100, heightPx: 260 },
+            'calendar-preview': { widthPct: 100, heightPx: 420 }
+        };
+        const HOME_WIDGET_DEFAULT_SIZE = { widthPct: 48, heightPx: 176 };
+        function clampHomeWidgetSize(size) {
+            const L = HOME_WIDGET_SIZE_LIMITS;
+            const widthPct = Math.min(L.maxWidthPct, Math.max(L.minWidthPct, Number(size && size.widthPct) || HOME_WIDGET_DEFAULT_SIZE.widthPct));
+            const heightPx = Math.min(L.maxHeightPx, Math.max(L.minHeightPx, Number(size && size.heightPx) || HOME_WIDGET_DEFAULT_SIZE.heightPx));
+            return { widthPct, heightPx };
+        }
         function defaultHomeWidgetLayout() {
-            return HOME_WIDGET_DEFS.map(w => ({ id: w.id, visible: true, size: HOME_WIDGET_DEFAULT_SIZES[w.id] || 'small' }));
+            return HOME_WIDGET_DEFS.map(w => ({ id: w.id, visible: true, size: HOME_WIDGET_DEFAULT_SIZES[w.id] || HOME_WIDGET_DEFAULT_SIZE }));
         }
         function loadHomeWidgetLayout() {
             let layout;
@@ -5205,10 +5444,11 @@ body.dark-theme[data-palette="mint"] {
             // whose id changed) doesn't silently disappear or crash the layout logic.
             const knownIds = new Set(HOME_WIDGET_DEFS.map(w => w.id));
             const cleaned = layout.filter(entry => entry && knownIds.has(entry.id)).map(entry => ({
-                id: entry.id, visible: !!entry.visible, size: entry.size === 'wide' ? 'wide' : 'small'
+                id: entry.id, visible: !!entry.visible,
+                size: clampHomeWidgetSize(entry.size || HOME_WIDGET_DEFAULT_SIZES[entry.id])
             }));
             HOME_WIDGET_DEFS.forEach(w => {
-                if (!cleaned.some(entry => entry.id === w.id)) cleaned.push({ id: w.id, visible: true, size: HOME_WIDGET_DEFAULT_SIZES[w.id] || 'small' });
+                if (!cleaned.some(entry => entry.id === w.id)) cleaned.push({ id: w.id, visible: true, size: HOME_WIDGET_DEFAULT_SIZES[w.id] || HOME_WIDGET_DEFAULT_SIZE });
             });
             return cleaned;
         }
@@ -5223,9 +5463,15 @@ body.dark-theme[data-palette="mint"] {
                 const el = def && document.getElementById(def.el);
                 if (!el) return;
                 el.classList.toggle('hidden', !entry.visible);
-                el.classList.toggle('home-widget-size-wide', entry.size === 'wide');
-                // Widgets inside the grid get reordered there; the full-width calendar preview
-                // lives outside the grid and stays pinned below it regardless of list position.
+                // The full-width calendar preview lives outside the grid, isn't resizable, and
+                // keeps its own natural height -- only visibility applies to it.
+                if (entry.id !== 'calendar-preview') {
+                    const { widthPct, heightPx } = clampHomeWidgetSize(entry.size);
+                    el.style.width = widthPct + '%';
+                    el.style.height = heightPx + 'px';
+                }
+                // Widgets inside the grid get reordered there; the calendar preview stays pinned
+                // below it regardless of list position.
                 if (grid && el.parentElement === grid) grid.appendChild(el);
             });
             if (isHomeEditModeActive()) renderHomeEditExtras();
@@ -5236,10 +5482,24 @@ body.dark-theme[data-palette="mint"] {
         function toggleHomeEditMode() {
             homeEditMode ? exitHomeEditMode() : enterHomeEditMode();
         }
+        // Capture-phase guard on the grid: while editing, a click has to land exactly on the
+        // remove badge, the resize handle, or an add-tile to do anything. Everything else inside
+        // a widget -- "Next Class"'s own card-level navigate-on-click (renderHomeNextClass sets
+        // widget.onclick every second off the 1s clock tick, edit mode or not), a countdown's
+        // "+" button, a reminder's done-checkmark -- gets silenced. This is what actually makes
+        // jiggling widgets inert to normal taps, same as iOS: nothing under an icon you're
+        // rearranging still responds to being tapped.
+        function homeEditClickGuard(e) {
+            if (!e.target.closest('.home-widget-remove-badge, .home-widget-resize-handle, .home-widget-add-tile')) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }
         function enterHomeEditMode() {
             homeEditMode = true;
             const grid = document.querySelector('.home-widget-grid');
             grid.classList.add('is-editing');
+            grid.addEventListener('click', homeEditClickGuard, true);
             const btn = document.getElementById('customize-home-button');
             if (btn) {
                 btn.classList.add('is-done');
@@ -5249,6 +5509,8 @@ body.dark-theme[data-palette="mint"] {
             }
             const resetBtn = document.getElementById('home-reset-layout-button');
             if (resetBtn) resetBtn.classList.remove('hidden');
+            const presetSelect = document.getElementById('home-preset-select');
+            if (presetSelect) { presetSelect.classList.remove('hidden'); renderHomePresetOptions(); }
 
             Array.from(grid.children).forEach((el, i) => {
                 if (!el.classList.contains('home-widget')) return;
@@ -5265,6 +5527,11 @@ body.dark-theme[data-palette="mint"] {
                     badge.className = 'home-widget-remove-badge ios-remove-dot';
                     badge.title = 'Hide widget';
                     badge.textContent = '−';
+                    // draggable="false" on the control itself is what stops a press-and-slight-
+                    // move on it from also being picked up as the start of the parent widget's
+                    // native HTML5 drag (a child needs its own explicit opt-out; it doesn't
+                    // inherit one from being "not the draggable element").
+                    badge.setAttribute('draggable', 'false');
                     badge.onclick = (ev) => { ev.stopPropagation(); hideHomeWidgetById(el.id); };
                     el.appendChild(badge);
                 }
@@ -5272,6 +5539,7 @@ body.dark-theme[data-palette="mint"] {
                     const handle = document.createElement('div');
                     handle.className = 'home-widget-resize-handle';
                     handle.title = 'Drag to resize';
+                    handle.setAttribute('draggable', 'false');
                     handle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 4L4 20M20 12l-8 8M20 20h-4"></path></svg>';
                     handle.addEventListener('pointerdown', (ev) => startHomeWidgetResize(ev, el));
                     el.appendChild(handle);
@@ -5283,6 +5551,7 @@ body.dark-theme[data-palette="mint"] {
             homeEditMode = false;
             const grid = document.querySelector('.home-widget-grid');
             grid.classList.remove('is-editing');
+            grid.removeEventListener('click', homeEditClickGuard, true);
             const btn = document.getElementById('customize-home-button');
             if (btn) {
                 btn.classList.remove('is-done');
@@ -5292,6 +5561,8 @@ body.dark-theme[data-palette="mint"] {
             }
             const resetBtn = document.getElementById('home-reset-layout-button');
             if (resetBtn) resetBtn.classList.add('hidden');
+            const presetSelect = document.getElementById('home-preset-select');
+            if (presetSelect) presetSelect.classList.add('hidden');
             Array.from(grid.children).forEach(el => {
                 if (!el.classList.contains('home-widget')) return;
                 el.removeAttribute('draggable');
@@ -5303,6 +5574,10 @@ body.dark-theme[data-palette="mint"] {
                 if (handle) handle.remove();
             });
             document.querySelectorAll('.home-widget-add-tile').forEach(t => t.remove());
+            // Force an immediate refresh of anything that gates its own click behavior on
+            // homeEditMode (see homeEditClickGuard's comment) so it's correct right away instead
+            // of waiting up to 1s for the next clock tick to fix it.
+            renderHomeNextClass();
         }
         // Dashed "+ Add Widget" tiles for anything currently hidden, appended into the live grid
         // right alongside the real widgets -- tapping one un-hides it in place, no separate list.
@@ -5330,6 +5605,7 @@ body.dark-theme[data-palette="mint"] {
             saveHomeWidgetLayout(layout);
             document.getElementById(elId).classList.add('hidden');
             renderHomeEditExtras();
+            markHomeLayoutCustom();
         }
         function showHomeWidgetById(id) {
             const layout = loadHomeWidgetLayout();
@@ -5342,28 +5618,175 @@ body.dark-theme[data-palette="mint"] {
             saveHomeWidgetLayout(layout);
             applyHomeWidgetLayout();
             if (homeEditMode) enterHomeEditMode();
+            markHomeLayoutCustom();
         }
         function resetCustomizeHomeLayout() {
             saveHomeWidgetLayout(defaultHomeWidgetLayout());
             applyHomeWidgetLayout();
             if (homeEditMode) enterHomeEditMode();
+            setHomePresetSelection('default');
+        }
+
+        // ===================== HOME LAYOUT PRESETS =====================
+        // Each preset is a full snapshot: widget layout (order/visible/size) *and* the digest +
+        // calendar-preview config, since a layout built around "just today's essentials" only
+        // really makes sense together with a digest/preview trimmed to match (per the request
+        // that presets carry their own digest/calendar-preview choices too, not just widget sizes).
+        function w(id, visible, widthPct, heightPx) { return { id, visible, size: { widthPct, heightPx } }; }
+        const HOME_LAYOUT_PRESETS = [
+            {
+                id: 'default', label: 'Default',
+                layout: null, // null = defaultHomeWidgetLayout()
+                digest: null, calPreview: null
+            },
+            {
+                id: 'compact', label: 'Compact List',
+                layout: [
+                    w('next-class', true, 33, 120), w('due-soon', true, 33, 120), w('countdowns', true, 33, 120),
+                    w('reminders', true, 33, 120), w('upcoming', true, 33, 120), w('calendar-preview', false, 100, 420)
+                ],
+                digest: { showWeekly: false, showDaily: true, sections: { reminders: true, due: true, events: false, classes: false } },
+                calPreview: null
+            },
+            {
+                id: 'focus-next-class', label: 'Focus: Next Class',
+                layout: [
+                    w('next-class', true, 100, 320), w('due-soon', true, 50, 160), w('countdowns', true, 25, 140),
+                    w('reminders', true, 25, 140), w('upcoming', false, 100, 260), w('calendar-preview', true, 100, 420)
+                ],
+                digest: null, calPreview: null
+            },
+            {
+                id: 'assignments-first', label: 'Assignments First',
+                layout: [
+                    w('due-soon', true, 100, 260), w('next-class', true, 50, 160), w('upcoming', true, 50, 260),
+                    w('countdowns', true, 33, 140), w('reminders', true, 33, 140), w('calendar-preview', false, 100, 420)
+                ],
+                digest: { showWeekly: true, showDaily: true, sections: { reminders: false, due: true, events: true, classes: false } },
+                calPreview: { categories: { assignment: true, 'school-event': true, club: false, sports: false, event: true }, showClasses: false, showReminders: false, showDayBadges: true, showNotes: true }
+            },
+            {
+                id: 'countdown-enthusiast', label: 'Countdown Enthusiast',
+                layout: [
+                    w('countdowns', true, 66, 320), w('reminders', true, 66, 320), w('next-class', true, 33, 140),
+                    w('due-soon', true, 33, 140), w('upcoming', false, 100, 260), w('calendar-preview', true, 100, 420)
+                ],
+                digest: null, calPreview: null
+            },
+            {
+                id: 'minimal-today', label: 'Minimal (Today Only)',
+                layout: [
+                    w('next-class', true, 50, 180), w('due-soon', true, 50, 180), w('countdowns', false, 33, 140),
+                    w('reminders', false, 33, 140), w('upcoming', false, 100, 260), w('calendar-preview', false, 100, 420)
+                ],
+                digest: { showWeekly: false, showDaily: true, sections: { reminders: false, due: true, events: true, classes: true } },
+                calPreview: { categories: { assignment: true, 'school-event': true, club: false, sports: false, event: true }, showClasses: true, showReminders: false, showDayBadges: true, showNotes: true }
+            },
+            {
+                id: 'everything-big', label: 'Everything Big',
+                layout: [
+                    w('next-class', true, 50, 260), w('due-soon', true, 50, 260), w('countdowns', true, 50, 260),
+                    w('reminders', true, 50, 260), w('upcoming', true, 100, 320), w('calendar-preview', true, 100, 480)
+                ],
+                digest: null, calPreview: null
+            },
+            {
+                id: 'calendar-heavy', label: 'Calendar-Heavy',
+                layout: [
+                    w('calendar-preview', true, 100, 620), w('countdowns', true, 50, 160), w('reminders', true, 50, 160),
+                    w('next-class', false, 50, 160), w('due-soon', false, 50, 160), w('upcoming', false, 100, 260)
+                ],
+                digest: { showWeekly: true, showDaily: true, sections: { reminders: true, due: true, events: true, classes: true } },
+                calPreview: { categories: { assignment: true, 'school-event': true, club: true, sports: true, event: true }, showClasses: true, showReminders: true, showDayBadges: true, showNotes: true }
+            },
+            {
+                id: 'reminders-countdowns', label: 'Reminders & Countdowns Focus',
+                layout: [
+                    w('reminders', true, 100, 300), w('countdowns', true, 100, 300), w('next-class', false, 50, 160),
+                    w('due-soon', false, 50, 160), w('upcoming', false, 100, 260), w('calendar-preview', false, 100, 420)
+                ],
+                digest: { showWeekly: false, showDaily: true, sections: { reminders: true, due: false, events: false, classes: false } },
+                calPreview: null
+            },
+            {
+                id: 'weekly-planner', label: 'Weekly Planner',
+                layout: [
+                    w('upcoming', true, 100, 380), w('due-soon', true, 50, 160), w('next-class', true, 50, 160),
+                    w('countdowns', true, 33, 140), w('reminders', true, 33, 140), w('calendar-preview', true, 100, 420)
+                ],
+                digest: { showWeekly: true, showDaily: false, sections: { reminders: true, due: true, events: true, classes: true } },
+                calPreview: null
+            }
+        ];
+        function loadHomePresetSelection() {
+            return localStorage.getItem('homeLayoutPresetV1') || 'custom';
+        }
+        function setHomePresetSelection(id) {
+            localStorage.setItem('homeLayoutPresetV1', id);
+            const select = document.getElementById('home-preset-select');
+            if (select) select.value = id;
+        }
+        function renderHomePresetOptions() {
+            const select = document.getElementById('home-preset-select');
+            if (!select) return;
+            select.innerHTML = `<option value="custom">Custom</option>` +
+                HOME_LAYOUT_PRESETS.map(p => `<option value="${p.id}">${escapeHtml(p.label)}</option>`).join('');
+            select.value = loadHomePresetSelection();
+        }
+        function applyHomePreset(id) {
+            if (id === 'custom') { setHomePresetSelection('custom'); return; }
+            const preset = HOME_LAYOUT_PRESETS.find(p => p.id === id);
+            if (!preset) return;
+            saveHomeWidgetLayout(preset.layout ? preset.layout.map(entry => ({ ...entry })) : defaultHomeWidgetLayout());
+            saveHomeDigestConfig(preset.digest ? { ...preset.digest, sections: { ...preset.digest.sections } } : JSON.parse(JSON.stringify(HOME_DIGEST_DEFAULT_CONFIG)));
+            saveCalPreviewConfig(preset.calPreview ? { ...preset.calPreview, categories: { ...preset.calPreview.categories } } : JSON.parse(JSON.stringify(CAL_PREVIEW_DEFAULT_CONFIG)));
+            applyHomeWidgetLayout();
+            renderDigestBanner();
+            rerenderAllCalendarPreviews();
+            if (homeEditMode) enterHomeEditMode();
+            setHomePresetSelection(id);
+        }
+        // Any manual edit (resize/drag/hide/config change) means the layout no longer matches
+        // whatever preset was last selected -- fall back to "Custom" so the dropdown stays honest.
+        function markHomeLayoutCustom() {
+            if (loadHomePresetSelection() !== 'custom') setHomePresetSelection('custom');
         }
 
         // --- DRAG TO REPOSITION (live grid) ---
         let draggedHomeWidgetEl = null;
         function handleHomeWidgetDragStart(e, el) {
+            // Belt-and-suspenders alongside the controls' own draggable="false" (see
+            // enterHomeEditMode): if a drag somehow still starts from inside the remove badge or
+            // resize handle, bail rather than let it hijack that control's own gesture.
+            if (e.target.closest('.home-widget-remove-badge, .home-widget-resize-handle')) {
+                e.preventDefault();
+                return;
+            }
             draggedHomeWidgetEl = el;
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', el.id);
-            requestAnimationFrame(() => el.classList.add('is-dragging'));
+            // Synchronous, not requestAnimationFrame-deferred: a fast drag can fire dragend
+            // before a deferred rAF callback runs, so the class never gets removed by dragend's
+            // (already-run) cleanup -- it lands afterward and the widget is stuck dimmed forever.
+            el.classList.add('is-dragging');
         }
+        // Reading-order insertion: a plain X-midpoint comparison (the original approach) only
+        // makes sense in a single-column list. In a real 2-D grid with mixed widths/heights, the
+        // target you're hovering could be in a different row entirely, so this checks Y first --
+        // clearly above the target's row -> insert before it; clearly below -> after it; only
+        // when the pointer is roughly level with the target (same row) does X decide left/right.
         function handleHomeWidgetDragOver(e, targetEl) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             if (!draggedHomeWidgetEl || targetEl === draggedHomeWidgetEl) return;
             const grid = document.querySelector('.home-widget-grid');
             const rect = targetEl.getBoundingClientRect();
-            const before = e.clientX < rect.left + rect.width / 2;
+            const midY = rect.top + rect.height / 2;
+            const rowBand = rect.height * 0.3;
+            let before;
+            if (e.clientY < midY - rowBand) before = true;
+            else if (e.clientY > midY + rowBand) before = false;
+            else before = e.clientX < rect.left + rect.width / 2;
             grid.insertBefore(draggedHomeWidgetEl, before ? targetEl : targetEl.nextSibling);
         }
         function handleHomeWidgetDragEnd() {
@@ -5382,30 +5805,114 @@ body.dark-theme[data-palette="mint"] {
             const calendarPreviewEntries = layout.filter(e => e.id === 'calendar-preview');
             const reordered = domIds.map(id => layout.find(e => e.id === id)).filter(Boolean);
             saveHomeWidgetLayout(reordered.concat(calendarPreviewEntries));
+            markHomeLayoutCustom();
         }
 
-        // --- DRAG TO RESIZE (small <-> wide, via the corner grip) ---
+        // --- DRAG TO RESIZE (corner grip, fully free-form -- any width%/height(px) within the
+        // sane min/max bounds in HOME_WIDGET_SIZE_LIMITS, no snapping. A live skeleton outline
+        // tracks the target footprint the same way Control Center's own resize preview does.) ---
         function startHomeWidgetResize(e, el) {
             e.preventDefault();
             e.stopPropagation();
-            const startX = e.clientX;
-            const startedWide = el.classList.contains('home-widget-size-wide');
+            const grid = document.querySelector('.home-widget-grid');
+            const gridRect = grid.getBoundingClientRect();
+            const elRect = el.getBoundingClientRect();
+            const startWidthPx = elRect.width;
+            const startHeightPx = elRect.height;
+            const startClientX = e.clientX, startClientY = e.clientY;
+            const elLeft = el.offsetLeft, elTop = el.offsetTop;
+            const L = HOME_WIDGET_SIZE_LIMITS;
+            const minWidthPx = gridRect.width * L.minWidthPct / 100;
+            const maxWidthPx = gridRect.width * L.maxWidthPct / 100;
+
+            const skeleton = document.createElement('div');
+            skeleton.className = 'home-widget-resize-skeleton';
+            grid.appendChild(skeleton);
+
             el.setAttribute('draggable', 'false'); // don't fight the native drag-reorder while resizing
-            function onMove(ev) {
-                const dx = ev.clientX - startX;
-                const shouldBeWide = startedWide ? dx > -60 : dx > 60;
-                el.classList.toggle('home-widget-size-wide', shouldBeWide);
+
+            // Magnetic snapping, not rigid steps: still a free-form drag, but the width/height
+            // gently catch on values that are actually meaningful -- clean fractions (1/4, 1/3,
+            // 1/2, 2/3, 3/4, full), round row-height multiples, *and* dynamically, the exact
+            // current size of every other visible widget (so "match Reminders' width" is a real
+            // snap target, not just guesswork) plus "fill the rest of this row" measured from
+            // this widget's own left edge to the grid's right edge. Only within a small pixel
+            // threshold of the pointer, so most of the drag stays fully continuous.
+            const gridStyle = getComputedStyle(grid);
+            const gapPx = parseFloat(gridStyle.columnGap || gridStyle.gap) || 0;
+            const siblingRects = Array.from(grid.children)
+                .filter(child => child !== el && child.classList.contains('home-widget') && !child.classList.contains('hidden'))
+                .map(child => child.getBoundingClientRect());
+            const siblingWidths = siblingRects.map(r => r.width);
+            const siblingHeights = siblingRects.map(r => r.height);
+            const fillRowWidthPx = gridRect.right - (gridRect.left + elLeft) - 0; // remaining width to the grid's right edge from this widget's own left edge
+
+            const WIDTH_SNAP_FRACTIONS = [1 / 4, 1 / 3, 1 / 2, 2 / 3, 3 / 4, 1];
+            const HEIGHT_SNAP_UNIT = 60;
+            const SNAP_THRESHOLD_PX = 14;
+            function snapValue(value, candidates) {
+                let closest = candidates[0], closestDist = Math.abs(value - candidates[0]);
+                for (let i = 1; i < candidates.length; i++) {
+                    const dist = Math.abs(value - candidates[i]);
+                    if (dist < closestDist) { closest = candidates[i]; closestDist = dist; }
+                }
+                return closestDist <= SNAP_THRESHOLD_PX ? closest : value;
             }
-            function onUp() {
+            function snappedWidth(widthPx) {
+                const candidates = WIDTH_SNAP_FRACTIONS.map(f => gridRect.width * f)
+                    .concat(siblingWidths)
+                    .concat([fillRowWidthPx])
+                    .filter(px => px >= minWidthPx && px <= maxWidthPx);
+                return snapValue(widthPx, candidates);
+            }
+            function snappedHeight(heightPx) {
+                const candidates = [];
+                for (let h = Math.ceil(L.minHeightPx / HEIGHT_SNAP_UNIT) * HEIGHT_SNAP_UNIT; h <= L.maxHeightPx; h += HEIGHT_SNAP_UNIT) candidates.push(h);
+                siblingHeights.forEach(h => { if (h >= L.minHeightPx && h <= L.maxHeightPx) candidates.push(h); });
+                return snapValue(heightPx, candidates);
+            }
+
+            function apply(widthPx, heightPx, snapped) {
+                el.style.width = widthPx + 'px';
+                el.style.height = heightPx + 'px';
+                skeleton.style.left = elLeft + 'px';
+                skeleton.style.top = elTop + 'px';
+                skeleton.style.width = widthPx + 'px';
+                skeleton.style.height = heightPx + 'px';
+                skeleton.classList.toggle('is-snapped', !!snapped);
+            }
+            function targetSize(ev) {
+                const rawWidthPx = Math.min(maxWidthPx, Math.max(minWidthPx, startWidthPx + (ev.clientX - startClientX)));
+                const rawHeightPx = Math.min(L.maxHeightPx, Math.max(L.minHeightPx, startHeightPx + (ev.clientY - startClientY)));
+                const widthPx = snappedWidth(rawWidthPx);
+                const heightPx = snappedHeight(rawHeightPx);
+                return { widthPx, heightPx, snapped: widthPx !== rawWidthPx || heightPx !== rawHeightPx };
+            }
+            apply(startWidthPx, startHeightPx);
+
+            function onMove(ev) {
+                const { widthPx, heightPx, snapped } = targetSize(ev);
+                apply(widthPx, heightPx, snapped);
+            }
+            function onUp(ev) {
                 document.removeEventListener('pointermove', onMove);
                 document.removeEventListener('pointerup', onUp);
+                skeleton.remove();
                 el.setAttribute('draggable', 'true');
+                const { widthPx, heightPx } = targetSize(ev);
+                apply(widthPx, heightPx);
                 const def = HOME_WIDGET_DEFS.find(w => w.el === el.id);
                 if (def) {
                     const layout = loadHomeWidgetLayout();
                     const entry = layout.find(en => en.id === def.id);
-                    if (entry) entry.size = el.classList.contains('home-widget-size-wide') ? 'wide' : 'small';
+                    // el.style.width was set in px during the drag for 1:1 tracking with the
+                    // pointer; converted back to a percentage here so the saved size (and the
+                    // regular, non-dragging render path in applyHomeWidgetLayout) stays
+                    // resolution-independent and reflows correctly if the window is resized later.
+                    if (entry) entry.size = { widthPct: (widthPx / gridRect.width) * 100, heightPx };
                     saveHomeWidgetLayout(layout);
+                    applyHomeWidgetLayout();
+                    markHomeLayoutCustom();
                 }
             }
             document.addEventListener('pointermove', onMove);
@@ -6454,6 +6961,11 @@ body.dark-theme[data-palette="mint"] {
             const container = document.getElementById(containerId);
             if (!container) return;
 
+            // Shared across every mini calendar preview (Home widget + Classes screen) -- see
+            // CAL_PREVIEW_DEFAULT_CONFIG / syncCalPreviewToCurrentFilters.
+            const previewConfig = loadCalPreviewConfig();
+            const filterPreviewEvents = (events) => events.filter(e => previewConfig.categories[categoryGroup(e.category)] !== false);
+
             const previewDate = new Date();
             const year = previewDate.getFullYear();
             const month = previewDate.getMonth();
@@ -6474,9 +6986,9 @@ body.dark-theme[data-palette="mint"] {
                 const isToday = isSameDay(cursor, today);
                 const dayType = getDayType(cursor);
                 const note = getNote(cursor);
-                const externalEvents = getExternalEventsForDate(cursor);
-                const badgeHtml = dayType ? `<span class="day-badge ${dayType === 'A' ? 'badge-a' : 'badge-b'}">${dayType}</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none" title="No School">${NO_SCHOOL_ICON}</span>` : '';
-                const noteDotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
+                const externalEvents = filterPreviewEvents(getExternalEventsForDate(cursor));
+                const badgeHtml = !previewConfig.showDayBadges ? '' : dayType ? `<span class="day-badge ${dayType === 'A' ? 'badge-a' : 'badge-b'}">${dayType}</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none" title="No School">${NO_SCHOOL_ICON}</span>` : '';
+                const noteDotHtml = previewConfig.showNotes && note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
                 const externalDotsHtml = externalEvents.length ? `<div class="mini-external-dots">${externalEvents.slice(0, 2).map((event, idx) => {
                     const size = (7 + eventUrgencyT(event.category, cursor, today) * 6).toFixed(1);
                     return `<span class="mini-external-dot calendar-event-dot" style="width:${size}px;height:${size}px;background:${event.color};cursor:pointer;" title="${escapeHtml(event.title)} — ${escapeHtml(categoryLabel(event.category))}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx})">${categoryIconSvg(event.category, size)}</span>`;
@@ -6498,16 +7010,18 @@ body.dark-theme[data-palette="mint"] {
                 const currentDay = new Date(today);
                 currentDay.setDate(today.getDate() + offset);
                 const key = dateKey(currentDay);
-                const note = dayNotes[key];
-                const dayType = getDayType(currentDay);
-                const noSchool = isNoSchoolDay(currentDay);
-                const externalEvents = getExternalEventsForDate(currentDay);
-                if (!dayType && !noSchool && !note && !externalEvents.length) continue;
+                const note = previewConfig.showNotes ? dayNotes[key] : null;
+                const dayType = previewConfig.showDayBadges ? getDayType(currentDay) : null;
+                const noSchool = previewConfig.showDayBadges && isNoSchoolDay(currentDay);
+                const externalEvents = filterPreviewEvents(getExternalEventsForDate(currentDay));
+                const remindersToday = previewConfig.showReminders ? getRemindersForDate(currentDay) : [];
+                if (!dayType && !noSchool && !note && !externalEvents.length && !remindersToday.length) continue;
 
                 const titleHtml = note && note.title ? `<p class="mini-upcoming-title">${escapeHtml(note.title)}</p>` : (dayType ? `<p class="mini-upcoming-title">${dayType}-Day</p>` : noSchool ? `<p class="mini-upcoming-title">No School</p>` : '<p class="mini-upcoming-title">Scheduled</p>');
                 const notesHtml = note && note.notes ? `<p class="mini-upcoming-sub line-clamp-2">${escapeHtml(note.notes)}</p>` : '';
-                const classesToday = getClassesForDate(currentDay);
+                const classesToday = previewConfig.showClasses ? getClassesForDate(currentDay) : [];
                 const classesHtml = classesToday.length ? `<p class="mini-upcoming-sub truncate">${classesToday.map(c => `<span${classPopupAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>` : '';
+                const remindersHtml = remindersToday.length ? `<p class="mini-upcoming-sub truncate">📌 ${remindersToday.map(r => escapeHtml(r.text)).join(', ')}</p>` : '';
                 // When more than one category is happening that day, group by category (each with
                 // its own icon+label) instead of a flat list -- otherwise a single "Assignment"
                 // dot per line is enough to tell items apart without a group header.
@@ -6545,10 +7059,50 @@ body.dark-theme[data-palette="mint"] {
                         ${titleHtml}
                         ${notesHtml}
                         ${classesHtml}
+                        ${remindersHtml}
                         ${externalHtml}
                     </div>
                 `);
             }
+
+            // The inline "configure this preview" gear only shows on the Home widget while
+            // editing the Home screen -- the Classes screen's preview reads the same shared
+            // config but is configured from here, not duplicated there.
+            const showEditGear = containerId === 'home-calendar-preview' && typeof isHomeEditModeActive === 'function' && isHomeEditModeActive();
+            const gearHtml = showEditGear ? `
+                <button type="button" class="mini-calendar-config-btn" onclick="event.stopPropagation(); toggleHomeCalPreviewPanel();" title="Configure this preview">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
+            ` : '';
+            const catToggle = (group, label) => `
+                <label class="mini-cal-config-row">
+                    <input type="checkbox" ${previewConfig.categories[group] !== false ? 'checked' : ''} onchange="toggleCalPreviewCategory('${group}', this.checked)">
+                    <span>${escapeHtml(label)}</span>
+                </label>
+            `;
+            const optToggle = (key, label) => `
+                <label class="mini-cal-config-row">
+                    <input type="checkbox" ${previewConfig[key] !== false ? 'checked' : ''} onchange="setCalPreviewOption('${key}', this.checked)">
+                    <span>${escapeHtml(label)}</span>
+                </label>
+            `;
+            const panelHtml = (showEditGear && homeCalPreviewPanelOpen) ? `
+                <div class="mini-cal-config-panel" onclick="event.stopPropagation()">
+                    <p class="mini-cal-config-panel-label">Shown in every calendar preview (Home &amp; Classes)</p>
+                    <div class="mini-cal-config-grid">
+                        ${catToggle('assignment', 'Assignments')}
+                        ${catToggle('school-event', 'School Events')}
+                        ${catToggle('club', 'Clubs')}
+                        ${catToggle('sports', 'Sports')}
+                        ${catToggle('event', 'Events')}
+                        ${optToggle('showClasses', 'Classes')}
+                        ${optToggle('showReminders', 'Reminders')}
+                        ${optToggle('showDayBadges', 'A/B Day badges')}
+                        ${optToggle('showNotes', 'Day notes')}
+                    </div>
+                    <button type="button" class="modal-footer-button is-secondary mt-3" style="font-size:0.75rem;padding:0.4rem 0.8rem;" onclick="hideHomeWidgetById('home-calendar-preview')">Hide this widget</button>
+                </div>
+            ` : '';
 
             container.innerHTML = `
                 <div class="mini-calendar-panel">
@@ -6557,8 +7111,12 @@ body.dark-theme[data-palette="mint"] {
                             <p class="mini-calendar-title">Calendar</p>
                             <p class="mini-calendar-subtitle">This month and what is coming up</p>
                         </div>
-                        <button type="button" class="mini-calendar-open-btn" onclick="switchAppView('calendar')">Open full calendar</button>
+                        <div class="flex items-center gap-2">
+                            ${gearHtml}
+                            <button type="button" class="mini-calendar-open-btn" onclick="switchAppView('calendar')">Open full calendar</button>
+                        </div>
                     </div>
+                    ${panelHtml}
                     <div class="grid grid-cols-7 gap-1 mb-3">${weekdayHeaders}</div>
                     <div class="grid grid-cols-7 gap-1">${cells}</div>
                     <div class="mt-4 space-y-2">${upcomingItems.length ? upcomingItems.join('') : '<p class="mini-empty-state">No notes or special dates are scheduled in the next week.</p>'}</div>
@@ -8077,7 +8635,7 @@ body.dark-theme[data-palette="mint"] {
                 if (!entry) return;
                 entry.events.forEach(ev => {
                     if (!externalEventsByDate[ev.date]) externalEventsByDate[ev.date] = [];
-                    externalEventsByDate[ev.date].push({ title: ev.title, feedLabel: feed.label, color: feed.color || feedColor(feed, i), category: categorizeFeedEvent(feed, ev.uid, ev.title), description: ev.description, timestamp: ev.timestamp, allDay: !!ev.allDay });
+                    externalEventsByDate[ev.date].push({ title: ev.title, feedId: feed.id, feedLabel: feed.label, color: feed.color || feedColor(feed, i), category: categorizeFeedEvent(feed, ev.uid, ev.title), description: ev.description, timestamp: ev.timestamp, allDay: !!ev.allDay });
                 });
             });
             // Pass the cache along rather than having rebuildCanvasAssignmentsIndex re-read and
@@ -9841,10 +10399,45 @@ body.dark-theme[data-palette="mint"] {
             const isMonday = new Date().getDay() === 1;
             const dailyDismissed = localStorage.getItem('dismissedDailyDigestDate') === todayKey;
             const weeklyDismissed = localStorage.getItem('dismissedWeeklyDigestKey') === weekKey;
+            const digestCfg = loadHomeDigestConfig();
 
             let html = '';
 
-            if (isMonday && !weeklyDismissed) {
+            const showEditGear = typeof isHomeEditModeActive === 'function' && isHomeEditModeActive();
+            if (showEditGear) {
+                const secToggle = (key, label) => `
+                    <label class="mini-cal-config-row">
+                        <input type="checkbox" ${digestCfg.sections[key] ? 'checked' : ''} onchange="setHomeDigestOption('${key}', this.checked)">
+                        <span>${escapeHtml(label)}</span>
+                    </label>
+                `;
+                html += `
+                    <div class="digest-config-bar">
+                        <button type="button" class="mini-calendar-config-btn" onclick="toggleHomeDigestPanel()" title="Configure digest">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </button>
+                        <span class="digest-config-bar-label">Configure Today/This Week digests</span>
+                    </div>
+                    ${homeDigestPanelOpen ? `
+                        <div class="mini-cal-config-panel mb-4">
+                            <p class="mini-cal-config-panel-label">Digest banners</p>
+                            <div class="mini-cal-config-grid">
+                                <label class="mini-cal-config-row"><input type="checkbox" ${digestCfg.showDaily ? 'checked' : ''} onchange="setHomeDigestOption('showDaily', this.checked)"><span>Today banner</span></label>
+                                <label class="mini-cal-config-row"><input type="checkbox" ${digestCfg.showWeekly ? 'checked' : ''} onchange="setHomeDigestOption('showWeekly', this.checked)"><span>This Week banner</span></label>
+                            </div>
+                            <p class="mini-cal-config-panel-label" style="margin-top:0.7rem;">Today banner sections</p>
+                            <div class="mini-cal-config-grid">
+                                ${secToggle('reminders', 'Reminders')}
+                                ${secToggle('due', 'Assignments Due')}
+                                ${secToggle('events', 'Events')}
+                                ${secToggle('classes', 'Classes (with notes)')}
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+            }
+
+            if (digestCfg.showWeekly && isMonday && !weeklyDismissed) {
                 const { dueCount, eventCount, items } = buildWeeklyDigestData();
                 const preview = items.slice(0, 4).map(({ date, event }) => `
                     <div class="digest-item">
@@ -9864,7 +10457,7 @@ body.dark-theme[data-palette="mint"] {
                 `;
             }
 
-            if (!dailyDismissed) {
+            if (digestCfg.showDaily && !dailyDismissed) {
                 const today = new Date();
                 const dueToday = canvasAssignments.filter(a => dateKey(new Date(a.dueAt)) === todayKey && !isAssignmentDismissed(a));
                 const eventsToday = getExternalEventsForDate(today).filter(ev => ev.category !== 'assignment');
@@ -9929,10 +10522,10 @@ body.dark-theme[data-palette="mint"] {
                     ? `<div class="digest-section"><p class="digest-section-title">${title}</p><div class="digest-items">${itemsHtml}</div></div>`
                     : '';
                 const sections = [
-                    digestSection('Reminders', remindersHtml),
-                    digestSection('Assignments Due', dueHtml),
-                    digestSection('Events', eventsHtml),
-                    digestSection('Classes', classesHtml)
+                    digestSection('Reminders', digestCfg.sections.reminders ? remindersHtml : ''),
+                    digestSection('Assignments Due', digestCfg.sections.due ? dueHtml : ''),
+                    digestSection('Events', digestCfg.sections.events ? eventsHtml : ''),
+                    digestSection('Classes', digestCfg.sections.classes ? classesHtml : '')
                 ].join('');
 
                 html += `
