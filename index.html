@@ -2625,6 +2625,8 @@ body.dark-theme[data-palette="mint"] {
                         </div>
                         <div class="flex items-center gap-2">
                             <select id="home-preset-select" class="form-select hidden" style="font-size:0.8rem;padding:0.45rem 0.7rem;width:auto;" onchange="applyHomePreset(this.value)" title="Layout preset"></select>
+                            <button type="button" id="home-preset-save-button" class="modal-footer-button is-secondary hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="saveCurrentAsHomePreset()" title="Save the current layout, digest, and calendar preview settings as a new preset">Save Preset</button>
+                            <button type="button" id="home-preset-delete-button" class="modal-footer-button bg-red-600 hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="deleteHomeUserPreset(loadHomePresetSelection())" title="Delete this saved preset">Delete Preset</button>
                             <button type="button" id="home-reset-layout-button" class="modal-footer-button is-secondary hidden" onclick="resetCustomizeHomeLayout()">Reset Layout</button>
                             <button type="button" id="customize-home-button" class="icon-btn p-3 rounded-full" onclick="toggleHomeEditMode()" title="Customize Home">
                                 <svg class="home-edit-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
@@ -5511,6 +5513,9 @@ body.dark-theme[data-palette="mint"] {
             if (resetBtn) resetBtn.classList.remove('hidden');
             const presetSelect = document.getElementById('home-preset-select');
             if (presetSelect) { presetSelect.classList.remove('hidden'); renderHomePresetOptions(); }
+            const presetSaveBtn = document.getElementById('home-preset-save-button');
+            if (presetSaveBtn) presetSaveBtn.classList.remove('hidden');
+            setHomePresetSelection(loadHomePresetSelection()); // syncs the delete button's visibility
 
             Array.from(grid.children).forEach((el, i) => {
                 if (!el.classList.contains('home-widget')) return;
@@ -5563,6 +5568,10 @@ body.dark-theme[data-palette="mint"] {
             if (resetBtn) resetBtn.classList.add('hidden');
             const presetSelect = document.getElementById('home-preset-select');
             if (presetSelect) presetSelect.classList.add('hidden');
+            const presetSaveBtn = document.getElementById('home-preset-save-button');
+            if (presetSaveBtn) presetSaveBtn.classList.add('hidden');
+            const presetDeleteBtn = document.getElementById('home-preset-delete-button');
+            if (presetDeleteBtn) presetDeleteBtn.classList.add('hidden');
             Array.from(grid.children).forEach(el => {
                 if (!el.classList.contains('home-widget')) return;
                 el.removeAttribute('draggable');
@@ -5725,19 +5734,73 @@ body.dark-theme[data-palette="mint"] {
             localStorage.setItem('homeLayoutPresetV1', id);
             const select = document.getElementById('home-preset-select');
             if (select) select.value = id;
+            const deleteBtn = document.getElementById('home-preset-delete-button');
+            if (deleteBtn) deleteBtn.classList.toggle('hidden', !isHomeUserPresetId(id));
+        }
+
+        // ---- User-saved presets: same shape as the built-in ones, just kept separately so a
+        // future update to this file can't accidentally overwrite what someone saved. ----
+        function loadHomeUserPresets() {
+            try {
+                const list = JSON.parse(localStorage.getItem('homeUserPresetsV1') || '[]');
+                return Array.isArray(list) ? list : [];
+            } catch (e) { return []; }
+        }
+        function saveHomeUserPresets(list) {
+            localStorage.setItem('homeUserPresetsV1', JSON.stringify(list));
+        }
+        function isHomeUserPresetId(id) {
+            return typeof id === 'string' && id.indexOf('user-') === 0;
+        }
+        function saveCurrentAsHomePreset() {
+            const name = (prompt('Name this preset:') || '').trim();
+            if (!name) return;
+            const preset = {
+                id: 'user-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                label: name,
+                layout: loadHomeWidgetLayout(),
+                digest: loadHomeDigestConfig(),
+                calPreview: loadCalPreviewConfig()
+            };
+            const list = loadHomeUserPresets();
+            list.push(preset);
+            saveHomeUserPresets(list);
+            renderHomePresetOptions();
+            setHomePresetSelection(preset.id);
+        }
+        function deleteHomeUserPreset(id) {
+            const preset = loadHomeUserPresets().find(p => p.id === id);
+            if (!preset) return;
+            showConfirmationModal(`Delete the "${preset.label}" preset? This can't be undone.`, [
+                { text: 'Delete', action: () => {
+                    saveHomeUserPresets(loadHomeUserPresets().filter(p => p.id !== id));
+                    renderHomePresetOptions();
+                    if (loadHomePresetSelection() === id) setHomePresetSelection('custom');
+                }},
+                { text: 'Cancel', action: () => {} }
+            ]);
         }
         function renderHomePresetOptions() {
             const select = document.getElementById('home-preset-select');
             if (!select) return;
+            const userPresets = loadHomeUserPresets();
             select.innerHTML = `<option value="custom">Custom</option>` +
-                HOME_LAYOUT_PRESETS.map(p => `<option value="${p.id}">${escapeHtml(p.label)}</option>`).join('');
+                `<optgroup label="Built-in">` +
+                HOME_LAYOUT_PRESETS.map(p => `<option value="${p.id}">${escapeHtml(p.label)}</option>`).join('') +
+                `</optgroup>` +
+                (userPresets.length ? `<optgroup label="Your Presets">` +
+                    userPresets.map(p => `<option value="${p.id}">${escapeHtml(p.label)}</option>`).join('') +
+                    `</optgroup>` : '');
             select.value = loadHomePresetSelection();
+        }
+        function findHomePreset(id) {
+            return HOME_LAYOUT_PRESETS.find(p => p.id === id) || loadHomeUserPresets().find(p => p.id === id);
         }
         function applyHomePreset(id) {
             if (id === 'custom') { setHomePresetSelection('custom'); return; }
-            const preset = HOME_LAYOUT_PRESETS.find(p => p.id === id);
+            const preset = findHomePreset(id);
             if (!preset) return;
-            saveHomeWidgetLayout(preset.layout ? preset.layout.map(entry => ({ ...entry })) : defaultHomeWidgetLayout());
+            saveHomeWidgetLayout(preset.layout ? preset.layout.map(entry => ({ ...entry, size: { ...entry.size } })) : defaultHomeWidgetLayout());
             saveHomeDigestConfig(preset.digest ? { ...preset.digest, sections: { ...preset.digest.sections } } : JSON.parse(JSON.stringify(HOME_DIGEST_DEFAULT_CONFIG)));
             saveCalPreviewConfig(preset.calPreview ? { ...preset.calPreview, categories: { ...preset.calPreview.categories } } : JSON.parse(JSON.stringify(CAL_PREVIEW_DEFAULT_CONFIG)));
             applyHomeWidgetLayout();
