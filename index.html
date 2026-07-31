@@ -1914,6 +1914,22 @@ body.dark-theme[data-palette="mint"] {
         .home-widget-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
         .home-widget-body.is-fill-center { justify-content: center; }
         .home-widget-body .home-list { flex: 1; }
+        /* ---- Progressive disclosure: extra detail (exact class time, notes, assignment/event
+           descriptions, etc.) that's genuinely useful but too much for a small tile -- hidden by
+           default, revealed once the widget is dragged tall enough to have somewhere to put it,
+           so a big widget shows more, not just bigger versions of the same three words. */
+        .home-widget-extra { display: none; flex-direction: column; gap: 0.25rem; margin-top: 0.6rem; }
+        .home-widget-extra-row { color: var(--text-secondary); }
+        .home-widget-extra-row strong { color: var(--text-primary); font-weight: 700; }
+        .home-widget-extra-note { white-space: pre-wrap; }
+        @container homewidget (min-height: 220px) {
+            .home-widget-extra { display: flex; }
+        }
+        .home-list-item .home-widget-extra { margin-top: 0.3rem; }
+        @container homewidget (min-height: 340px) {
+            .home-list-item .home-widget-extra-desc { display: block; }
+        }
+        .home-list-item .home-widget-extra-desc { display: none; }
         .home-widget-header-actions { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
         .home-widget-settings-btn {
             border-radius: 50%;
@@ -6535,10 +6551,21 @@ body.dark-theme[data-palette="mint"] {
             const verb = info.status === 'current' ? 'ends in' : 'starts in';
             if (titleEl) titleEl.textContent = info.status === 'current' ? 'Current Class' : 'Next Class';
             const classItem = info.classItem;
+            const timeRangeLabel = (typeof info.startMin === 'number') ? `${minutesToTimeLabel(info.startMin)} – ${minutesToTimeLabel(info.endMin)}` : '';
+            const noteText = classItem && classItem.noteId ? (classNotes[classItem.noteId] || '') : '';
+            const extraHtml = `
+                <div class="home-widget-extra">
+                    ${timeRangeLabel ? `<p class="home-item-sub home-widget-extra-row"><strong>Time:</strong> ${escapeHtml(timeRangeLabel)}</p>` : ''}
+                    ${!settings.showMeta && classItem && classItem.room ? `<p class="home-item-sub home-widget-extra-row"><strong>Room:</strong> ${escapeHtml(classItem.room)}</p>` : ''}
+                    ${!settings.showMeta && classItem && classItem.teacher ? `<p class="home-item-sub home-widget-extra-row"><strong>Teacher:</strong> ${escapeHtml(classItem.teacher)}</p>` : ''}
+                    ${noteText ? `<p class="home-item-sub home-widget-extra-row home-widget-extra-note"><strong>Note:</strong> ${escapeHtml(noteText)}</p>` : ''}
+                </div>
+            `;
             container.innerHTML = `
                 <p class="home-next-class-big">${escapeHtml(info.label)}</p>
                 ${(settings.showMeta && classItem) ? classMetaChipsHTML(classItem) : ''}
                 <p class="home-item-sub" style="margin-top:0.4rem;">${verb} ${timeStr}</p>
+                ${extraHtml}
             `;
             const url = classItem && classItem.url;
             if (widget) {
@@ -6612,6 +6639,7 @@ body.dark-theme[data-palette="mint"] {
                     const matchedClass = a.courseCode ? findClassByCanvasCourseCode(a.courseCode) : null;
                     const color = (matchedClass && matchedClass.color) ? matchedClass.color : dueUrgencyColor(msLeft);
                     const timeStr = a.allDay ? '' : new Date(a.dueAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    const desc = (a.description || '').trim();
                     return `
                         <div class="home-list-item has-countdown" style="border-color:${color};">
                             <div class="home-due-item-main">
@@ -6619,6 +6647,7 @@ body.dark-theme[data-palette="mint"] {
                                 <div class="min-w-0">
                                     <p class="home-item-title">${escapeHtml(a.title)}</p>
                                     <p class="home-item-sub">${a.courseCode ? escapeHtml(a.courseCode) + ' · ' : ''}${timeStr}</p>
+                                    ${desc ? `<p class="home-item-sub home-widget-extra-desc">${escapeHtml(desc.slice(0, 200))}</p>` : ''}
                                 </div>
                             </div>
                             <div class="home-due-item-actions">
@@ -6671,12 +6700,14 @@ body.dark-theme[data-palette="mint"] {
             }
             const eventsListHtml = `<div class="home-list">${trimmed.map(({ date, event }) => {
                 const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                const desc = (event.description || '').trim();
                 return `
                     <div class="home-list-item">
                         <span class="home-dot" style="background:${event.color || 'var(--accent-2)'};"></span>
                         <div>
                             <p class="home-item-title">${escapeHtml(event.title)}</p>
                             <p class="home-item-sub">${dateStr}${event.feedLabel ? ' · ' + escapeHtml(event.feedLabel) : ''}</p>
+                            ${desc ? `<p class="home-item-sub home-widget-extra-desc">${escapeHtml(desc.slice(0, 200))}</p>` : ''}
                         </div>
                     </div>
                 `;
@@ -6728,15 +6759,19 @@ body.dark-theme[data-palette="mint"] {
 
             for (const c of candidates) {
                 if (nowMinutes >= c.startMin && nowMinutes < c.endMin) {
-                    return { status: 'current', label: c.classItem ? c.classItem.title : c.slot.label, secondsLeft: (c.endMin - nowMinutes) * 60, scheduleSlot: c.slot.value, classItem: c.classItem };
+                    return { status: 'current', label: c.classItem ? c.classItem.title : c.slot.label, secondsLeft: (c.endMin - nowMinutes) * 60, scheduleSlot: c.slot.value, classItem: c.classItem, startMin: c.startMin, endMin: c.endMin };
                 }
             }
             for (const c of candidates) {
                 if (c.startMin > nowMinutes) {
-                    return { status: 'next', label: c.classItem ? c.classItem.title : c.slot.label, secondsLeft: (c.startMin - nowMinutes) * 60, scheduleSlot: c.slot.value, classItem: c.classItem };
+                    return { status: 'next', label: c.classItem ? c.classItem.title : c.slot.label, secondsLeft: (c.startMin - nowMinutes) * 60, scheduleSlot: c.slot.value, classItem: c.classItem, startMin: c.startMin, endMin: c.endMin };
                 }
             }
             return null;
+        }
+        function minutesToTimeLabel(totalMin) {
+            const wrapped = ((Math.round(totalMin) % 1440) + 1440) % 1440;
+            return formatTimeLabel(Math.floor(wrapped / 60), wrapped % 60);
         }
 
         // --- HIGHLIGHT THE CLASS TILE THAT'S CURRENTLY IN SESSION ---
@@ -10713,6 +10748,7 @@ body.dark-theme[data-palette="mint"] {
                         <div class="min-w-0" style="flex-grow:1;">
                             <p class="home-item-title">${escapeHtml(cd.label)}</p>
                             <p class="home-item-sub">${target ? target.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : cd.type === 'no-school' ? 'No School day scheduled' : ''}</p>
+                            ${target ? `<p class="home-item-sub home-widget-extra-desc">${escapeHtml(target.toLocaleDateString('en-US', { weekday: 'long' }))}</p>` : ''}
                         </div>
                         <div class="home-due-item-actions" style="opacity:1;">
                             <span class="home-due-countdown" style="color:${cd.color || 'var(--accent-2)'};">${daysLabel}</span>
@@ -10753,6 +10789,7 @@ body.dark-theme[data-palette="mint"] {
                         <div class="min-w-0" style="flex-grow:1;">
                             <p class="home-item-title">📌 ${escapeHtml(r.text)}</p>
                             <p class="home-item-sub">${reminderWeekdaysLabel(r.weekdays)}${info ? ' · ' + escapeHtml(info.label) : ''}</p>
+                            ${(info && info.url) ? `<p class="home-item-sub home-widget-extra-desc"><a href="${escapeAttr(normalizeExternalUrl(info.url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escapeHtml(info.url)}</a></p>` : ''}
                         </div>
                         <div class="home-due-item-actions" style="opacity:1;">
                             <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="openReminderModal('${escapeJsAttr(r.id)}')" title="Edit reminder">
