@@ -668,6 +668,24 @@ body.dark-theme[data-palette="mint"] {
         .digest-banner-header { display: flex; justify-content: space-between; align-items: center; }
         .digest-banner-title { font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--accent-2); }
         .digest-banner-summary { font-size: 0.9rem; margin-top: 0.3rem; }
+        .digest-stats-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.6rem;
+        }
+        .digest-stat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 0.45rem 0.3rem;
+            border-radius: 0.75rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+        }
+        .digest-stat-value { font-size: 1.15rem; font-weight: 800; color: var(--accent-2); }
+        .digest-stat-label { font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 0.1rem; }
         .digest-items { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
         .digest-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
         /* Items with a note preview stack two lines, so the dot centers on the whole block
@@ -5592,7 +5610,11 @@ body.dark-theme[data-palette="mint"] {
         // drag to resize between one and two grid columns, and hidden widgets appear as dashed
         // "add" tiles right in the grid. "Done" commits and turns editing back off.
         // ===================== HOME DIGEST CONFIG (which digest sections show) =====================
-        const HOME_DIGEST_DEFAULT_CONFIG = { showWeekly: true, showDaily: true, sections: { reminders: true, due: true, events: true, classes: true } };
+        const HOME_DIGEST_DEFAULT_CONFIG = {
+            showWeekly: true, showDaily: true,
+            sections: { reminders: true, due: true, events: true, classes: true, countdowns: true, stats: true },
+            weeklySections: { countdowns: true, stats: true }
+        };
         function loadHomeDigestConfig() {
             let cfg;
             try { cfg = JSON.parse(localStorage.getItem('homeDigestConfigV1') || 'null'); } catch (e) { cfg = null; }
@@ -5604,7 +5626,13 @@ body.dark-theme[data-palette="mint"] {
                     reminders: !cfg.sections || cfg.sections.reminders !== false,
                     due: !cfg.sections || cfg.sections.due !== false,
                     events: !cfg.sections || cfg.sections.events !== false,
-                    classes: !cfg.sections || cfg.sections.classes !== false
+                    classes: !cfg.sections || cfg.sections.classes !== false,
+                    countdowns: !cfg.sections || cfg.sections.countdowns !== false,
+                    stats: !cfg.sections || cfg.sections.stats !== false
+                },
+                weeklySections: {
+                    countdowns: !cfg.weeklySections || cfg.weeklySections.countdowns !== false,
+                    stats: !cfg.weeklySections || cfg.weeklySections.stats !== false
                 }
             };
         }
@@ -5620,6 +5648,13 @@ body.dark-theme[data-palette="mint"] {
             const cfg = loadHomeDigestConfig();
             if (path === 'showWeekly' || path === 'showDaily') cfg[path] = value;
             else cfg.sections[path] = value;
+            saveHomeDigestConfig(cfg);
+            renderDigestBanner();
+            markHomeLayoutCustom();
+        }
+        function setHomeWeeklyDigestOption(path, value) {
+            const cfg = loadHomeDigestConfig();
+            cfg.weeklySections[path] = value;
             saveHomeDigestConfig(cfg);
             renderDigestBanner();
             markHomeLayoutCustom();
@@ -6679,7 +6714,7 @@ body.dark-theme[data-palette="mint"] {
             const todaysClasses = getClassesForDate(today);
             const classesRowHtml = todaysClasses.length ? `
                 <div class="home-today-classes-row">${todaysClasses.map(({ classItem, timeRange }) => `
-                    <a class="home-today-class-chip" href="${escapeAttr(normalizeExternalUrl(classItem.url) || '#')}" target="_blank" rel="noopener" ${classItem.color ? `style="border-left: 3px solid ${escapeAttr(classItem.color)};"` : ''}${classPopupAttr(classItem)} onclick="${classItem.url ? '' : 'return false;'}">
+                    <a class="home-today-class-chip" href="${escapeAttr(normalizeExternalUrl(classItem.url) || '#')}" target="_blank" rel="noopener" ${classItem.color ? `style="border-left: 3px solid ${escapeAttr(classItem.color)};"` : ''}${classPopupAttr(classItem)} onclick="${classItem.url ? 'recordClassOpened();' : 'return false;'}">
                         <p class="home-item-title">${escapeHtml(classItem.title)}</p>
                         ${timeRange ? `<p class="home-item-sub">${escapeHtml(timeRange)}</p>` : ''}
                     </a>
@@ -8205,7 +8240,7 @@ body.dark-theme[data-palette="mint"] {
                         ${classesToday.map(c => {
                             const noteText = classNoteText(c.classItem);
                             return `
-                            <a class="day-class-row" style="${c.classItem.color ? `border-left: 3px solid ${escapeAttr(c.classItem.color)};` : ''}" href="${escapeAttr(normalizeExternalUrl(c.classItem.url) || '#')}" target="_blank" rel="noopener"${classPopupAttr(c.classItem)} onclick="${c.classItem.url ? '' : 'return false;'}">
+                            <a class="day-class-row" style="${c.classItem.color ? `border-left: 3px solid ${escapeAttr(c.classItem.color)};` : ''}" href="${escapeAttr(normalizeExternalUrl(c.classItem.url) || '#')}" target="_blank" rel="noopener"${classPopupAttr(c.classItem)} onclick="${c.classItem.url ? 'recordClassOpened();' : 'return false;'}">
                                 <span class="min-w-0">
                                     <span class="flex items-center gap-2 font-medium">${classDotHtml(c.classItem)}${classNameHtml(c.classItem)}</span>
                                     ${noteText ? `<span class="day-class-note">${escapeHtml(noteText)}</span>` : ''}
@@ -8339,7 +8374,7 @@ body.dark-theme[data-palette="mint"] {
                 const color = c.classItem.color || 'var(--accent-2)';
                 return `
                     <a class="day-grid-event" style="top:${top}px; height:${height}px; left:0.25rem; right:36%; background:color-mix(in srgb, ${color} 20%, var(--glass-bg-strong)); border-left: 3px solid ${escapeAttr(color)};"
-                       href="${escapeAttr(normalizeExternalUrl(c.classItem.url) || '#')}" target="_blank" rel="noopener"${classPopupAttr(c.classItem)} onclick="${c.classItem.url ? '' : 'return false;'}">
+                       href="${escapeAttr(normalizeExternalUrl(c.classItem.url) || '#')}" target="_blank" rel="noopener"${classPopupAttr(c.classItem)} onclick="${c.classItem.url ? 'recordClassOpened();' : 'return false;'}">
                         <span class="day-grid-event-title">${classNameHtml(c.classItem)}</span>
                         <span class="day-grid-event-time">${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>
                     </a>
@@ -9690,6 +9725,7 @@ body.dark-theme[data-palette="mint"] {
         function markAssignmentDone(key) {
             dismissedAssignmentKeys.add(key);
             saveDismissedAssignments();
+            recordAssignmentCompleted();
             renderHomeDueSoon();
             renderDigestBanner();
             showActionToast('Marked as done', () => {
@@ -10912,6 +10948,7 @@ body.dark-theme[data-palette="mint"] {
         function openClassLink(url) {
             const normalized = normalizeExternalUrl(url);
             if (!normalized || normalized === '#') return;
+            if (typeof recordClassOpened === 'function') recordClassOpened();
             window.open(normalized, '_blank', 'noopener');
         }
 
@@ -11258,6 +11295,85 @@ body.dark-theme[data-palette="mint"] {
             `;
         }
 
+        // --- USAGE ANALYTICS (local-only -- nothing leaves the browser) ---
+        // A per-day counter bag keyed by dateKey, pruned to the trailing 90 days so it can't grow
+        // forever. Feeds the "your activity" bits on the Today/This Week digest banners below --
+        // streaks, assignments completed, classes opened -- all things that only make sense once
+        // there's history to look back on, which is exactly what the digest banners already are.
+        function loadUsageStats() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem('appUsageStatsV1'));
+                return (parsed && typeof parsed === 'object') ? parsed : { days: {}, totalSessions: 0 };
+            } catch (e) {
+                return { days: {}, totalSessions: 0 };
+            }
+        }
+        function saveUsageStats(stats) {
+            localStorage.setItem('appUsageStatsV1', JSON.stringify(stats));
+        }
+        function todaysUsageEntry(stats) {
+            const key = dateKey(appNow());
+            if (!stats.days) stats.days = {};
+            if (!stats.days[key]) stats.days[key] = { opened: false, assignmentsCompleted: 0, classesOpened: 0 };
+            return stats.days[key];
+        }
+        function pruneUsageStats(stats) {
+            const cutoff = new Date(appNow());
+            cutoff.setDate(cutoff.getDate() - 90);
+            Object.keys(stats.days || {}).forEach(key => {
+                if (parseDateKey(key) < cutoff) delete stats.days[key];
+            });
+        }
+        // Called once per calendar day (from DOMContentLoaded) -- counts a new "session" only the
+        // first time the app is opened that day, so refreshing the tab all afternoon doesn't
+        // inflate the number.
+        function recordAppOpen() {
+            const stats = loadUsageStats();
+            const key = dateKey(appNow());
+            const isNewDay = !(stats.days && stats.days[key] && stats.days[key].opened);
+            todaysUsageEntry(stats).opened = true;
+            if (isNewDay) stats.totalSessions = (stats.totalSessions || 0) + 1;
+            pruneUsageStats(stats);
+            saveUsageStats(stats);
+        }
+        function recordAssignmentCompleted() {
+            const stats = loadUsageStats();
+            todaysUsageEntry(stats).assignmentsCompleted++;
+            saveUsageStats(stats);
+        }
+        function recordClassOpened() {
+            const stats = loadUsageStats();
+            todaysUsageEntry(stats).classesOpened++;
+            saveUsageStats(stats);
+        }
+        // Consecutive days (counting back from today) the app's been opened -- breaks the moment
+        // a day is missing, same rule as any other "streak" concept.
+        function computeUsageStreak(stats) {
+            let streak = 0;
+            const d = appNow();
+            while (true) {
+                const key = dateKey(d);
+                const entry = stats.days && stats.days[key];
+                if (entry && entry.opened) { streak++; d.setDate(d.getDate() - 1); }
+                else break;
+            }
+            return streak;
+        }
+        function sumUsageStats(stats, days) {
+            let assignmentsCompleted = 0, classesOpened = 0, daysActive = 0;
+            const d = appNow();
+            for (let i = 0; i < days; i++) {
+                const entry = stats.days && stats.days[dateKey(d)];
+                if (entry) {
+                    assignmentsCompleted += entry.assignmentsCompleted || 0;
+                    classesOpened += entry.classesOpened || 0;
+                    if (entry.opened) daysActive++;
+                }
+                d.setDate(d.getDate() - 1);
+            }
+            return { assignmentsCompleted, classesOpened, daysActive };
+        }
+
         // --- DAILY / WEEKLY DIGEST BANNER (Home page) ---
         function getWeekMondayKey(date) {
             const d = new Date(date);
@@ -11298,7 +11414,14 @@ body.dark-theme[data-palette="mint"] {
                     items.push({ date: d, event: ev });
                 });
             }
-            return { dueCount, eventCount, items };
+            // Countdowns landing sometime in the next 7 days -- a countdown existing at all means
+            // the user cared enough to set a reminder for it, so it belongs in the week-ahead
+            // brief same as any other scheduled thing.
+            const countdownsThisWeek = countdowns
+                .map(cd => ({ cd, target: countdownTargetDate(cd) }))
+                .filter(({ target }) => target && daysUntil(target) >= 0 && daysUntil(target) <= 7)
+                .sort((a, b) => daysUntil(a.target) - daysUntil(b.target));
+            return { dueCount, eventCount, items, countdownsThisWeek };
         }
 
         function renderDigestBanner() {
@@ -11342,6 +11465,13 @@ body.dark-theme[data-palette="mint"] {
                                 ${secToggle('due', 'Assignments Due', 'Include assignments due today in the Today banner')}
                                 ${secToggle('events', 'Events', "Include today's calendar events in the Today banner")}
                                 ${secToggle('classes', 'Classes (with notes)', "Include today's classes that have a note attached")}
+                                ${secToggle('countdowns', 'Countdowns hitting today', 'Include any countdown reaching 0 today')}
+                                ${secToggle('stats', 'Your activity', "Show today's open streak and how many assignments/classes you've gone through today")}
+                            </div>
+                            <p class="mini-cal-config-panel-label" style="margin-top:0.7rem;">This Week banner sections</p>
+                            <div class="mini-cal-config-grid">
+                                <label class="ui-setting-row mini-cal-config-row" title="Include countdowns landing sometime in the next 7 days"><span>Countdowns this week</span><input type="checkbox" class="ui-switch" ${digestCfg.weeklySections.countdowns ? 'checked' : ''} onchange="setHomeWeeklyDigestOption('countdowns', this.checked)"></label>
+                                <label class="ui-setting-row mini-cal-config-row" title="Show your activity totals for the past 7 days -- assignments completed, classes opened, active days"><span>Your week in review</span><input type="checkbox" class="ui-switch" ${digestCfg.weeklySections.stats ? 'checked' : ''} onchange="setHomeWeeklyDigestOption('stats', this.checked)"></label>
                             </div>
                             <p class="mini-cal-config-panel-label" style="margin-top:0.7rem;">Refresh</p>
                             <p style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.5rem;">Dismissed banners come back on their own the next day/Monday. Use this to bring them back right now instead of waiting.</p>
@@ -11352,13 +11482,38 @@ body.dark-theme[data-palette="mint"] {
             }
 
             if (digestCfg.showWeekly && isMonday && !weeklyDismissed) {
-                const { dueCount, eventCount, items } = buildWeeklyDigestData();
+                const { dueCount, eventCount, items, countdownsThisWeek } = buildWeeklyDigestData();
                 const preview = items.slice(0, 4).map(({ date, event }) => `
                     <div class="digest-item">
                         <span class="home-dot" style="background:${event.color};"></span>
                         <span>${escapeHtml(event.title)} <span style="color:var(--text-muted);">— ${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span></span>
                     </div>
                 `).join('');
+                const countdownsHtml = digestCfg.weeklySections.countdowns ? countdownsThisWeek.map(({ cd, target }) => {
+                    const days = daysUntil(target);
+                    const label = days === 0 ? 'Today!' : days === 1 ? 'Tomorrow' : `${days} days`;
+                    return `
+                        <div class="digest-item">
+                            <span class="home-dot" style="background:${cd.color || 'var(--accent-2)'};"></span>
+                            <span>${escapeHtml(cd.label)} <span style="color:var(--text-muted);">— ${label}</span></span>
+                        </div>
+                    `;
+                }).join('') : '';
+                let statsHtml = '';
+                if (digestCfg.weeklySections.stats) {
+                    const stats = loadUsageStats();
+                    const week = sumUsageStats(stats, 7);
+                    statsHtml = `
+                        <div class="digest-stats-row">
+                            <div class="digest-stat"><span class="digest-stat-value">${week.daysActive}/7</span><span class="digest-stat-label">Days active</span></div>
+                            <div class="digest-stat"><span class="digest-stat-value">${week.assignmentsCompleted}</span><span class="digest-stat-label">Completed</span></div>
+                            <div class="digest-stat"><span class="digest-stat-value">${week.classesOpened}</span><span class="digest-stat-label">Classes opened</span></div>
+                        </div>
+                    `;
+                }
+                const digestSection = (title, itemsHtml) => itemsHtml
+                    ? `<div class="digest-section"><p class="digest-section-title">${title}</p><div class="digest-items">${itemsHtml}</div></div>`
+                    : '';
                 html += `
                     <div class="digest-banner">
                         <div class="digest-banner-header">
@@ -11366,7 +11521,9 @@ body.dark-theme[data-palette="mint"] {
                             <button type="button" class="digest-dismiss-btn" onclick="dismissWeeklyDigest()" title="Dismiss">&times;</button>
                         </div>
                         <p class="digest-banner-summary">${dueCount} assignment${dueCount === 1 ? '' : 's'} due, ${eventCount} event${eventCount === 1 ? '' : 's'} this week.</p>
+                        ${statsHtml}
                         ${preview ? `<div class="digest-items">${preview}</div>` : ''}
+                        ${digestSection('Countdowns This Week', countdownsHtml)}
                     </div>
                 `;
             }
@@ -11384,7 +11541,11 @@ body.dark-theme[data-palette="mint"] {
                 // this brief only calls out the ones with something worth reading.
                 const classesWithNotes = getClassesForDate(today).filter(c => classNoteText(c.classItem));
                 const todaysReminders = getTodaysReminders();
-                const hasAny = dueToday.length || eventsToday.length || dayType || noSchool || hasDayNote || classesWithNotes.length || todaysReminders.length;
+                const countdownsToday = countdowns.filter(cd => {
+                    const target = countdownTargetDate(cd);
+                    return target && daysUntil(target) === 0;
+                });
+                const hasAny = dueToday.length || eventsToday.length || dayType || noSchool || hasDayNote || classesWithNotes.length || todaysReminders.length || countdownsToday.length;
 
                 // A day-type badge and/or day note reads as one "Day" fact, not a list item, so
                 // it gets its own compact header row instead of living inside .digest-items.
@@ -11429,6 +11590,26 @@ body.dark-theme[data-palette="mint"] {
                         <button type="button" class="digest-dismiss-btn" onclick="removeReminder('${escapeJsAttr(r.id)}')" title="Delete reminder">&times;</button>
                     </div>
                 `).join('');
+                const countdownsTodayHtml = countdownsToday.map(cd => `
+                    <div class="digest-item">
+                        <span class="home-dot" style="background:${cd.color || 'var(--accent-2)'};"></span>
+                        <span>${escapeHtml(cd.label)} <span style="color:var(--text-muted);">— Today!</span></span>
+                    </div>
+                `).join('');
+
+                let dailyStatsHtml = '';
+                if (digestCfg.sections.stats) {
+                    const stats = loadUsageStats();
+                    const streak = computeUsageStreak(stats);
+                    const todayEntry = todaysUsageEntry(stats);
+                    dailyStatsHtml = `
+                        <div class="digest-stats-row">
+                            <div class="digest-stat"><span class="digest-stat-value">${streak}</span><span class="digest-stat-label">Day streak</span></div>
+                            <div class="digest-stat"><span class="digest-stat-value">${todayEntry.assignmentsCompleted || 0}</span><span class="digest-stat-label">Completed today</span></div>
+                            <div class="digest-stat"><span class="digest-stat-value">${todayEntry.classesOpened || 0}</span><span class="digest-stat-label">Classes opened</span></div>
+                        </div>
+                    `;
+                }
 
                 // Same section-header pattern as the calendar's day-hover-tooltip (see
                 // buildDayTooltipHtml) so a class's info reads the same wherever it shows up.
@@ -11439,7 +11620,8 @@ body.dark-theme[data-palette="mint"] {
                     digestSection('Reminders', digestCfg.sections.reminders ? remindersHtml : ''),
                     digestSection('Assignments Due', digestCfg.sections.due ? dueHtml : ''),
                     digestSection('Events', digestCfg.sections.events ? eventsHtml : ''),
-                    digestSection('Classes', digestCfg.sections.classes ? classesHtml : '')
+                    digestSection('Classes', digestCfg.sections.classes ? classesHtml : ''),
+                    digestSection('Countdowns Today', digestCfg.sections.countdowns ? countdownsTodayHtml : '')
                 ].join('');
 
                 html += `
@@ -11448,6 +11630,7 @@ body.dark-theme[data-palette="mint"] {
                             <p class="digest-banner-title">Today</p>
                             <button type="button" class="digest-dismiss-btn" onclick="dismissDailyDigest()" title="Dismiss">&times;</button>
                         </div>
+                        ${dailyStatsHtml}
                         <p class="digest-banner-summary">${hasAny ? `${dueToday.length} due, ${eventsToday.length} event${eventsToday.length === 1 ? '' : 's'} today.` : 'Nothing due or scheduled today.'}</p>
                         ${dayHeaderHtml}
                         ${sections}
@@ -11475,6 +11658,7 @@ body.dark-theme[data-palette="mint"] {
             const isFirstRun = !localStorage.getItem('classDataV3');
 
             updateSimulatedDateBanner();
+            recordAppOpen();
             loadClassData();
             loadClassNotes();
             loadUserScheduleDates();
