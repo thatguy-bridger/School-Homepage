@@ -6840,7 +6840,10 @@ body.dark-theme[data-palette="mint"] {
             }
             return null;
         }
-        function openClassForPeriodShortcut(n) {
+        // force=true (Shift held) skips the "is there actually school today" check entirely and
+        // just opens whatever's assigned to that period -- try an A-day slot first, then B-day,
+        // since without a real day type there's no "correct" one to prefer, just whichever exists.
+        function openClassForPeriodShortcut(n, force) {
             if (n === 0) {
                 const advisory = findClassBySlot('ADVISORY');
                 if (!advisory) { showActionToast('No class assigned to Advisory.'); return; }
@@ -6858,22 +6861,95 @@ body.dark-theme[data-palette="mint"] {
             const todayKey = dateKey(now);
             const isADay = userADays.includes(todayKey);
             const isBDay = userBDays.includes(todayKey);
-            if (isNoSchoolDay(now) || (!isADay && !isBDay)) { showActionToast('No school scheduled today.'); return; }
-            const dayType = isADay ? 'A' : 'B';
-            const classItem = findClassBySlot(`${dayType}_P${n}`);
-            if (!classItem) { showActionToast(`No class assigned to period ${n} today.`); return; }
+            let classItem;
+            if (force) {
+                classItem = findClassBySlot(`A_P${n}`) || findClassBySlot(`B_P${n}`);
+            } else {
+                if (isNoSchoolDay(now) || (!isADay && !isBDay)) { showActionToast('No school scheduled today. Hold Shift to open it anyway.'); return; }
+                classItem = findClassBySlot(`${isADay ? 'A' : 'B'}_P${n}`);
+            }
+            if (!classItem) { showActionToast(`No class assigned to period ${n}${force ? '' : ' today'}.`); return; }
             if (!classItem.url || classItem.url === '#') { showActionToast(`No link set for ${classItem.title || 'this class'}.`); return; }
             window.location.href = classItem.url;
         }
         function showKeyboardShortcutsHelp() {
             showConfirmationModal(
                 'H Home  ·  C Classes  ·  P Planner  ·  G Grades  ·  S Settings  ·  N Add reminder  ·  ' +
-                '0–8 open that period’s class link (0 = Advisory)  ·  D/W/M/A calendar day/week/month/agenda  ·  T jump to today  ·  ? this list',
+                '0–8 open that period’s class link (0 = Advisory)  ·  Shift+0–8 open it even if there\'s no school today  ·  ' +
+                'D/W/M/A calendar day/week/month/agenda  ·  T jump to today  ·  ? this list',
                 [{ text: 'Got it', action: () => {} }],
                 { clickAnywhereConfirms: true }
             );
         }
+        // ===================== MODAL ESCAPE-TO-CLOSE / ENTER-TO-SAVE =====================
+        // Generic, not per-modal: rather than hand-writing dirty tracking for every form, this
+        // snapshots every input/textarea/select inside a modal the moment it opens (via a single
+        // MutationObserver watching for any .modal losing its "hidden" class) and diffs that
+        // against current values when Escape is pressed. Only the modals listed in MODAL_ACTIONS
+        // respond -- onboarding-sync-modal is deliberately excluded (see its own comment: it's a
+        // one-time prompt that shouldn't be casually dismissable), and confirmation-modal handles
+        // its own keyboard/click behavior already.
+        const MODAL_ACTIONS = {
+            'countdown-modal': { close: () => hideCountdownModal(), save: () => saveCountdownFromModal() },
+            'reminder-modal': { close: () => hideReminderModal(), save: () => saveReminderFromModal() },
+            'scheduling-settings-modal': { close: () => closeSchedulingSettingsModal(), save: () => saveSchedulingSettingsAndCloseModal() },
+            'calendar-settings-modal': { close: () => closeCalendarSettingsModal() }, // fields autosave on change -- nothing to confirm-discard
+            'all-settings-modal': { close: () => closeAllSettingsModal(), save: () => saveAllSettingsAndClose() },
+            'event-detail-modal': { close: () => hideEventDetailModal() } // read-only, no save
+        };
+        const modalFormSnapshots = new WeakMap();
+        function snapshotModalFormState(modalEl) {
+            const fields = Array.from(modalEl.querySelectorAll('input, textarea, select'));
+            return JSON.stringify(fields.map(f => (f.type === 'checkbox' || f.type === 'radio') ? f.checked : f.value));
+        }
+        function isModalFormDirty(modalEl) {
+            const before = modalFormSnapshots.get(modalEl);
+            return before !== undefined && before !== snapshotModalFormState(modalEl);
+        }
+        new MutationObserver(mutations => {
+            mutations.forEach(m => {
+                const el = m.target;
+                if (!(el instanceof HTMLElement) || !el.classList.contains('modal')) return;
+                if (el.classList.contains('hidden')) {
+                    modalFormSnapshots.delete(el); // reset so the next open snapshots fresh
+                } else if (!modalFormSnapshots.has(el)) {
+                    // Newly opened -- wait a couple frames for whatever open*Modal() does to
+                    // populate fields (e.g. filling in an existing countdown/reminder's values)
+                    // before taking the "before" snapshot, or every edit would look dirty.
+                    requestAnimationFrame(() => requestAnimationFrame(() => {
+                        if (!el.classList.contains('hidden')) modalFormSnapshots.set(el, snapshotModalFormState(el));
+                    }));
+                }
+            });
+        }).observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
+        function handleGlobalModalKeys(e) {
+            if (e.key !== 'Escape' && e.key !== 'Enter') return;
+            if (e.defaultPrevented) return; // a field's own Enter handler (e.g. reminder text) already acted
+            const openModal = document.querySelector('.modal:not(.hidden)');
+            if (!openModal || openModal.id === 'confirmation-modal') return;
+            const actions = MODAL_ACTIONS[openModal.id];
+            if (!actions) return;
+
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                if (actions.save && isModalFormDirty(openModal)) {
+                    showConfirmationModal('You have unsaved changes. Save before closing?', [
+                        { text: 'Save', action: () => actions.save() },
+                        { text: "Don't Save", action: () => actions.close() },
+                        { text: 'Cancel', action: () => {} }
+                    ]);
+                } else {
+                    actions.close();
+                }
+                return;
+            }
+            // Enter: don't hijack it out of a textarea (should insert a newline there instead).
+            if (e.target.tagName === 'TEXTAREA') return;
+            e.preventDefault();
+            (actions.save || actions.close)();
+        }
         function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', handleGlobalModalKeys);
             document.addEventListener('keydown', (e) => {
                 if (e.metaKey || e.ctrlKey || e.altKey) return;
                 if (isTypingTarget(e.target)) return;
@@ -6881,9 +6957,13 @@ body.dark-theme[data-palette="mint"] {
                 // modal) -- shortcuts shouldn't fire underneath it.
                 if (document.querySelector('.modal:not(.hidden)')) return;
 
-                if (/^[0-8]$/.test(e.key)) {
+                // e.code (the physical key), not e.key -- Shift+1 produces "!" for e.key on a US
+                // layout, which would silently break the force-open-anyway variant of this
+                // shortcut. e.code stays "Digit1" regardless of Shift, so this works either way.
+                const digitMatch = /^Digit([0-8])$/.exec(e.code) || /^Numpad([0-8])$/.exec(e.code);
+                if (digitMatch) {
                     e.preventDefault();
-                    openClassForPeriodShortcut(parseInt(e.key, 10));
+                    openClassForPeriodShortcut(parseInt(digitMatch[1], 10), e.shiftKey);
                     return;
                 }
                 if (e.key === '?') { showKeyboardShortcutsHelp(); return; }
