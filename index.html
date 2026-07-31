@@ -6225,7 +6225,10 @@ body.dark-theme[data-palette="mint"] {
             const overrides = loadHomePresetLabelOverrides();
             const builtins = HOME_LAYOUT_PRESETS.filter(p => !deleted.has(p.id))
                 .map(p => overrides[p.id] ? Object.assign({}, p, { label: overrides[p.id] }) : p);
-            return builtins.concat(loadHomeUserPresets());
+            // Alphabetical by label (not insertion/built-in-vs-user order) so renaming a preset or
+            // saving a new one always keeps the dropdown sorted, not just at creation time.
+            return builtins.concat(loadHomeUserPresets())
+                .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
         }
         function saveCurrentAsHomePreset() {
             const name = (prompt('Name this preset:') || '').trim();
