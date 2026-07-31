@@ -666,7 +666,7 @@ body.dark-theme[data-palette="mint"] {
         }
         .digest-config-bar-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
         .digest-banner-header { display: flex; justify-content: space-between; align-items: center; }
-        .digest-banner-title { font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--accent-2); }
+        .digest-banner-title { font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--accent-3); }
         .digest-banner-summary { font-size: 0.9rem; margin-top: 0.3rem; }
         .digest-stats-row {
             display: flex;
@@ -684,7 +684,7 @@ body.dark-theme[data-palette="mint"] {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
         }
-        .digest-stat-value { font-size: 1.15rem; font-weight: 800; color: var(--accent-2); }
+        .digest-stat-value { font-size: 1.15rem; font-weight: 800; color: var(--accent-3); }
         .digest-stat-label { font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 0.1rem; }
         .digest-items { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
         .digest-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
@@ -1753,7 +1753,7 @@ body.dark-theme[data-palette="mint"] {
         }
         .countdown-suggestion-chip .countdown-suggestion-when {
             font-weight: 700;
-            color: var(--accent-2);
+            color: var(--accent-3);
         }
 
         /* ===================== ONBOARDING TOUR ===================== */
@@ -1804,7 +1804,7 @@ body.dark-theme[data-palette="mint"] {
         }
         .tour-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 0.4rem; }
         .tour-body { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 1rem; }
-        .tour-hint { font-size: 0.75rem; font-weight: 700; color: var(--accent-2); margin-bottom: 0.9rem; }
+        .tour-hint { font-size: 0.75rem; font-weight: 700; color: var(--accent-3); margin-bottom: 0.9rem; }
         .tour-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
         .tour-nav-buttons { display: flex; gap: 0.5rem; }
         .tour-btn {
@@ -2271,7 +2271,7 @@ body.dark-theme[data-palette="mint"] {
             border-color: var(--accent-2);
         }
         .mini-day-number { font-size: 0.72rem; font-weight: 600; color: var(--text-primary); }
-        .mini-day-cell.is-today .mini-day-number { color: var(--accent-2); }
+        .mini-day-cell.is-today .mini-day-number { color: var(--accent-3); }
         .mini-day-cell .day-badge { font-size: 0.55rem; padding: 0.05rem 0.3rem; }
         .mini-day-cell .note-dot { position: static; width: 0.3rem; height: 0.3rem; box-shadow: none; }
         .mini-external-dots { display: flex; gap: 0.3rem; margin-top: 0.15rem; }
@@ -2586,7 +2586,7 @@ body.dark-theme[data-palette="mint"] {
         .no-school-toast .toast-close svg { width: 1rem; height: 1rem; }
         .no-school-toast .toast-undo-btn {
             flex-shrink: 0;
-            color: var(--accent-2);
+            color: var(--accent-3);
             background: none;
             border: none;
             cursor: pointer;
@@ -7714,7 +7714,7 @@ body.dark-theme[data-palette="mint"] {
                             <p class="home-item-sub">${target ? target.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : cd.type === 'no-school' ? 'No School day scheduled' : ''}</p>
                         </div>
                         <div class="home-due-item-actions" style="opacity:1;">
-                            <span class="home-due-countdown" style="color:${cd.color || 'var(--accent-2)'};">${daysLabel}</span>
+                            <span class="home-due-countdown" style="color:${cd.color || 'var(--accent-3)'};">${daysLabel}</span>
                             <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="openCountdownModal('${escapeJsAttr(cd.id)}')" title="Edit countdown">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
@@ -10787,7 +10787,7 @@ body.dark-theme[data-palette="mint"] {
                             ${target ? `<p class="home-item-sub home-widget-extra-desc">${escapeHtml(target.toLocaleDateString('en-US', { weekday: 'long' }))}</p>` : ''}
                         </div>
                         <div class="home-due-item-actions" style="opacity:1;">
-                            <span class="home-due-countdown" style="color:${cd.color || 'var(--accent-2)'};">${daysLabel}</span>
+                            <span class="home-due-countdown" style="color:${cd.color || 'var(--accent-3)'};">${daysLabel}</span>
                             <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="openCountdownModal('${escapeJsAttr(cd.id)}')" title="Edit countdown">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
