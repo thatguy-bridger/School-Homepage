@@ -808,17 +808,17 @@ body.dark-theme[data-palette="mint"] {
         /* Text inside these two widgets specifically reads smaller than the normal home-list
            item -- there's less room and more items to skim, so density wins over size here. */
         .home-widget-compact-list .home-item-title {
-            font-size: clamp(0.8rem, 3.2cqmin, 1.5rem);
+            font-size: max(0.8rem, 3.2cqmin);
             line-height: 1.2;
         }
         .home-widget-compact-list .home-item-sub {
-            font-size: clamp(0.62rem, 2.4cqmin, 1.15rem);
+            font-size: max(0.62rem, 2.4cqmin);
             line-height: 1.15;
         }
         /* The days-left number is the whole point of a countdown row, so it stays the biggest
            thing in it even though the title/date around it are shrunk down (see above). */
         .home-widget-compact-list .home-due-countdown {
-            font-size: clamp(1.05rem, 3.6cqmin, 2rem);
+            font-size: max(1.05rem, 3.6cqmin);
             font-weight: 800;
         }
         #planner-countdowns-container .home-due-countdown {
@@ -1884,17 +1884,18 @@ body.dark-theme[data-palette="mint"] {
            of the container's width/height is currently smaller) so content keeps growing
            smoothly as a widget is resized larger in EITHER direction, not just wider, instead of
            stopping dead at a low cap (e.g. "Current Class" dragged out to a huge tile previously
-           stayed pinned to ~2rem text forever, using up a quarter of the box). Caps are generous
-           on purpose -- a widget dragged to fill most of the screen should show correspondingly
-           big text, not the same size as a modest one. */
-        .home-widget h2 { font-size: clamp(0.82rem, 6.5cqmin, 2.75rem); }
-        .home-item-title { font-size: clamp(0.78rem, 4.4cqmin, 1.9rem); }
-        .home-item-sub { font-size: clamp(0.68rem, 3.4cqmin, 1.55rem); }
-        .home-widget-empty { font-size: clamp(0.75rem, 3.6cqmin, 1.7rem); }
-        .home-next-class-big { font-size: clamp(1.1rem, 11cqmin, 5.5rem); }
-        .home-due-countdown { font-size: clamp(0.82rem, 4.2cqmin, 2.2rem); }
+           stayed pinned to ~2rem text forever, using up a quarter of the box). Text sizes have a
+           floor (via max()) but deliberately NO ceiling -- a widget dragged out huge should show
+           correspondingly huge text, not cap out partway there. Padding/icon sizes stay clamped
+           separately below so the box doesn't lose its breathing room at large sizes. */
+        .home-widget h2 { font-size: max(0.82rem, 6.5cqmin); }
+        .home-item-title { font-size: max(0.78rem, 4.4cqmin); }
+        .home-item-sub { font-size: max(0.68rem, 3.4cqmin); }
+        .home-widget-empty { font-size: max(0.75rem, 3.6cqmin); }
+        .home-next-class-big { font-size: max(1.1rem, 11cqmin); }
+        .home-due-countdown { font-size: max(0.82rem, 4.2cqmin); }
         #home-widget-next-class .class-meta-chip {
-            font-size: clamp(0.62rem, 3cqmin, 1.35rem);
+            font-size: max(0.62rem, 3cqmin);
             padding: clamp(0.2rem, 1.2cqmin, 0.65rem) clamp(0.4rem, 2.4cqmin, 1.1rem);
         }
         .home-widget-add-btn, .home-widget-settings-btn {
@@ -4460,7 +4461,14 @@ body.dark-theme[data-palette="mint"] {
             classData = savedData ? JSON.parse(savedData) : JSON.parse(JSON.stringify(defaultClassData));
             let assignedNewIds = false;
             classData.forEach(category => {
-                if (typeof category.isSideStacked === 'undefined') category.isSideStacked = false;
+                // perRow replaces the old binary isSideStacked (full-width vs. auto-chunked-by-3
+                // "stacked") with an explicit 1/2/3-per-row choice per category. Migrate existing
+                // data once: previously-stacked categories become 2-per-row (a reasonable default
+                // for what used to be an all-or-nothing "stacked" flag), full-width stays 1.
+                if (typeof category.perRow !== 'number') {
+                    category.perRow = category.isSideStacked ? 2 : 1;
+                }
+                if (category.perRow < 1 || category.perRow > 3) category.perRow = 1;
                 category.classes.forEach(classItem => {
                     if (typeof classItem.scheduleSlot === 'undefined') classItem.scheduleSlot = '';
                     if (typeof classItem.color === 'undefined') classItem.color = '';
@@ -4527,10 +4535,18 @@ body.dark-theme[data-palette="mint"] {
             let htmlOutput = '';
             let currentSideStackedGroup = [];
 
+            // Consecutive categories only share a row if they're set to the SAME per-row count
+            // (2 or 3) -- a run of "2 per row" categories groups in pairs, a run of "3 per row"
+            // groups in threes, and a per-row change (or a perRow:1 category) always starts a
+            // fresh row rather than silently merging different widths together.
             classData.forEach(category => {
-                if (category.isSideStacked) {
+                if (category.perRow > 1) {
+                    if (currentSideStackedGroup.length > 0 && currentSideStackedGroup[0].perRow !== category.perRow) {
+                        htmlOutput += renderSideStackedGroupHTML(currentSideStackedGroup);
+                        currentSideStackedGroup = [];
+                    }
                     currentSideStackedGroup.push(category);
-                    if (currentSideStackedGroup.length === 3 || category === classData[classData.length - 1]) {
+                    if (currentSideStackedGroup.length === category.perRow || category === classData[classData.length - 1]) {
                         htmlOutput += renderSideStackedGroupHTML(currentSideStackedGroup);
                         currentSideStackedGroup = [];
                     }
@@ -4551,7 +4567,7 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function renderSideStackedGroupHTML(group) {
-            const widthClass = group.length === 2 ? 'stacked-two' : 'stacked-three';
+            const widthClass = group[0].perRow === 3 ? 'stacked-three' : 'stacked-two';
             const groupItemsHTML = group.map(category => {
                 const classCardsHTML = category.classes.map(createClassCardHTML).join('');
                 return `
@@ -4680,10 +4696,14 @@ body.dark-theme[data-palette="mint"] {
             let currentModalSideStackedGroup = [];
 
             classData.forEach((category, index) => {
-                if (category.isSideStacked) {
+                if (category.perRow > 1) {
+                    if (currentModalSideStackedGroup.length > 0 && currentModalSideStackedGroup[0].category.perRow !== category.perRow) {
+                        htmlOutput += renderModalSideStackedGroupHTML(currentModalSideStackedGroup);
+                        currentModalSideStackedGroup = [];
+                    }
                     currentModalSideStackedGroup.push({ category, index });
                     const nextCategory = classData[index + 1];
-                    if (currentModalSideStackedGroup.length === 3 || !nextCategory || !nextCategory.isSideStacked) {
+                    if (currentModalSideStackedGroup.length === category.perRow || !nextCategory || nextCategory.perRow !== category.perRow) {
                         htmlOutput += renderModalSideStackedGroupHTML(currentModalSideStackedGroup);
                         currentModalSideStackedGroup = [];
                     }
@@ -4711,25 +4731,30 @@ body.dark-theme[data-palette="mint"] {
             container.innerHTML = htmlOutput;
         }
 
+        // Segmented 1/2/3-per-row control reused by both the grouped and full-width category
+        // cards below -- 1 always means full width, 2/3 group that category with its neighbors
+        // that share the same count (see renderClassEditor's grouping pass above it).
+        function perRowSegmentedHTML(categoryIndex, perRow) {
+            return `
+                <div class="ui-settings-segmented" title="How many categories share a row -- 1 is full width, 2 or 3 sit side by side with other categories set to the same number">
+                    ${[1, 2, 3].map(n => `<button type="button" class="${perRow === n ? 'active' : ''}" onclick="setCategoryPerRow(${categoryIndex}, ${n})">${n}</button>`).join('')}
+                </div>
+            `;
+        }
+
         function renderModalSideStackedGroupHTML(group) {
-            const widthClass = group.length === 2 ? 'stacked-two-modal' : 'stacked-three-modal';
+            const widthClass = group[0].category.perRow === 3 ? 'stacked-three-modal' : 'stacked-two-modal';
 
             const groupItemsHTML = group.map(item => {
                 const category = item.category;
                 const categoryIndex = item.index;
                 const classInputsHTML = category.classes.map((classItem, classIndex) => createClassInputHTML(categoryIndex, classIndex, classItem)).join('');
 
-                const toggleButtonClass = category.isSideStacked ? 'stacked' : 'full-width';
-                const toggleButtonSvg = category.isSideStacked ?
-                    `<svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M10 4h4v16h-4zm-6 0h4v16h-4zm12 0h4v16h-4z"/></svg>` :
-                    `<svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 4h16v16H4z"/></svg>`;
-                const toggleButtonTitle = category.isSideStacked ? 'Change to Full Width Layout' : 'Change to Stacked Layout';
-
                 return `
                     <div class="category-group p-6 rounded-2xl border ${widthClass}"
                          draggable="true"
                          data-category-index="${categoryIndex}"
-                         data-is-side-stacked="${category.isSideStacked}"
+                         data-per-row="${category.perRow}"
                          ondragstart="handleCategoryDragStart(event)"
                          ondragover="handleCategoryDragOver(event)"
                          ondragleave="handleCategoryDragLeave(event)"
@@ -4746,9 +4771,7 @@ body.dark-theme[data-palette="mint"] {
                                        onchange="updateCategoryName(${categoryIndex}, this.value)">
                             </div>
                             <div class="flex items-center gap-2">
-                                <button type="button" class="toggle-layout-button ${toggleButtonClass}" onclick="toggleSideStacked(${categoryIndex})" title="${toggleButtonTitle}">
-                                    ${toggleButtonSvg}
-                                </button>
+                                ${perRowSegmentedHTML(categoryIndex, category.perRow)}
                                 <button type="button" class="duplicate-category-btn text-green-500 hover:text-green-700 p-2 rounded-full hover:bg-green-100 transition" onclick="duplicateCategory(${categoryIndex})" title="Duplicate Category">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">  <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
                                 </button>
@@ -4778,17 +4801,11 @@ body.dark-theme[data-palette="mint"] {
         function renderModalFullWidthCategoryHTML(category, categoryIndex) {
             const classInputsHTML = category.classes.map((classItem, classIndex) => createClassInputHTML(categoryIndex, classIndex, classItem)).join('');
 
-            const toggleButtonClass = category.isSideStacked ? 'stacked' : 'full-width';
-            const toggleButtonSvg = category.isSideStacked ?
-                `<svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M10 4h4v16h-4zm-6 0h4v16h-4zm12 0h4v16h-4z"/></svg>` :
-                `<svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 4h16v16H4z"/></svg>`;
-            const toggleButtonTitle = category.isSideStacked ? 'Change to Full Width Layout' : 'Change to Stacked Layout';
-
             return `
                 <div class="category-group p-6 rounded-2xl border full-width-mode"
                      draggable="true"
                      data-category-index="${categoryIndex}"
-                     data-is-side-stacked="${category.isSideStacked}"
+                     data-per-row="${category.perRow}"
                      ondragstart="handleCategoryDragStart(event)"
                      ondragover="handleCategoryDragOver(event)"
                      ondragleave="handleCategoryDragLeave(event)"
@@ -4805,9 +4822,7 @@ body.dark-theme[data-palette="mint"] {
                                    onchange="updateCategoryName(${categoryIndex}, this.value)">
                         </div>
                         <div class="flex items-center gap-2">
-                            <button type="button" class="toggle-layout-button ${toggleButtonClass}" onclick="toggleSideStacked(${categoryIndex})" title="${toggleButtonTitle}">
-                                ${toggleButtonSvg}
-                            </button>
+                            ${perRowSegmentedHTML(categoryIndex, category.perRow)}
                             <button type="button" class="duplicate-category-btn text-green-500 hover:text-green-700 p-2 rounded-full hover:bg-green-100 transition" onclick="duplicateCategory(${categoryIndex})" title="Duplicate Category">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">  <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
                             </button>
@@ -4921,7 +4936,7 @@ body.dark-theme[data-palette="mint"] {
 
         // --- CLASS EDITOR: ACTIONS ---
         function addCategory() {
-            classData.push({ categoryName: 'New Category', classes: [], isSideStacked: false });
+            classData.push({ categoryName: 'New Category', classes: [], perRow: 1 });
             renderClassEditor(document.getElementById('class-links-container'));
             saveToLocalStorage();
         }
@@ -5058,8 +5073,8 @@ body.dark-theme[data-palette="mint"] {
             }
         });
 
-        function toggleSideStacked(categoryIndex) {
-            classData[categoryIndex].isSideStacked = !classData[categoryIndex].isSideStacked;
+        function setCategoryPerRow(categoryIndex, perRow) {
+            classData[categoryIndex].perRow = perRow;
             renderClassEditor(document.getElementById('class-links-container'));
             saveToLocalStorage();
         }
@@ -5070,12 +5085,12 @@ body.dark-theme[data-palette="mint"] {
 
             categoryGroupsInDOM.forEach(groupEl => {
                 const categoryNameInput = groupEl.querySelector('.category-name-input');
-                const isSideStacked = groupEl.dataset.isSideStacked === 'true';
+                const perRow = parseInt(groupEl.dataset.perRow, 10) || 1;
 
                 const updatedCategory = {
                     categoryName: categoryNameInput ? categoryNameInput.value.trim() : 'Unnamed Category',
                     classes: [],
-                    isSideStacked: isSideStacked
+                    perRow: perRow
                 };
 
                 const classInputsInThisCategory = groupEl.querySelectorAll('.class-inputs-container .class-input-group');
