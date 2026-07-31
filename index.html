@@ -1824,35 +1824,32 @@ body.dark-theme[data-palette="mint"] {
         .settings-tab-btn.active { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
         .settings-category.hidden { display: none; }
 
-        /* ===================== HOME SCREEN EDITOR (in-place, iOS-springboard-style) ===================== */
-        /* Flexbox, not CSS Grid -- each widget carries its own free-form width% and height(px)
-           as inline styles (see applyHomeWidgetLayout), set by dragging the resize handle to
-           whatever size you want rather than snapping to fixed fractions. flex-wrap just flows
-           widgets left-to-right, wrapping whenever the next one doesn't fit the remaining row
-           width, closest to how Control Center's own free-size widgets tile. Always on (not
-           just while editing) so a widget's chosen size looks the same in and out of edit mode. */
+        /* ===================== HOME SCREEN EDITOR (true 12-column square-cell grid,
+           iOS/Android-launcher-style) ===================== */
+        /* Always exactly 12 columns, at every viewport width -- deliberately not responsive,
+           since the point is that a widget spanning N columns is always N/12 of the screen
+           regardless of screen size. Row height (--cell-size, set by JS via ResizeObserver on
+           this element -- see refreshHomeGridCellSize) is kept equal to the actual computed
+           column width, so every cell is a true square, not just a same-width rectangle. Height
+           is unbounded ("never-ending" downward) since grid-auto-rows only defines the size of
+           rows as they're created, not a cap on how many exist. */
         .home-widget-grid {
             position: relative;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-start;
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-auto-rows: var(--cell-size, 1fr);
+            gap: var(--cell-gap, 0.75rem);
         }
-        @media (max-width: 640px) {
-            .home-widget-grid .home-widget { width: 100% !important; }
-        }
-        /* overflow:hidden so a freely-chosen height actually clips/contains content instead of
-           the widget silently growing taller than what you dragged it to. */
+        /* overflow:hidden so content is clipped/contained to whichever whole number of cells you
+           sized the widget to, instead of silently spilling into the row below. */
         .home-widget {
             position: relative;
-            transform-origin: center;
             overflow: hidden;
             box-sizing: border-box;
             /* Lets the CSS below key off THIS widget's own box size, not the viewport -- so
                content actually scales with whatever size you drag it to, tiny or huge, instead
                of every widget rendering identically regardless of its footprint. */
-            container-type: size; /* both axes, not just inline-size -- min-height queries below
-                                      need the block-size to be tracked too, and every widget's
-                                      own JS-set height (applyHomeWidgetLayout) makes that safe. */
+            container-type: size;
             container-name: homewidget;
         }
         /* ---- Content scaling: tiers keyed off the widget's own width, matched to what fits
@@ -1883,21 +1880,21 @@ body.dark-theme[data-palette="mint"] {
         @container homewidget (min-height: 340px) {
             .home-widget-compact-list { max-height: none; }
         }
+        /* Grid-cell outline shown live while dragging/resizing -- solid = a valid (non-colliding)
+           cell target, dashed red = occupied by another widget, so the position is rejected. */
         .home-widget-resize-skeleton {
-            /* No transition -- this is a free-form 1:1 drag, not snapping between a few discrete
-               sizes, so it needs to track the pointer immediately rather than ease toward it. */
             position: absolute;
             z-index: 50;
-            border-radius: 1.1rem;
-            border: 2px dashed var(--accent-2);
-            background: color-mix(in srgb, var(--accent-2) 14%, transparent);
+            border-radius: 0.9rem;
+            border: 2px solid var(--accent-2);
+            background: color-mix(in srgb, var(--accent-2) 18%, transparent);
             pointer-events: none;
+            transition: left 0.06s linear, top 0.06s linear, width 0.06s linear, height 0.06s linear;
         }
-        /* Solid border while magnet-snapped to a clean fraction/row height, dashed otherwise --
-           a quick visual "it caught" cue, same idea as alignment guides going solid on snap. */
-        .home-widget-resize-skeleton.is-snapped {
-            border-style: solid;
-            background: color-mix(in srgb, var(--accent-2) 22%, transparent);
+        .home-widget-resize-skeleton.is-blocked {
+            border-color: #ef4444;
+            border-style: dashed;
+            background: color-mix(in srgb, #ef4444 14%, transparent);
         }
         .ios-remove-dot, .ios-add-dot {
             flex-shrink: 0;
@@ -1944,17 +1941,12 @@ body.dark-theme[data-palette="mint"] {
             touch-action: none;
         }
         .home-widget-resize-handle svg { width: 0.85rem; height: 0.85rem; }
-        /* Springboard-style wiggle -- each widget gets a slightly different animation-delay (set
-           inline per element) so they don't all rock in lockstep like a single rigid grid. */
-        @keyframes ios-jiggle {
-            0%, 100% { transform: rotate(-0.6deg); }
-            50% { transform: rotate(0.6deg); }
-        }
+        /* No jiggle/shake -- editing state is communicated by the remove badge and resize handle
+           alone, plus the grid-snap skeleton that appears while actually dragging/resizing. */
         .home-widget-grid.is-editing > .home-widget {
-            animation: ios-jiggle 0.22s ease-in-out infinite;
             /* Overrides any normal-mode is-clickable cursor/hover -- while editing, nothing in
                a tile responds to a plain click except the remove badge and resize handle
-               (matches iOS: content underneath a jiggling icon doesn't react to taps). */
+               (matches iOS: content underneath a widget you're rearranging doesn't react to taps). */
             cursor: grab;
         }
         .home-widget-grid.is-editing > .home-widget:active { cursor: grabbing; }
@@ -1962,19 +1954,17 @@ body.dark-theme[data-palette="mint"] {
             background: var(--glass-bg);
         }
         .home-widget-grid.is-editing > .home-widget.is-dragging {
-            opacity: 0.4;
-            animation: none;
+            opacity: 0.5;
+            z-index: 40;
         }
         .home-widget-add-tile {
-            width: 33%; /* a reasonable default footprint -- unlike real widgets it isn't resizable */
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            min-height: 6rem;
-            border-radius: 1.25rem;
+            border-radius: 0.9rem;
             border: 2px dashed var(--glass-border);
             background: transparent;
             color: var(--text-secondary);
@@ -2626,7 +2616,7 @@ body.dark-theme[data-palette="mint"] {
                         <div class="flex items-center gap-2">
                             <select id="home-preset-select" class="form-select hidden" style="font-size:0.8rem;padding:0.45rem 0.7rem;width:auto;" onchange="applyHomePreset(this.value)" title="Layout preset"></select>
                             <button type="button" id="home-preset-save-button" class="modal-footer-button is-secondary hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="saveCurrentAsHomePreset()" title="Save the current layout, digest, and calendar preview settings as a new preset">Save Preset</button>
-                            <button type="button" id="home-preset-delete-button" class="modal-footer-button bg-red-600 hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="deleteHomeUserPreset(loadHomePresetSelection())" title="Delete this saved preset">Delete Preset</button>
+                            <button type="button" id="home-preset-delete-button" class="modal-footer-button bg-red-600 hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="deleteHomePreset(loadHomePresetSelection())" title="Delete this preset">Delete Preset</button>
                             <button type="button" id="home-reset-layout-button" class="modal-footer-button is-secondary hidden" onclick="resetCustomizeHomeLayout()">Reset Layout</button>
                             <button type="button" id="customize-home-button" class="icon-btn p-3 rounded-full" onclick="toggleHomeEditMode()" title="Customize Home">
                                 <svg class="home-edit-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
@@ -5420,23 +5410,66 @@ body.dark-theme[data-palette="mint"] {
             { id: 'upcoming', label: 'Upcoming Events', el: 'home-widget-upcoming' },
             { id: 'calendar-preview', label: 'Calendar Preview', el: 'home-calendar-preview' }
         ];
-        // Free-form size: widthPct is a percentage (10-100) of the grid's own width, heightPx is
-        // an absolute pixel height. No snapping, no fixed menu -- drag the corner handle to
-        // whatever footprint you want, same as Control Center's continuous widget resize.
-        const HOME_WIDGET_SIZE_LIMITS = { minWidthPct: 15, maxWidthPct: 100, minHeightPx: 100, maxHeightPx: 800 };
-        const HOME_WIDGET_DEFAULT_SIZES = {
-            upcoming: { widthPct: 100, heightPx: 260 },
-            'calendar-preview': { widthPct: 100, heightPx: 420 }
+        // True grid-cell sizing: the grid is always exactly 12 columns wide regardless of
+        // viewport (see .home-widget-grid CSS), so a widget's colSpan is always that many
+        // twelfths of the screen no matter the device. Row height is kept equal to column width
+        // (see refreshHomeGridCellSize), so every cell is a square, and there's no row cap --
+        // rowSpan can grow as tall as content needs. col/row are 1-based grid line numbers,
+        // exactly what CSS grid-column/grid-row expect.
+        const HOME_GRID_COLS = 12;
+        const HOME_WIDGET_DEFAULT_SPANS = {
+            'next-class': { colSpan: 6, rowSpan: 4 },
+            'due-soon': { colSpan: 6, rowSpan: 4 },
+            countdowns: { colSpan: 6, rowSpan: 4 },
+            reminders: { colSpan: 6, rowSpan: 4 },
+            upcoming: { colSpan: 12, rowSpan: 5 },
+            'calendar-preview': { colSpan: 12, rowSpan: 8 }
         };
-        const HOME_WIDGET_DEFAULT_SIZE = { widthPct: 48, heightPx: 176 };
-        function clampHomeWidgetSize(size) {
-            const L = HOME_WIDGET_SIZE_LIMITS;
-            const widthPct = Math.min(L.maxWidthPct, Math.max(L.minWidthPct, Number(size && size.widthPct) || HOME_WIDGET_DEFAULT_SIZE.widthPct));
-            const heightPx = Math.min(L.maxHeightPx, Math.max(L.minHeightPx, Number(size && size.heightPx) || HOME_WIDGET_DEFAULT_SIZE.heightPx));
-            return { widthPct, heightPx };
+        function clampHomeGridEntry(entry) {
+            const spans = HOME_WIDGET_DEFAULT_SPANS[entry.id] || { colSpan: 6, rowSpan: 4 };
+            const colSpan = Math.max(1, Math.min(HOME_GRID_COLS, Math.round(Number(entry.colSpan)) || spans.colSpan));
+            const rowSpan = Math.max(1, Math.round(Number(entry.rowSpan)) || spans.rowSpan);
+            const col = Math.max(1, Math.min(HOME_GRID_COLS - colSpan + 1, Math.round(Number(entry.col)) || 1));
+            const row = Math.max(1, Math.round(Number(entry.row)) || 1);
+            return { id: entry.id, visible: !!entry.visible, col, row, colSpan, rowSpan };
+        }
+        // Top-left "first fit" placement, same idea as how a launcher auto-arranges widgets you
+        // drop without a specific spot in mind: walk row by row, column by column, and place each
+        // entry (in the order given) in the first opening its colSpan/rowSpan actually fits,
+        // skipping cells already claimed by an earlier entry in the pass. calendar-preview is
+        // excluded -- it lives outside the grid entirely (see applyHomeWidgetLayout).
+        function autoPackHomeLayout(entries) {
+            const occupied = new Set();
+            function fits(col, row, colSpan, rowSpan) {
+                if (col + colSpan - 1 > HOME_GRID_COLS) return false;
+                for (let r = row; r < row + rowSpan; r++)
+                    for (let c = col; c < col + colSpan; c++)
+                        if (occupied.has(r + ':' + c)) return false;
+                return true;
+            }
+            function occupy(col, row, colSpan, rowSpan) {
+                for (let r = row; r < row + rowSpan; r++)
+                    for (let c = col; c < col + colSpan; c++)
+                        occupied.add(r + ':' + c);
+            }
+            entries.forEach(entry => {
+                if (entry.id === 'calendar-preview' || !entry.visible) return;
+                outer:
+                for (let row = 1; row < 2000; row++) {
+                    for (let col = 1; col <= HOME_GRID_COLS - entry.colSpan + 1; col++) {
+                        if (fits(col, row, entry.colSpan, entry.rowSpan)) {
+                            entry.col = col; entry.row = row;
+                            occupy(col, row, entry.colSpan, entry.rowSpan);
+                            break outer;
+                        }
+                    }
+                }
+            });
+            return entries;
         }
         function defaultHomeWidgetLayout() {
-            return HOME_WIDGET_DEFS.map(w => ({ id: w.id, visible: true, size: HOME_WIDGET_DEFAULT_SIZES[w.id] || HOME_WIDGET_DEFAULT_SIZE }));
+            const entries = HOME_WIDGET_DEFS.map(w => ({ id: w.id, visible: true, col: 1, row: 1, ...HOME_WIDGET_DEFAULT_SPANS[w.id] }));
+            return autoPackHomeLayout(entries);
         }
         function loadHomeWidgetLayout() {
             let layout;
@@ -5445,37 +5478,55 @@ body.dark-theme[data-palette="mint"] {
             // Reconcile against HOME_WIDGET_DEFS so a future widget added to the app (or one
             // whose id changed) doesn't silently disappear or crash the layout logic.
             const knownIds = new Set(HOME_WIDGET_DEFS.map(w => w.id));
-            const cleaned = layout.filter(entry => entry && knownIds.has(entry.id)).map(entry => ({
-                id: entry.id, visible: !!entry.visible,
-                size: clampHomeWidgetSize(entry.size || HOME_WIDGET_DEFAULT_SIZES[entry.id])
-            }));
+            const cleaned = layout.filter(entry => entry && knownIds.has(entry.id)).map(clampHomeGridEntry);
             HOME_WIDGET_DEFS.forEach(w => {
-                if (!cleaned.some(entry => entry.id === w.id)) cleaned.push({ id: w.id, visible: true, size: HOME_WIDGET_DEFAULT_SIZES[w.id] || HOME_WIDGET_DEFAULT_SIZE });
+                if (!cleaned.some(entry => entry.id === w.id)) cleaned.push({ id: w.id, visible: true, col: 1, row: 1, ...HOME_WIDGET_DEFAULT_SPANS[w.id] });
             });
             return cleaned;
         }
         function saveHomeWidgetLayout(layout) {
             localStorage.setItem('homeWidgetLayoutV1', JSON.stringify(layout));
         }
+        // Measures the grid's own rendered width and derives a square cell size from it (see the
+        // CSS comment on .home-widget-grid) -- called on every layout apply and again whenever
+        // the grid itself resizes (window resize, sidebar toggle, etc. -- see the ResizeObserver
+        // wired up in ensureHomeGridResizeObserver).
+        function refreshHomeGridCellSize() {
+            const grid = document.querySelector('.home-widget-grid');
+            if (!grid) return;
+            const gapPx = parseFloat(getComputedStyle(grid).columnGap) || 0;
+            const widthPx = grid.getBoundingClientRect().width;
+            if (!widthPx) return;
+            const cellPx = (widthPx - gapPx * (HOME_GRID_COLS - 1)) / HOME_GRID_COLS;
+            grid.style.setProperty('--cell-size', Math.max(20, cellPx) + 'px');
+        }
+        let homeGridResizeObserver = null;
+        function ensureHomeGridResizeObserver() {
+            if (homeGridResizeObserver || !window.ResizeObserver) return;
+            const grid = document.querySelector('.home-widget-grid');
+            if (!grid) return;
+            homeGridResizeObserver = new ResizeObserver(() => refreshHomeGridCellSize());
+            homeGridResizeObserver.observe(grid);
+        }
         function applyHomeWidgetLayout() {
             const layout = loadHomeWidgetLayout();
-            const grid = document.querySelector('.home-widget-grid');
             layout.forEach(entry => {
                 const def = HOME_WIDGET_DEFS.find(w => w.id === entry.id);
                 const el = def && document.getElementById(def.el);
                 if (!el) return;
                 el.classList.toggle('hidden', !entry.visible);
-                // The full-width calendar preview lives outside the grid, isn't resizable, and
-                // keeps its own natural height -- only visibility applies to it.
+                // The full-width calendar preview lives outside the grid entirely, isn't
+                // resizable/repositionable, and keeps its own natural height -- only visibility
+                // applies to it. Position for every other widget is purely grid-column/grid-row;
+                // there's no DOM reordering involved (unlike the old flex-based system), so
+                // dragging one widget can never accidentally shuffle the others' source order.
                 if (entry.id !== 'calendar-preview') {
-                    const { widthPct, heightPx } = clampHomeWidgetSize(entry.size);
-                    el.style.width = widthPct + '%';
-                    el.style.height = heightPx + 'px';
+                    el.style.gridColumn = `${entry.col} / span ${entry.colSpan}`;
+                    el.style.gridRow = `${entry.row} / span ${entry.rowSpan}`;
                 }
-                // Widgets inside the grid get reordered there; the calendar preview stays pinned
-                // below it regardless of list position.
-                if (grid && el.parentElement === grid) grid.appendChild(el);
             });
+            ensureHomeGridResizeObserver();
+            refreshHomeGridCellSize();
             if (isHomeEditModeActive()) renderHomeEditExtras();
         }
 
@@ -5517,14 +5568,11 @@ body.dark-theme[data-palette="mint"] {
             if (presetSaveBtn) presetSaveBtn.classList.remove('hidden');
             setHomePresetSelection(loadHomePresetSelection()); // syncs the delete button's visibility
 
-            Array.from(grid.children).forEach((el, i) => {
+            Array.from(grid.children).forEach(el => {
                 if (!el.classList.contains('home-widget')) return;
-                el.setAttribute('draggable', 'true');
-                el.style.animationDelay = ((i % 5) * 0.045) + 's';
-                el.ondragstart = (e) => handleHomeWidgetDragStart(e, el);
-                el.ondragover = (e) => handleHomeWidgetDragOver(e, el);
-                el.ondrop = (e) => e.preventDefault();
-                el.ondragend = () => handleHomeWidgetDragEnd();
+                // Property assignment (not addEventListener) so re-entering edit mode (e.g. from
+                // showHomeWidgetById while already editing) can't stack duplicate listeners.
+                el.onpointerdown = (e) => handleHomeWidgetPointerDown(e, el);
 
                 if (!el.querySelector('.home-widget-remove-badge')) {
                     const badge = document.createElement('button');
@@ -5532,11 +5580,10 @@ body.dark-theme[data-palette="mint"] {
                     badge.className = 'home-widget-remove-badge ios-remove-dot';
                     badge.title = 'Hide widget';
                     badge.textContent = '−';
-                    // draggable="false" on the control itself is what stops a press-and-slight-
-                    // move on it from also being picked up as the start of the parent widget's
-                    // native HTML5 drag (a child needs its own explicit opt-out; it doesn't
-                    // inherit one from being "not the draggable element").
-                    badge.setAttribute('draggable', 'false');
+                    // Stopped at both pointerdown and click -- pointerdown so it can't also be
+                    // picked up as the start of the widget's own move-drag (which listens on the
+                    // ancestor), click so the hide action doesn't also bubble into anything else.
+                    badge.onpointerdown = (ev) => ev.stopPropagation();
                     badge.onclick = (ev) => { ev.stopPropagation(); hideHomeWidgetById(el.id); };
                     el.appendChild(badge);
                 }
@@ -5544,7 +5591,6 @@ body.dark-theme[data-palette="mint"] {
                     const handle = document.createElement('div');
                     handle.className = 'home-widget-resize-handle';
                     handle.title = 'Drag to resize';
-                    handle.setAttribute('draggable', 'false');
                     handle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 4L4 20M20 12l-8 8M20 20h-4"></path></svg>';
                     handle.addEventListener('pointerdown', (ev) => startHomeWidgetResize(ev, el));
                     el.appendChild(handle);
@@ -5574,9 +5620,7 @@ body.dark-theme[data-palette="mint"] {
             if (presetDeleteBtn) presetDeleteBtn.classList.add('hidden');
             Array.from(grid.children).forEach(el => {
                 if (!el.classList.contains('home-widget')) return;
-                el.removeAttribute('draggable');
-                el.style.removeProperty('animation-delay');
-                el.ondragstart = el.ondragover = el.ondrop = el.ondragend = null;
+                el.onpointerdown = null;
                 const badge = el.querySelector('.home-widget-remove-badge');
                 if (badge) badge.remove();
                 const handle = el.querySelector('.home-widget-resize-handle');
@@ -5600,6 +5644,11 @@ body.dark-theme[data-palette="mint"] {
                 const tile = document.createElement('button');
                 tile.type = 'button';
                 tile.className = 'home-widget-add-tile';
+                // Auto-placed (no explicit grid-column/row) -- the browser's own grid layout
+                // flows it into the next open cells without overlapping the explicitly-positioned
+                // real widgets, so it never needs its own collision check.
+                tile.style.gridColumn = 'span 4';
+                tile.style.gridRow = 'span 3';
                 tile.innerHTML = `<span class="ios-add-dot" aria-hidden="true">+</span><span>${escapeHtml(def.label)}</span>`;
                 tile.onclick = () => showHomeWidgetById(def.id);
                 grid.appendChild(tile);
@@ -5616,13 +5665,30 @@ body.dark-theme[data-palette="mint"] {
             renderHomeEditExtras();
             markHomeLayoutCustom();
         }
+        // Finds the first open (non-colliding) top-left spot for entry against the *current*
+        // positions of everything else already visible in layout -- used when un-hiding a widget,
+        // so it doesn't need to fully re-pack the whole board, just find itself a home.
+        function placeHomeWidgetInFirstOpenSpot(entry, layout) {
+            const others = layout.filter(e => e.id !== entry.id && e.visible && e.id !== 'calendar-preview');
+            function fits(col, row) {
+                if (col + entry.colSpan - 1 > HOME_GRID_COLS) return false;
+                return !others.some(other =>
+                    row < other.row + other.rowSpan && row + entry.rowSpan > other.row &&
+                    col < other.col + other.colSpan && col + entry.colSpan > other.col
+                );
+            }
+            for (let row = 1; row < 2000; row++) {
+                for (let col = 1; col <= HOME_GRID_COLS - entry.colSpan + 1; col++) {
+                    if (fits(col, row)) { entry.col = col; entry.row = row; return; }
+                }
+            }
+        }
         function showHomeWidgetById(id) {
             const layout = loadHomeWidgetLayout();
             const entry = layout.find(e => e.id === id);
             if (entry) {
                 entry.visible = true;
-                layout.splice(layout.indexOf(entry), 1);
-                layout.push(entry);
+                if (entry.id !== 'calendar-preview') placeHomeWidgetInFirstOpenSpot(entry, layout);
             }
             saveHomeWidgetLayout(layout);
             applyHomeWidgetLayout();
@@ -5641,7 +5707,10 @@ body.dark-theme[data-palette="mint"] {
         // calendar-preview config, since a layout built around "just today's essentials" only
         // really makes sense together with a digest/preview trimmed to match (per the request
         // that presets carry their own digest/calendar-preview choices too, not just widget sizes).
-        function w(id, visible, widthPct, heightPx) { return { id, visible, size: { widthPct, heightPx } }; }
+        // colSpan/rowSpan out of the 12-column grid -- placement (col/row) is computed by
+        // autoPackHomeLayout in the order listed, so presets only need to describe *how big*
+        // each widget is, not where exactly it lands (see applyHomePreset).
+        function w(id, visible, colSpan, rowSpan) { return { id, visible, colSpan, rowSpan, col: 1, row: 1 }; }
         const HOME_LAYOUT_PRESETS = [
             {
                 id: 'default', label: 'Default',
@@ -5651,8 +5720,8 @@ body.dark-theme[data-palette="mint"] {
             {
                 id: 'compact', label: 'Compact List',
                 layout: [
-                    w('next-class', true, 33, 120), w('due-soon', true, 33, 120), w('countdowns', true, 33, 120),
-                    w('reminders', true, 33, 120), w('upcoming', true, 33, 120), w('calendar-preview', false, 100, 420)
+                    w('next-class', true, 4, 3), w('due-soon', true, 4, 3), w('countdowns', true, 4, 3),
+                    w('reminders', true, 4, 3), w('upcoming', true, 4, 3), w('calendar-preview', false, 12, 8)
                 ],
                 digest: { showWeekly: false, showDaily: true, sections: { reminders: true, due: true, events: false, classes: false } },
                 calPreview: null
@@ -5660,16 +5729,16 @@ body.dark-theme[data-palette="mint"] {
             {
                 id: 'focus-next-class', label: 'Focus: Next Class',
                 layout: [
-                    w('next-class', true, 100, 320), w('due-soon', true, 50, 160), w('countdowns', true, 25, 140),
-                    w('reminders', true, 25, 140), w('upcoming', false, 100, 260), w('calendar-preview', true, 100, 420)
+                    w('next-class', true, 12, 6), w('due-soon', true, 6, 3), w('countdowns', true, 3, 3),
+                    w('reminders', true, 3, 3), w('upcoming', false, 12, 5), w('calendar-preview', true, 12, 8)
                 ],
                 digest: null, calPreview: null
             },
             {
                 id: 'assignments-first', label: 'Assignments First',
                 layout: [
-                    w('due-soon', true, 100, 260), w('next-class', true, 50, 160), w('upcoming', true, 50, 260),
-                    w('countdowns', true, 33, 140), w('reminders', true, 33, 140), w('calendar-preview', false, 100, 420)
+                    w('due-soon', true, 12, 5), w('next-class', true, 6, 3), w('upcoming', true, 6, 5),
+                    w('countdowns', true, 4, 3), w('reminders', true, 4, 3), w('calendar-preview', false, 12, 8)
                 ],
                 digest: { showWeekly: true, showDaily: true, sections: { reminders: false, due: true, events: true, classes: false } },
                 calPreview: { categories: { assignment: true, 'school-event': true, club: false, sports: false, event: true }, showClasses: false, showReminders: false, showDayBadges: true, showNotes: true }
@@ -5677,16 +5746,16 @@ body.dark-theme[data-palette="mint"] {
             {
                 id: 'countdown-enthusiast', label: 'Countdown Enthusiast',
                 layout: [
-                    w('countdowns', true, 66, 320), w('reminders', true, 66, 320), w('next-class', true, 33, 140),
-                    w('due-soon', true, 33, 140), w('upcoming', false, 100, 260), w('calendar-preview', true, 100, 420)
+                    w('countdowns', true, 8, 5), w('reminders', true, 8, 5), w('next-class', true, 4, 3),
+                    w('due-soon', true, 4, 3), w('upcoming', false, 12, 5), w('calendar-preview', true, 12, 8)
                 ],
                 digest: null, calPreview: null
             },
             {
                 id: 'minimal-today', label: 'Minimal (Today Only)',
                 layout: [
-                    w('next-class', true, 50, 180), w('due-soon', true, 50, 180), w('countdowns', false, 33, 140),
-                    w('reminders', false, 33, 140), w('upcoming', false, 100, 260), w('calendar-preview', false, 100, 420)
+                    w('next-class', true, 6, 4), w('due-soon', true, 6, 4), w('countdowns', false, 4, 3),
+                    w('reminders', false, 4, 3), w('upcoming', false, 12, 5), w('calendar-preview', false, 12, 8)
                 ],
                 digest: { showWeekly: false, showDaily: true, sections: { reminders: false, due: true, events: true, classes: true } },
                 calPreview: { categories: { assignment: true, 'school-event': true, club: false, sports: false, event: true }, showClasses: true, showReminders: false, showDayBadges: true, showNotes: true }
@@ -5694,16 +5763,16 @@ body.dark-theme[data-palette="mint"] {
             {
                 id: 'everything-big', label: 'Everything Big',
                 layout: [
-                    w('next-class', true, 50, 260), w('due-soon', true, 50, 260), w('countdowns', true, 50, 260),
-                    w('reminders', true, 50, 260), w('upcoming', true, 100, 320), w('calendar-preview', true, 100, 480)
+                    w('next-class', true, 6, 5), w('due-soon', true, 6, 5), w('countdowns', true, 6, 5),
+                    w('reminders', true, 6, 5), w('upcoming', true, 12, 6), w('calendar-preview', true, 12, 9)
                 ],
                 digest: null, calPreview: null
             },
             {
                 id: 'calendar-heavy', label: 'Calendar-Heavy',
                 layout: [
-                    w('calendar-preview', true, 100, 620), w('countdowns', true, 50, 160), w('reminders', true, 50, 160),
-                    w('next-class', false, 50, 160), w('due-soon', false, 50, 160), w('upcoming', false, 100, 260)
+                    w('calendar-preview', true, 12, 10), w('countdowns', true, 6, 4), w('reminders', true, 6, 4),
+                    w('next-class', false, 6, 4), w('due-soon', false, 6, 4), w('upcoming', false, 12, 5)
                 ],
                 digest: { showWeekly: true, showDaily: true, sections: { reminders: true, due: true, events: true, classes: true } },
                 calPreview: { categories: { assignment: true, 'school-event': true, club: true, sports: true, event: true }, showClasses: true, showReminders: true, showDayBadges: true, showNotes: true }
@@ -5711,8 +5780,8 @@ body.dark-theme[data-palette="mint"] {
             {
                 id: 'reminders-countdowns', label: 'Reminders & Countdowns Focus',
                 layout: [
-                    w('reminders', true, 100, 300), w('countdowns', true, 100, 300), w('next-class', false, 50, 160),
-                    w('due-soon', false, 50, 160), w('upcoming', false, 100, 260), w('calendar-preview', false, 100, 420)
+                    w('reminders', true, 12, 6), w('countdowns', true, 12, 6), w('next-class', false, 6, 4),
+                    w('due-soon', false, 6, 4), w('upcoming', false, 12, 5), w('calendar-preview', false, 12, 8)
                 ],
                 digest: { showWeekly: false, showDaily: true, sections: { reminders: true, due: false, events: false, classes: false } },
                 calPreview: null
@@ -5720,8 +5789,8 @@ body.dark-theme[data-palette="mint"] {
             {
                 id: 'weekly-planner', label: 'Weekly Planner',
                 layout: [
-                    w('upcoming', true, 100, 380), w('due-soon', true, 50, 160), w('next-class', true, 50, 160),
-                    w('countdowns', true, 33, 140), w('reminders', true, 33, 140), w('calendar-preview', true, 100, 420)
+                    w('upcoming', true, 12, 7), w('due-soon', true, 6, 4), w('next-class', true, 6, 4),
+                    w('countdowns', true, 4, 3), w('reminders', true, 4, 3), w('calendar-preview', true, 12, 8)
                 ],
                 digest: { showWeekly: true, showDaily: false, sections: { reminders: true, due: true, events: true, classes: true } },
                 calPreview: null
@@ -5735,7 +5804,7 @@ body.dark-theme[data-palette="mint"] {
             const select = document.getElementById('home-preset-select');
             if (select) select.value = id;
             const deleteBtn = document.getElementById('home-preset-delete-button');
-            if (deleteBtn) deleteBtn.classList.toggle('hidden', !isHomeUserPresetId(id));
+            if (deleteBtn) deleteBtn.classList.toggle('hidden', id === 'custom');
         }
 
         // ---- User-saved presets: same shape as the built-in ones, just kept separately so a
@@ -5751,6 +5820,25 @@ body.dark-theme[data-palette="mint"] {
         }
         function isHomeUserPresetId(id) {
             return typeof id === 'string' && id.indexOf('user-') === 0;
+        }
+        // Built-in presets are hardcoded (HOME_LAYOUT_PRESETS), so "deleting" one just records
+        // its id here and every lookup below filters it out -- the preset's own definition never
+        // changes, it's just hidden, which also means a future app update can't silently
+        // resurrect one the user removed on purpose.
+        function loadDeletedBuiltinPresetIds() {
+            try {
+                const list = JSON.parse(localStorage.getItem('homeDeletedBuiltinPresetsV1') || '[]');
+                return Array.isArray(list) ? list : [];
+            } catch (e) { return []; }
+        }
+        function saveDeletedBuiltinPresetIds(list) {
+            localStorage.setItem('homeDeletedBuiltinPresetsV1', JSON.stringify(list));
+        }
+        // Every preset the dropdown should currently offer -- built-ins (minus any the user
+        // deleted) followed by user-saved ones, as one flat, ungrouped list.
+        function listAvailableHomePresets() {
+            const deleted = new Set(loadDeletedBuiltinPresetIds());
+            return HOME_LAYOUT_PRESETS.filter(p => !deleted.has(p.id)).concat(loadHomeUserPresets());
         }
         function saveCurrentAsHomePreset() {
             const name = (prompt('Name this preset:') || '').trim();
@@ -5768,12 +5856,20 @@ body.dark-theme[data-palette="mint"] {
             renderHomePresetOptions();
             setHomePresetSelection(preset.id);
         }
-        function deleteHomeUserPreset(id) {
-            const preset = loadHomeUserPresets().find(p => p.id === id);
+        // Handles both kinds -- a user-saved preset gets removed outright, a built-in gets added
+        // to the deleted-id list so it drops out of the dropdown without touching its definition.
+        function deleteHomePreset(id) {
+            if (id === 'custom') return;
+            const preset = findHomePreset(id);
             if (!preset) return;
             showConfirmationModal(`Delete the "${preset.label}" preset? This can't be undone.`, [
                 { text: 'Delete', action: () => {
-                    saveHomeUserPresets(loadHomeUserPresets().filter(p => p.id !== id));
+                    if (isHomeUserPresetId(id)) {
+                        saveHomeUserPresets(loadHomeUserPresets().filter(p => p.id !== id));
+                    } else {
+                        const deleted = loadDeletedBuiltinPresetIds();
+                        if (!deleted.includes(id)) { deleted.push(id); saveDeletedBuiltinPresetIds(deleted); }
+                    }
                     renderHomePresetOptions();
                     if (loadHomePresetSelection() === id) setHomePresetSelection('custom');
                 }},
@@ -5783,24 +5879,23 @@ body.dark-theme[data-palette="mint"] {
         function renderHomePresetOptions() {
             const select = document.getElementById('home-preset-select');
             if (!select) return;
-            const userPresets = loadHomeUserPresets();
             select.innerHTML = `<option value="custom">Custom</option>` +
-                `<optgroup label="Built-in">` +
-                HOME_LAYOUT_PRESETS.map(p => `<option value="${p.id}">${escapeHtml(p.label)}</option>`).join('') +
-                `</optgroup>` +
-                (userPresets.length ? `<optgroup label="Your Presets">` +
-                    userPresets.map(p => `<option value="${p.id}">${escapeHtml(p.label)}</option>`).join('') +
-                    `</optgroup>` : '');
-            select.value = loadHomePresetSelection();
+                listAvailableHomePresets().map(p => `<option value="${p.id}">${escapeHtml(p.label)}</option>`).join('');
+            // A preset selected in an earlier session might since have been deleted -- fall back
+            // to Custom rather than silently leaving the dropdown on a now-missing option.
+            const wanted = loadHomePresetSelection();
+            const stillExists = wanted === 'custom' || listAvailableHomePresets().some(p => p.id === wanted);
+            select.value = stillExists ? wanted : 'custom';
+            if (!stillExists) setHomePresetSelection('custom');
         }
         function findHomePreset(id) {
-            return HOME_LAYOUT_PRESETS.find(p => p.id === id) || loadHomeUserPresets().find(p => p.id === id);
+            return listAvailableHomePresets().find(p => p.id === id);
         }
         function applyHomePreset(id) {
             if (id === 'custom') { setHomePresetSelection('custom'); return; }
             const preset = findHomePreset(id);
             if (!preset) return;
-            saveHomeWidgetLayout(preset.layout ? preset.layout.map(entry => ({ ...entry, size: { ...entry.size } })) : defaultHomeWidgetLayout());
+            saveHomeWidgetLayout(preset.layout ? autoPackHomeLayout(preset.layout.map(entry => clampHomeGridEntry(entry))) : defaultHomeWidgetLayout());
             saveHomeDigestConfig(preset.digest ? { ...preset.digest, sections: { ...preset.digest.sections } } : JSON.parse(JSON.stringify(HOME_DIGEST_DEFAULT_CONFIG)));
             saveCalPreviewConfig(preset.calPreview ? { ...preset.calPreview, categories: { ...preset.calPreview.categories } } : JSON.parse(JSON.stringify(CAL_PREVIEW_DEFAULT_CONFIG)));
             applyHomeWidgetLayout();
@@ -5815,168 +5910,160 @@ body.dark-theme[data-palette="mint"] {
             if (loadHomePresetSelection() !== 'custom') setHomePresetSelection('custom');
         }
 
-        // --- DRAG TO REPOSITION (live grid) ---
-        let draggedHomeWidgetEl = null;
-        function handleHomeWidgetDragStart(e, el) {
-            // Belt-and-suspenders alongside the controls' own draggable="false" (see
-            // enterHomeEditMode): if a drag somehow still starts from inside the remove badge or
-            // resize handle, bail rather than let it hijack that control's own gesture.
-            if (e.target.closest('.home-widget-remove-badge, .home-widget-resize-handle')) {
-                e.preventDefault();
-                return;
-            }
-            draggedHomeWidgetEl = el;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', el.id);
-            // Synchronous, not requestAnimationFrame-deferred: a fast drag can fire dragend
-            // before a deferred rAF callback runs, so the class never gets removed by dragend's
-            // (already-run) cleanup -- it lands afterward and the widget is stuck dimmed forever.
-            el.classList.add('is-dragging');
+        // --- DRAG TO REPOSITION (hard grid-cell snapping, launcher-style: the widget only ever
+        // sits at whole (col,row) grid coordinates, and can't be dropped on top of another
+        // visible widget -- it just stops advancing into occupied cells rather than overlapping,
+        // the same way iOS/Android's own widget grids behave.) ---
+        function handleHomeWidgetPointerDown(e, el) {
+            if (e.target.closest('.home-widget-remove-badge, .home-widget-resize-handle')) return;
+            if (e.button !== undefined && e.button !== 0) return; // left click / primary touch only
+            startHomeWidgetMove(e, el);
         }
-        // Reading-order insertion: a plain X-midpoint comparison (the original approach) only
-        // makes sense in a single-column list. In a real 2-D grid with mixed widths/heights, the
-        // target you're hovering could be in a different row entirely, so this checks Y first --
-        // clearly above the target's row -> insert before it; clearly below -> after it; only
-        // when the pointer is roughly level with the target (same row) does X decide left/right.
-        function handleHomeWidgetDragOver(e, targetEl) {
+        function homeGridMetrics() {
+            const grid = document.querySelector('.home-widget-grid');
+            const gapPx = parseFloat(getComputedStyle(grid).columnGap) || 0;
+            const cellPx = parseFloat(getComputedStyle(grid).getPropertyValue('--cell-size')) ||
+                ((grid.getBoundingClientRect().width - gapPx * (HOME_GRID_COLS - 1)) / HOME_GRID_COLS);
+            return { grid, gapPx, cellPx, stridePx: cellPx + gapPx };
+        }
+        // True for any two widgets whose occupied cell rectangles overlap -- the one collision
+        // check both dragging and resizing lean on.
+        function homeCellsOverlap(a, b) {
+            return a.row < b.row + b.rowSpan && a.row + a.rowSpan > b.row &&
+                   a.col < b.col + b.colSpan && a.col + a.colSpan > b.col;
+        }
+        function startHomeWidgetMove(e, el) {
             e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            if (!draggedHomeWidgetEl || targetEl === draggedHomeWidgetEl) return;
-            const grid = document.querySelector('.home-widget-grid');
-            const rect = targetEl.getBoundingClientRect();
-            const midY = rect.top + rect.height / 2;
-            const rowBand = rect.height * 0.3;
-            let before;
-            if (e.clientY < midY - rowBand) before = true;
-            else if (e.clientY > midY + rowBand) before = false;
-            else before = e.clientX < rect.left + rect.width / 2;
-            grid.insertBefore(draggedHomeWidgetEl, before ? targetEl : targetEl.nextSibling);
-        }
-        function handleHomeWidgetDragEnd() {
-            if (draggedHomeWidgetEl) draggedHomeWidgetEl.classList.remove('is-dragging');
-            draggedHomeWidgetEl = null;
-            commitHomeGridOrderToLayout();
-        }
-        function commitHomeGridOrderToLayout() {
-            const grid = document.querySelector('.home-widget-grid');
-            const domIds = Array.from(grid.children)
-                .filter(el => el.classList.contains('home-widget'))
-                .map(el => HOME_WIDGET_DEFS.find(w => w.el === el.id))
-                .filter(Boolean)
-                .map(w => w.id);
+            const { grid, gapPx, cellPx, stridePx } = homeGridMetrics();
             const layout = loadHomeWidgetLayout();
-            const calendarPreviewEntries = layout.filter(e => e.id === 'calendar-preview');
-            const reordered = domIds.map(id => layout.find(e => e.id === id)).filter(Boolean);
-            saveHomeWidgetLayout(reordered.concat(calendarPreviewEntries));
-            markHomeLayoutCustom();
+            const def = HOME_WIDGET_DEFS.find(w => w.el === el.id);
+            const entry = def && layout.find(en => en.id === def.id);
+            if (!entry) return;
+            const others = layout.filter(en => en.id !== entry.id && en.visible && en.id !== 'calendar-preview');
+
+            const startCol = entry.col, startRow = entry.row;
+            const startClientX = e.clientX, startClientY = e.clientY;
+
+            const skeleton = document.createElement('div');
+            skeleton.className = 'home-widget-resize-skeleton';
+            grid.appendChild(skeleton);
+            el.classList.add('is-dragging');
+
+            const sizePx = (span) => span * cellPx + (span - 1) * gapPx;
+            function paint(col, row, blocked) {
+                skeleton.style.left = ((col - 1) * stridePx) + 'px';
+                skeleton.style.top = ((row - 1) * stridePx) + 'px';
+                skeleton.style.width = sizePx(entry.colSpan) + 'px';
+                skeleton.style.height = sizePx(entry.rowSpan) + 'px';
+                skeleton.classList.toggle('is-blocked', blocked);
+                if (!blocked) {
+                    el.style.gridColumn = `${col} / span ${entry.colSpan}`;
+                    el.style.gridRow = `${row} / span ${entry.rowSpan}`;
+                }
+            }
+            paint(startCol, startRow, false);
+
+            let lastValid = { col: startCol, row: startRow };
+            function target(ev) {
+                const dCol = Math.round((ev.clientX - startClientX) / stridePx);
+                const dRow = Math.round((ev.clientY - startClientY) / stridePx);
+                const col = Math.max(1, Math.min(HOME_GRID_COLS - entry.colSpan + 1, startCol + dCol));
+                const row = Math.max(1, startRow + dRow);
+                const blocked = others.some(other => homeCellsOverlap({ col, row, colSpan: entry.colSpan, rowSpan: entry.rowSpan }, other));
+                return { col, row, blocked };
+            }
+            function onMove(ev) {
+                const { col, row, blocked } = target(ev);
+                paint(col, row, blocked);
+                if (!blocked) lastValid = { col, row };
+            }
+            function onUp() {
+                document.removeEventListener('pointermove', onMove);
+                document.removeEventListener('pointerup', onUp);
+                skeleton.remove();
+                el.classList.remove('is-dragging');
+                entry.col = lastValid.col;
+                entry.row = lastValid.row;
+                el.style.gridColumn = `${entry.col} / span ${entry.colSpan}`;
+                el.style.gridRow = `${entry.row} / span ${entry.rowSpan}`;
+                saveHomeWidgetLayout(layout);
+                markHomeLayoutCustom();
+            }
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp, { once: true });
         }
 
-        // --- DRAG TO RESIZE (corner grip, fully free-form -- any width%/height(px) within the
-        // sane min/max bounds in HOME_WIDGET_SIZE_LIMITS, no snapping. A live skeleton outline
-        // tracks the target footprint the same way Control Center's own resize preview does.) ---
+        // --- DRAG TO RESIZE (corner grip, hard grid-cell snapping -- colSpan/rowSpan only ever
+        // change by whole cells, and growing stops dead at the edge of the next occupied cell in
+        // that direction, exactly like resizing a widget on an Android launcher.) ---
         function startHomeWidgetResize(e, el) {
             e.preventDefault();
             e.stopPropagation();
-            const grid = document.querySelector('.home-widget-grid');
-            const gridRect = grid.getBoundingClientRect();
-            const elRect = el.getBoundingClientRect();
-            const startWidthPx = elRect.width;
-            const startHeightPx = elRect.height;
+            const { grid, gapPx, cellPx, stridePx } = homeGridMetrics();
+            const layout = loadHomeWidgetLayout();
+            const def = HOME_WIDGET_DEFS.find(w => w.el === el.id);
+            const entry = def && layout.find(en => en.id === def.id);
+            if (!entry) return;
+            const others = layout.filter(en => en.id !== entry.id && en.visible && en.id !== 'calendar-preview');
+            const col = entry.col, row = entry.row;
+            const startColSpan = entry.colSpan, startRowSpan = entry.rowSpan;
             const startClientX = e.clientX, startClientY = e.clientY;
-            const elLeft = el.offsetLeft, elTop = el.offsetTop;
-            const L = HOME_WIDGET_SIZE_LIMITS;
-            const minWidthPx = gridRect.width * L.minWidthPct / 100;
-            const maxWidthPx = gridRect.width * L.maxWidthPct / 100;
 
             const skeleton = document.createElement('div');
             skeleton.className = 'home-widget-resize-skeleton';
             grid.appendChild(skeleton);
 
-            el.setAttribute('draggable', 'false'); // don't fight the native drag-reorder while resizing
+            const sizePx = (span) => span * cellPx + (span - 1) * gapPx;
+            function paint(colSpan, rowSpan) {
+                skeleton.style.left = ((col - 1) * stridePx) + 'px';
+                skeleton.style.top = ((row - 1) * stridePx) + 'px';
+                skeleton.style.width = sizePx(colSpan) + 'px';
+                skeleton.style.height = sizePx(rowSpan) + 'px';
+                el.style.gridColumn = `${col} / span ${colSpan}`;
+                el.style.gridRow = `${row} / span ${rowSpan}`;
+            }
+            paint(startColSpan, startRowSpan);
 
-            // Magnetic snapping, not rigid steps: still a free-form drag, but the width/height
-            // gently catch on values that are actually meaningful -- clean fractions (1/4, 1/3,
-            // 1/2, 2/3, 3/4, full), round row-height multiples, *and* dynamically, the exact
-            // current size of every other visible widget (so "match Reminders' width" is a real
-            // snap target, not just guesswork) plus "fill the rest of this row" measured from
-            // this widget's own left edge to the grid's right edge. Only within a small pixel
-            // threshold of the pointer, so most of the drag stays fully continuous.
-            const gridStyle = getComputedStyle(grid);
-            const gapPx = parseFloat(gridStyle.columnGap || gridStyle.gap) || 0;
-            const siblingRects = Array.from(grid.children)
-                .filter(child => child !== el && child.classList.contains('home-widget') && !child.classList.contains('hidden'))
-                .map(child => child.getBoundingClientRect());
-            const siblingWidths = siblingRects.map(r => r.width);
-            const siblingHeights = siblingRects.map(r => r.height);
-            const fillRowWidthPx = gridRect.right - (gridRect.left + elLeft) - 0; // remaining width to the grid's right edge from this widget's own left edge
-
-            const WIDTH_SNAP_FRACTIONS = [1 / 4, 1 / 3, 1 / 2, 2 / 3, 3 / 4, 1];
-            const HEIGHT_SNAP_UNIT = 60;
-            const SNAP_THRESHOLD_PX = 14;
-            function snapValue(value, candidates) {
-                let closest = candidates[0], closestDist = Math.abs(value - candidates[0]);
-                for (let i = 1; i < candidates.length; i++) {
-                    const dist = Math.abs(value - candidates[i]);
-                    if (dist < closestDist) { closest = candidates[i]; closestDist = dist; }
+            function collides(colSpan, rowSpan) {
+                return others.some(other => homeCellsOverlap({ col, row, colSpan, rowSpan }, other));
+            }
+            let lastValid = { colSpan: startColSpan, rowSpan: startRowSpan };
+            function target(ev) {
+                const dCol = Math.round((ev.clientX - startClientX) / stridePx);
+                const dRow = Math.round((ev.clientY - startClientY) / stridePx);
+                const maxColSpan = HOME_GRID_COLS - col + 1;
+                let colSpan = Math.max(1, Math.min(maxColSpan, startColSpan + dCol));
+                let rowSpan = Math.max(1, startRowSpan + dRow);
+                // Each axis is checked against the OTHER axis's starting size, not its tentative
+                // one -- a diagonal drag that only really collides on the row axis must not also
+                // eat into the column axis's headroom (and vice versa); testing against a moving
+                // target on both sides at once conflates the two collisions into one.
+                while (colSpan > 1 && collides(colSpan, startRowSpan)) colSpan--;
+                while (rowSpan > 1 && collides(startColSpan, rowSpan)) rowSpan--;
+                // Belt-and-suspenders: the two independent checks above can't catch a widget that
+                // only overlaps the *combined* grown box (e.g. sitting exactly in the new corner),
+                // so do one final joint check and shrink alternately until the actual committed
+                // box is guaranteed collision-free.
+                while ((colSpan > 1 || rowSpan > 1) && collides(colSpan, rowSpan)) {
+                    if (colSpan > 1) colSpan--; else rowSpan--;
                 }
-                return closestDist <= SNAP_THRESHOLD_PX ? closest : value;
+                return { colSpan, rowSpan };
             }
-            function snappedWidth(widthPx) {
-                const candidates = WIDTH_SNAP_FRACTIONS.map(f => gridRect.width * f)
-                    .concat(siblingWidths)
-                    .concat([fillRowWidthPx])
-                    .filter(px => px >= minWidthPx && px <= maxWidthPx);
-                return snapValue(widthPx, candidates);
-            }
-            function snappedHeight(heightPx) {
-                const candidates = [];
-                for (let h = Math.ceil(L.minHeightPx / HEIGHT_SNAP_UNIT) * HEIGHT_SNAP_UNIT; h <= L.maxHeightPx; h += HEIGHT_SNAP_UNIT) candidates.push(h);
-                siblingHeights.forEach(h => { if (h >= L.minHeightPx && h <= L.maxHeightPx) candidates.push(h); });
-                return snapValue(heightPx, candidates);
-            }
-
-            function apply(widthPx, heightPx, snapped) {
-                el.style.width = widthPx + 'px';
-                el.style.height = heightPx + 'px';
-                skeleton.style.left = elLeft + 'px';
-                skeleton.style.top = elTop + 'px';
-                skeleton.style.width = widthPx + 'px';
-                skeleton.style.height = heightPx + 'px';
-                skeleton.classList.toggle('is-snapped', !!snapped);
-            }
-            function targetSize(ev) {
-                const rawWidthPx = Math.min(maxWidthPx, Math.max(minWidthPx, startWidthPx + (ev.clientX - startClientX)));
-                const rawHeightPx = Math.min(L.maxHeightPx, Math.max(L.minHeightPx, startHeightPx + (ev.clientY - startClientY)));
-                const widthPx = snappedWidth(rawWidthPx);
-                const heightPx = snappedHeight(rawHeightPx);
-                return { widthPx, heightPx, snapped: widthPx !== rawWidthPx || heightPx !== rawHeightPx };
-            }
-            apply(startWidthPx, startHeightPx);
-
             function onMove(ev) {
-                const { widthPx, heightPx, snapped } = targetSize(ev);
-                apply(widthPx, heightPx, snapped);
+                const { colSpan, rowSpan } = target(ev);
+                paint(colSpan, rowSpan);
+                lastValid = { colSpan, rowSpan };
             }
-            function onUp(ev) {
+            function onUp() {
                 document.removeEventListener('pointermove', onMove);
                 document.removeEventListener('pointerup', onUp);
                 skeleton.remove();
-                el.setAttribute('draggable', 'true');
-                const { widthPx, heightPx } = targetSize(ev);
-                apply(widthPx, heightPx);
-                const def = HOME_WIDGET_DEFS.find(w => w.el === el.id);
-                if (def) {
-                    const layout = loadHomeWidgetLayout();
-                    const entry = layout.find(en => en.id === def.id);
-                    // el.style.width was set in px during the drag for 1:1 tracking with the
-                    // pointer; converted back to a percentage here so the saved size (and the
-                    // regular, non-dragging render path in applyHomeWidgetLayout) stays
-                    // resolution-independent and reflows correctly if the window is resized later.
-                    if (entry) entry.size = { widthPct: (widthPx / gridRect.width) * 100, heightPx };
-                    saveHomeWidgetLayout(layout);
-                    applyHomeWidgetLayout();
-                    markHomeLayoutCustom();
-                }
+                entry.colSpan = lastValid.colSpan;
+                entry.rowSpan = lastValid.rowSpan;
+                paint(entry.colSpan, entry.rowSpan);
+                saveHomeWidgetLayout(layout);
+                applyHomeWidgetLayout();
+                markHomeLayoutCustom();
             }
             document.addEventListener('pointermove', onMove);
             document.addEventListener('pointerup', onUp, { once: true });
@@ -6737,7 +6824,8 @@ body.dark-theme[data-palette="mint"] {
 
         // ===================== GLOBAL KEYBOARD SHORTCUTS =====================
         // 0-8 jump straight to a class by period (0 = Advisory, matching today's A/B day),
-        // D/W/M/A/T mirror Google Calendar's own view shortcuts, N quick-adds a reminder.
+        // D/W/M/A/T mirror Google Calendar's own view shortcuts, N quick-adds a reminder,
+        // H/C/P/G jump to a screen, S opens Settings, ? shows this list.
         // Bound once on document so these fire from any screen, not just the relevant one.
         function isTypingTarget(el) {
             if (!el) return false;
@@ -6755,13 +6843,35 @@ body.dark-theme[data-palette="mint"] {
         function openClassForPeriodShortcut(n) {
             if (n === 0) {
                 const advisory = findClassBySlot('ADVISORY');
-                if (advisory && advisory.url && advisory.url !== '#') window.location.href = advisory.url;
+                if (!advisory) { showActionToast('No class assigned to Advisory.'); return; }
+                if (!advisory.url || advisory.url === '#') { showActionToast(`No link set for ${advisory.title || 'Advisory'}.`); return; }
+                window.location.href = advisory.url;
                 return;
             }
-            const dayType = getDayType(new Date());
-            if (!dayType) return;
+            // Deliberately NOT getDayType() -- that reads userADaysCal/userBDaysCal, which only
+            // get loaded once the Calendar screen has been opened this session (see initCalendar).
+            // Land on Home and hit a number key without ever visiting Calendar first and it was
+            // always empty, so the shortcut silently did nothing. userADays/userBDays are the
+            // same data loaded unconditionally at startup -- getCurrentOrNextPeriodInfo (the Home
+            // "Next Class" widget) already relies on these for exactly this reason.
+            const now = new Date();
+            const todayKey = dateKey(now);
+            const isADay = userADays.includes(todayKey);
+            const isBDay = userBDays.includes(todayKey);
+            if (isNoSchoolDay(now) || (!isADay && !isBDay)) { showActionToast('No school scheduled today.'); return; }
+            const dayType = isADay ? 'A' : 'B';
             const classItem = findClassBySlot(`${dayType}_P${n}`);
-            if (classItem && classItem.url && classItem.url !== '#') window.location.href = classItem.url;
+            if (!classItem) { showActionToast(`No class assigned to period ${n} today.`); return; }
+            if (!classItem.url || classItem.url === '#') { showActionToast(`No link set for ${classItem.title || 'this class'}.`); return; }
+            window.location.href = classItem.url;
+        }
+        function showKeyboardShortcutsHelp() {
+            showConfirmationModal(
+                'H Home  ·  C Classes  ·  P Planner  ·  G Grades  ·  S Settings  ·  N Add reminder  ·  ' +
+                '0–8 open that period’s class link (0 = Advisory)  ·  D/W/M/A calendar day/week/month/agenda  ·  T jump to today  ·  ? this list',
+                [{ text: 'Got it', action: () => {} }],
+                { clickAnywhereConfirms: true }
+            );
         }
         function setupKeyboardShortcuts() {
             document.addEventListener('keydown', (e) => {
@@ -6776,6 +6886,7 @@ body.dark-theme[data-palette="mint"] {
                     openClassForPeriodShortcut(parseInt(e.key, 10));
                     return;
                 }
+                if (e.key === '?') { showKeyboardShortcutsHelp(); return; }
                 switch (e.key.toLowerCase()) {
                     case 'd': switchAppView('calendar'); switchView('day'); break;
                     case 'w': switchAppView('calendar'); switchView('week'); break;
@@ -6783,6 +6894,11 @@ body.dark-theme[data-palette="mint"] {
                     case 'a': switchAppView('calendar'); switchView('agenda'); break;
                     case 't': switchAppView('calendar'); goToday(); break;
                     case 'n': e.preventDefault(); openReminderModal(); break;
+                    case 'h': switchAppView('home'); break;
+                    case 'c': switchAppView('classes'); break;
+                    case 'p': switchAppView('reminders'); break;
+                    case 'g': switchAppView('grades'); break;
+                    case 's': e.preventDefault(); openAllSettingsModal(); break;
                 }
             });
         }
