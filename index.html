@@ -2477,6 +2477,11 @@ body.dark-theme[data-palette="mint"] {
     <div id="no-school-toast" class="no-school-toast hidden" role="status" aria-live="polite"></div>
     <div id="action-toast" class="no-school-toast hidden" role="status" aria-live="polite"></div>
 
+    <div id="simulated-date-banner" class="hidden" role="status" style="position:fixed; top:0; left:0; right:0; z-index:60; background:#b45309; color:#fff; font-size:0.75rem; font-weight:600; text-align:center; padding:0.35rem 0.75rem; display:flex; align-items:center; justify-content:center; gap:0.75rem;">
+        <span id="simulated-date-banner-text"></span>
+        <button type="button" onclick="clearSimulatedDateOverride(); location.reload();" style="background:rgba(255,255,255,0.2); border:none; color:#fff; border-radius:0.375rem; padding:0.1rem 0.5rem; font-size:0.7rem; cursor:pointer;">Use real time</button>
+    </div>
+
     <!-- First-run onboarding: only shown when no local data exists yet at all (see isFirstRun in
          DOMContentLoaded) -- deliberately no backdrop-click dismiss, this is a one-time prompt. -->
     <div id="onboarding-sync-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-50 hidden opacity-0">
@@ -3123,6 +3128,21 @@ body.dark-theme[data-palette="mint"] {
                         <div id="portal-sync-unmatched-list" class="mt-3"></div>
                     </div>
                 </div>
+
+                <div class="settings-category" data-settings-category="simulate-date">
+                    <div class="mb-4">
+                        <h4 class="text-2xl font-semibold mb-3">Simulate Date</h4>
+                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                            Test the app as if it were a different date/time -- class schedules, countdowns, and "no school today" logic all use this instead of your real system clock while it's active. It keeps ticking forward in real time from whatever moment you pick, so clocks and countdowns still move. Nothing here is sent anywhere; it only affects this browser tab.
+                        </p>
+                        <div class="flex flex-wrap gap-3 items-center">
+                            <input type="datetime-local" id="simulate-date-input" class="form-input" style="max-width:16rem;">
+                            <button type="button" id="simulate-date-apply-btn" class="modal-footer-button bg-blue-600 text-white">Apply</button>
+                            <button type="button" id="simulate-date-clear-btn" class="modal-footer-button">Clear (use real time)</button>
+                        </div>
+                        <div id="simulate-date-status" class="text-xs text-gray-600 dark:text-gray-300 mt-2"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="flex justify-end gap-4 mt-6 flex-shrink-0">
@@ -3154,6 +3174,73 @@ body.dark-theme[data-palette="mint"] {
     </div>
 
     <script>
+        // ===================== SIMULATED DATE/TIME (testing aid) =====================
+        // Lets the app pretend it's a different date/time than the real system clock, so class
+        // schedules, countdowns, "no school today" logic, etc. can be exercised before the school
+        // year actually starts. appNow() is a drop-in replacement for `appNow()` used everywhere
+        // in the app that means "right now" -- when an override is active it returns a Date
+        // anchored to the chosen moment but still ticking forward in real time (so countdowns/
+        // clocks keep moving instead of freezing), otherwise it's identical to `appNow()`.
+        let simulatedDateOverride = null; // { simMs, realMsAtSet } or null
+        function loadSimulatedDateOverride() {
+            try {
+                const raw = localStorage.getItem('simulatedDateOverrideV1');
+                if (!raw) { simulatedDateOverride = null; return; }
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed.simMs === 'number' && typeof parsed.realMsAtSet === 'number') {
+                    simulatedDateOverride = parsed;
+                } else {
+                    simulatedDateOverride = null;
+                }
+            } catch (e) { simulatedDateOverride = null; }
+        }
+        loadSimulatedDateOverride();
+        function appNow() {
+            if (!simulatedDateOverride) return new Date();
+            const elapsed = Date.now() - simulatedDateOverride.realMsAtSet;
+            return new Date(simulatedDateOverride.simMs + elapsed);
+        }
+        function appNowMs() {
+            return appNow().getTime();
+        }
+        function setSimulatedDateOverride(dateLike) {
+            const simMs = dateLike instanceof Date ? dateLike.getTime() : Date.parse(dateLike);
+            if (isNaN(simMs)) return false;
+            simulatedDateOverride = { simMs, realMsAtSet: Date.now() };
+            localStorage.setItem('simulatedDateOverrideV1', JSON.stringify(simulatedDateOverride));
+            updateSimulatedDateBanner();
+            return true;
+        }
+        function clearSimulatedDateOverride() {
+            simulatedDateOverride = null;
+            localStorage.removeItem('simulatedDateOverrideV1');
+            updateSimulatedDateBanner();
+        }
+        function updateSimulatedDateBanner() {
+            const banner = document.getElementById('simulated-date-banner');
+            if (!banner) return;
+            if (!simulatedDateOverride) { banner.classList.add('hidden'); return; }
+            banner.classList.remove('hidden');
+            const label = banner.querySelector('#simulated-date-banner-text');
+            if (label) label.textContent = 'Simulated date/time: ' + appNow().toLocaleString();
+        }
+        setInterval(() => { if (simulatedDateOverride) updateSimulatedDateBanner(); }, 30000);
+        function toDatetimeLocalValue(date) {
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+        function refreshSimulateDateUI() {
+            const input = document.getElementById('simulate-date-input');
+            const status = document.getElementById('simulate-date-status');
+            if (!input) return;
+            input.value = toDatetimeLocalValue(appNow());
+            if (status) {
+                status.textContent = simulatedDateOverride
+                    ? 'Currently simulating: ' + appNow().toLocaleString()
+                    : 'Using your real system clock.';
+            }
+        }
+
         // ===================== APP-LEVEL VIEW SWITCHING (SPA, no page reload) =====================
         let activeAppView = 'classes';
         let calendarInitialized = false;
@@ -3209,7 +3296,8 @@ body.dark-theme[data-palette="mint"] {
             { id: 'calendar', label: 'Calendar' },
             { id: 'help', label: 'Help' },
             { id: 'backup', label: 'Backup & Restore' },
-            { id: 'portal-sync', label: 'Portal Sync' }
+            { id: 'portal-sync', label: 'Portal Sync' },
+            { id: 'simulate-date', label: 'Simulate Date' }
         ];
         function renderSettingsTabs() {
             const tabs = document.getElementById('settings-tabs');
@@ -3241,6 +3329,7 @@ body.dark-theme[data-palette="mint"] {
             renderExternalFeedsList();
             updateGistSyncUI();
             renderPortalSyncUnmatchedList();
+            refreshSimulateDateUI();
 
             document.getElementById('all-settings-scheduling-slot').appendChild(document.getElementById('scheduling-settings-body'));
             document.getElementById('all-settings-calendar-slot').appendChild(document.getElementById('calendar-settings-body'));
@@ -3315,12 +3404,12 @@ body.dark-theme[data-palette="mint"] {
                 const value = localStorage.getItem(key);
                 if (value !== null) data[key] = value;
             });
-            const payload = { app: 'school-dashboard', exportedAt: new Date().toISOString(), data };
+            const payload = { app: 'school-dashboard', exportedAt: appNow().toISOString(), data };
             const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `school-dashboard-backup-${dateKey(new Date())}.json`;
+            a.download = `school-dashboard-backup-${dateKey(appNow())}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -5250,7 +5339,7 @@ body.dark-theme[data-palette="mint"] {
         // Single source of truth for the "Time: ... | Date: ..." subheader shown under Home,
         // Classes, and Calendar's titles -- called every tick so none of them go stale.
         function updateClockDisplays() {
-            const date = new Date();
+            const date = appNow();
             const hour12 = (localStorage.getItem('timeFormat') || '12') === '12';
             const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: hour12 });
             const formattedDate = `${date.getMonth() + 1}.${date.getDate()}.${date.getFullYear()}`;
@@ -5278,8 +5367,8 @@ body.dark-theme[data-palette="mint"] {
                 // unless the displayed minute would actually change, or something is imminent
                 // enough that formatDueCountdown is showing live seconds.
                 const nextDue = getNextDueAssignment();
-                const isImminent = nextDue && (nextDue.dueAt - Date.now()) < 60000;
-                const minuteBucket = Math.floor(Date.now() / 60000);
+                const isImminent = nextDue && (nextDue.dueAt - appNowMs()) < 60000;
+                const minuteBucket = Math.floor(appNowMs() / 60000);
                 if (isImminent || minuteBucket !== lastHomeDueSoonMinuteBucket) {
                     lastHomeDueSoonMinuteBucket = minuteBucket;
                     renderHomeDueSoon();
@@ -6137,7 +6226,7 @@ body.dark-theme[data-palette="mint"] {
         function renderHomeDueSoon() {
             const container = document.getElementById('home-due-soon-content');
             if (!container) return;
-            const now = Date.now();
+            const now = appNowMs();
             const upcoming = canvasAssignments.filter(a => a.dueAt >= now && !isAssignmentDismissed(a)).slice(0, 8);
             if (!upcoming.length) {
                 container.innerHTML = `<p class="home-widget-empty">Nothing due soon.</p>`;
@@ -6156,8 +6245,8 @@ body.dark-theme[data-palette="mint"] {
                 groups[groups.length - 1].items.push(a);
             });
 
-            const todayKey = dateKey(new Date());
-            const tomorrowDate = new Date();
+            const todayKey = dateKey(appNow());
+            const tomorrowDate = appNow();
             tomorrowDate.setDate(tomorrowDate.getDate() + 1);
             const tomorrowKey = dateKey(tomorrowDate);
 
@@ -6202,7 +6291,7 @@ body.dark-theme[data-palette="mint"] {
         function renderHomeUpcoming() {
             const container = document.getElementById('home-upcoming-content');
             if (!container) return;
-            const today = new Date();
+            const today = appNow();
             today.setHours(0, 0, 0, 0);
 
             const todaysClasses = getClassesForDate(today);
@@ -6243,7 +6332,7 @@ body.dark-theme[data-palette="mint"] {
 
         // --- PERIOD COUNTDOWN CHIP ---
         function getCurrentOrNextPeriodInfo() {
-            const now = new Date();
+            const now = appNow();
             const dateString = `${now.getMonth() + 1}.${now.getDate()}.${now.getFullYear()}`;
             const isADay = userADays.includes(dateString);
             const isBDay = userBDays.includes(dateString);
@@ -6364,7 +6453,7 @@ body.dark-theme[data-palette="mint"] {
                 chip.classList.add('hidden');
                 return;
             }
-            const msLeft = next.dueAt - Date.now();
+            const msLeft = next.dueAt - appNowMs();
             if (msLeft > ASSIGNMENT_COUNTDOWN_WINDOW_MS) {
                 chip.classList.add('hidden');
                 return;
@@ -6399,7 +6488,7 @@ body.dark-theme[data-palette="mint"] {
         function checkAssignmentDueSoonPrompt() {
             const next = getNextDueAssignment();
             if (!next || !next.courseCode) return;
-            const msLeft = next.dueAt - Date.now();
+            const msLeft = next.dueAt - appNowMs();
             if (msLeft > ASSIGNMENT_PROMPT_WINDOW_MS) return;
 
             const key = next.rawTitle + '|' + next.dueAt;
@@ -6446,7 +6535,7 @@ body.dark-theme[data-palette="mint"] {
         // Returns { title, url } for the class in session right now, or null if there isn't one
         // (no school today, between periods, or the matched class has no URL set).
         function getScheduledClassUrl() {
-            const now = new Date();
+            const now = appNow();
             const year = now.getFullYear();
             const month = now.getMonth() + 1;
             const dotw = now.getDay();
@@ -6513,7 +6602,7 @@ body.dark-theme[data-palette="mint"] {
         // ===================== CALENDAR =====================
         // =====================================================================================
         let calendarView = localStorage.getItem('calendarView') || 'month';
-        let currentDate = new Date();
+        let currentDate = appNow();
         let selectedDayKey = null;
 
         // --- CATEGORY FILTER (calendar page) ---
@@ -6616,7 +6705,7 @@ body.dark-theme[data-palette="mint"] {
         // import that left a "No School" day note (see isNoSchoolDay).
         let noSchoolToastHideTimer = null;
         function checkNoSchoolToast() {
-            const today = new Date();
+            const today = appNow();
             if (!isNoSchoolDay(today)) return;
             const key = dateKey(today);
             const sessionFlag = 'noSchoolToastShown:' + key;
@@ -6857,7 +6946,7 @@ body.dark-theme[data-palette="mint"] {
             // always empty, so the shortcut silently did nothing. userADays/userBDays are the
             // same data loaded unconditionally at startup -- getCurrentOrNextPeriodInfo (the Home
             // "Next Class" widget) already relies on these for exactly this reason.
-            const now = new Date();
+            const now = appNow();
             const todayKey = dateKey(now);
             const isADay = userADays.includes(todayKey);
             const isBDay = userBDays.includes(todayKey);
@@ -7031,7 +7120,7 @@ body.dark-theme[data-palette="mint"] {
             return reminders.filter(r => r.weekdays.includes(dow));
         }
         function getTodaysReminders() {
-            return getRemindersForDate(new Date());
+            return getRemindersForDate(appNow());
         }
         function removeReminder(id) {
             reminders = reminders.filter(r => r.id !== id);
@@ -7067,7 +7156,7 @@ body.dark-theme[data-palette="mint"] {
         function openReminderModal(reminderId) {
             editingReminderId = reminderId || null;
             const existing = editingReminderId ? reminders.find(r => r.id === editingReminderId) : null;
-            reminderModalSelectedDays = new Set(existing ? existing.weekdays : [new Date().getDay()]);
+            reminderModalSelectedDays = new Set(existing ? existing.weekdays : [appNow().getDay()]);
             const input = document.getElementById('reminder-text-input');
             input.value = existing ? existing.text : '';
             document.getElementById('reminder-modal-title').textContent = existing ? 'Edit Reminder' : 'Add Reminder';
@@ -7225,14 +7314,14 @@ body.dark-theme[data-palette="mint"] {
             const previewConfig = loadCalPreviewConfig();
             const filterPreviewEvents = (events) => events.filter(e => previewConfig.categories[categoryGroup(e.category)] !== false);
 
-            const previewDate = new Date();
+            const previewDate = appNow();
             const year = previewDate.getFullYear();
             const month = previewDate.getMonth();
             const firstOfMonth = new Date(year, month, 1);
             const weekStart = parseInt(localStorage.getItem('weekStart') || '0', 10);
             const gridStart = new Date(firstOfMonth);
             gridStart.setDate(gridStart.getDate() - ((firstOfMonth.getDay() - weekStart + 7) % 7));
-            const today = new Date();
+            const today = appNow();
             const weekdayLabelsBase = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const weekdayHeaders = Array.from({ length: 7 }, (_, i) => weekdayLabelsBase[(weekStart + i) % 7])
                 .map(label => `<div class="mini-weekday-label">${label}</div>`)
@@ -7459,7 +7548,7 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function goToday() {
-            currentDate = new Date();
+            currentDate = appNow();
             selectedDayKey = dateKey(currentDate);
             dayViewIsEditing = false;
             renderCalendar();
@@ -7521,7 +7610,7 @@ body.dark-theme[data-palette="mint"] {
             const firstOfMonth = new Date(year, month, 1);
             const gridStart = new Date(firstOfMonth);
             gridStart.setDate(gridStart.getDate() - ((firstOfMonth.getDay() - weekStart + 7) % 7));
-            const today = new Date();
+            const today = appNow();
 
             const weekdayLabelsBase = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const weekdayHeaders = Array.from({ length: 7 }, (_, i) => weekdayLabelsBase[(weekStart + i) % 7])
@@ -7576,7 +7665,7 @@ body.dark-theme[data-palette="mint"] {
             const weekStart = getWeekStart();
             const start = new Date(currentDate);
             start.setDate(start.getDate() - ((start.getDay() - weekStart + 7) % 7));
-            const today = new Date();
+            const today = appNow();
 
             let cols = '';
             for (let i = 0; i < 7; i++) {
@@ -7823,7 +7912,7 @@ body.dark-theme[data-palette="mint"] {
                 `;
             }).join('');
 
-            const isToday = isSameDay(currentDate, new Date());
+            const isToday = isSameDay(currentDate, appNow());
             const nowLineHtml = isToday ? `<div class="day-grid-now-line" id="day-grid-now-line"><span class="day-grid-now-dot"></span></div>` : '';
 
             return `
@@ -7853,7 +7942,7 @@ body.dark-theme[data-palette="mint"] {
             if (!container || container.dataset.dayGridIsToday !== 'true') return;
             const gridStart = Number(container.dataset.dayGridStart);
             const gridEnd = Number(container.dataset.dayGridEnd);
-            const now = new Date();
+            const now = appNow();
             const nowMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
             if (nowMin < gridStart || nowMin > gridEnd) {
                 line.style.display = 'none';
@@ -7925,7 +8014,7 @@ body.dark-theme[data-palette="mint"] {
             });
             const allDays = Array.from(dateMap.values()).sort((a, b) => a.date - b.date);
 
-            const today = new Date();
+            const today = appNow();
             const windowStart = new Date(today);
             windowStart.setHours(0,0,0,0);
             const windowEnd = new Date(windowStart);
@@ -8033,7 +8122,7 @@ body.dark-theme[data-palette="mint"] {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `school-calendar-notes-${dateKey(new Date())}.json`;
+            a.download = `school-calendar-notes-${dateKey(appNow())}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -8855,9 +8944,9 @@ body.dark-theme[data-palette="mint"] {
             const cache = getExternalFeedCache();
             const now = Date.now();
             const sixHours = 6 * 60 * 60 * 1000;
-            const windowStart = new Date();
+            const windowStart = appNow();
             windowStart.setMonth(windowStart.getMonth() - 1);
-            const windowEnd = new Date();
+            const windowEnd = appNow();
             windowEnd.setMonth(windowEnd.getMonth() + 6);
 
             const statusEl = document.getElementById('external-feeds-status');
@@ -9075,7 +9164,7 @@ body.dark-theme[data-palette="mint"] {
         // that didn't parse but still carry a score.
         function gradeStatusBadgeHtml(status, dueAt, submittedAt) {
             const normalized = (status || '').toLowerCase();
-            const overdueUnsubmitted = !submittedAt && typeof dueAt === 'number' && !isNaN(dueAt) && dueAt < Date.now();
+            const overdueUnsubmitted = !submittedAt && typeof dueAt === 'number' && !isNaN(dueAt) && dueAt < appNowMs();
             if (normalized.includes('missing') || overdueUnsubmitted) {
                 return `<span class="category-badge" style="margin-left:0.5rem; background:#ef4444; color:#fff;">Missing</span>`;
             }
@@ -9129,7 +9218,7 @@ body.dark-theme[data-palette="mint"] {
         // separate, factual data pipeline (externalEventsByDate) and stay untouched; "done" only
         // curates the actionable Due Soon / Today-brief lists.
         function getNextDueAssignment() {
-            const now = Date.now();
+            const now = appNowMs();
             return canvasAssignments.find(a => a.dueAt >= now && !isAssignmentDismissed(a)) || null;
         }
 
@@ -9282,7 +9371,7 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function buildIcsFeed() {
-            const dtstamp = formatIcsTimestamp(new Date());
+            const dtstamp = formatIcsTimestamp(appNow());
             const lines = [
                 'BEGIN:VCALENDAR',
                 'VERSION:2.0',
@@ -9557,7 +9646,7 @@ body.dark-theme[data-palette="mint"] {
                 const value = localStorage.getItem(key);
                 if (value !== null) data[key] = value;
             });
-            return JSON.stringify({ app: 'school-dashboard', exportedAt: new Date().toISOString(), data }, null, 2);
+            return JSON.stringify({ app: 'school-dashboard', exportedAt: appNow().toISOString(), data }, null, 2);
         }
 
         // Shared by both the file-based Import and the gist-based Restore -- applies a decoded
@@ -10078,7 +10167,7 @@ body.dark-theme[data-palette="mint"] {
         // right now (e.g. "next No School day" type but none are scheduled in the future).
         function countdownTargetDate(cd) {
             if (cd.type === 'no-school') {
-                const today = new Date();
+                const today = appNow();
                 today.setHours(0, 0, 0, 0);
                 const keys = new Set(userNoSchoolDaysCal);
                 Object.keys(dayNotes).forEach(k => { if (dayNotes[k].title === 'No School') keys.add(k); });
@@ -10095,7 +10184,7 @@ body.dark-theme[data-palette="mint"] {
         // clusters of consecutive No School days (breaks) and titled day notes (events).
         // Each cluster/note becomes a one-click chip that fills the label + date fields.
         function computeCountdownSuggestions() {
-            const today = new Date();
+            const today = appNow();
             today.setHours(0, 0, 0, 0);
             const maxDate = new Date(today);
             maxDate.setDate(maxDate.getDate() + 240);
@@ -10170,7 +10259,7 @@ body.dark-theme[data-palette="mint"] {
             renderCountdownTypeValueInput(iso);
         }
         function daysUntil(targetDate) {
-            const today = new Date();
+            const today = appNow();
             today.setHours(0, 0, 0, 0);
             const target = new Date(targetDate);
             target.setHours(0, 0, 0, 0);
@@ -10689,11 +10778,11 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function dismissDailyDigest() {
-            localStorage.setItem('dismissedDailyDigestDate', dateKey(new Date()));
+            localStorage.setItem('dismissedDailyDigestDate', dateKey(appNow()));
             renderDigestBanner();
         }
         function dismissWeeklyDigest() {
-            localStorage.setItem('dismissedWeeklyDigestKey', getWeekMondayKey(new Date()));
+            localStorage.setItem('dismissedWeeklyDigestKey', getWeekMondayKey(appNow()));
             renderDigestBanner();
         }
         function restoreDailyDigest() {
@@ -10706,7 +10795,7 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function buildWeeklyDigestData() {
-            const today = new Date();
+            const today = appNow();
             today.setHours(0, 0, 0, 0);
             let dueCount = 0, eventCount = 0;
             const items = [];
@@ -10725,9 +10814,9 @@ body.dark-theme[data-palette="mint"] {
             const container = document.getElementById('digest-banner-container');
             if (!container) return;
 
-            const todayKey = dateKey(new Date());
-            const weekKey = getWeekMondayKey(new Date());
-            const isMonday = new Date().getDay() === 1;
+            const todayKey = dateKey(appNow());
+            const weekKey = getWeekMondayKey(appNow());
+            const isMonday = appNow().getDay() === 1;
             const dailyDismissed = localStorage.getItem('dismissedDailyDigestDate') === todayKey;
             const weeklyDismissed = localStorage.getItem('dismissedWeeklyDigestKey') === weekKey;
             const digestCfg = loadHomeDigestConfig();
@@ -10789,7 +10878,7 @@ body.dark-theme[data-palette="mint"] {
             }
 
             if (digestCfg.showDaily && !dailyDismissed) {
-                const today = new Date();
+                const today = appNow();
                 const dueToday = canvasAssignments.filter(a => dateKey(new Date(a.dueAt)) === todayKey && !isAssignmentDismissed(a));
                 const eventsToday = getExternalEventsForDate(today).filter(ev => ev.category !== 'assignment');
                 const dayType = getDayType(today);
@@ -10891,6 +10980,7 @@ body.dark-theme[data-palette="mint"] {
             // has genuinely made no changes since).
             const isFirstRun = !localStorage.getItem('classDataV3');
 
+            updateSimulatedDateBanner();
             loadClassData();
             loadClassNotes();
             loadUserScheduleDates();
@@ -10940,6 +11030,22 @@ body.dark-theme[data-palette="mint"] {
                     importPortalSyncFile(e.target.files[0]);
                     e.target.value = '';
                 }
+            });
+
+            // Reloading (rather than trying to hot-refresh every widget/calendar/countdown that
+            // reads "now") is the only way to guarantee everything -- schedule logic, calendar
+            // month position, due-soon countdowns, etc. -- consistently reflects the new
+            // simulated time; the override itself is already saved to localStorage by the time
+            // this runs, so appNow() picks it straight back up on the reloaded page.
+            document.getElementById('simulate-date-apply-btn').addEventListener('click', () => {
+                const input = document.getElementById('simulate-date-input');
+                if (input.value && setSimulatedDateOverride(input.value)) {
+                    location.reload();
+                }
+            });
+            document.getElementById('simulate-date-clear-btn').addEventListener('click', () => {
+                clearSimulatedDateOverride();
+                location.reload();
             });
 
             const style = document.createElement('style');
