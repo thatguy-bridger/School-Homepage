@@ -3113,7 +3113,7 @@ body.dark-theme[data-palette="mint"] {
                     <div class="mb-4">
                         <h4 class="text-2xl font-semibold mb-3">Portal Sync</h4>
                         <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
-                            For schools like Skyward with no API access: install the companion browser extension (in this app's <code>portal-sync-extension</code> folder), browse to your Skyward assignments and Canvas grades pages while logged in, then export the merged JSON from the extension's popup and import it here. Assignments with a date the app can understand are folded into Due Soon; the rest still show below so you can check them manually.
+                            For schools like Skyward with no API access: install the companion browser extension (in this app's <code>portal-sync-extension</code> folder), browse to your Skyward assignments page while logged in, then export the JSON from the extension's popup and import it here. Assignments with a date the app can understand are folded into Due Soon; the rest still show below so you can check them manually.
                         </p>
                         <div class="flex flex-wrap gap-3 items-center">
                             <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="document.getElementById('portal-sync-import-input').click()">Import Portal Sync JSON</button>
@@ -8952,12 +8952,12 @@ body.dark-theme[data-palette="mint"] {
             pruneDismissedAssignments();
         }
 
-        // ===================== PORTAL SYNC (Skyward/Canvas via companion browser extension) =====================
+        // ===================== PORTAL SYNC (Skyward via companion browser extension) =====================
         // The extension can't inject into a local file:// dashboard directly, so the bridge is a
         // JSON export/import: see portal-sync-extension/popup.js for the export side. Entries
         // whose scraped date string parses cleanly get folded into canvasAssignments (so they
-        // show up in Due Soon/countdown chips just like a real Canvas feed item); the rest are
-        // listed as-is in Settings for the user to check by hand.
+        // show up in Due Soon/countdown chips); the rest are listed as-is in Settings for the
+        // user to check by hand.
         function loadPortalSyncParsedAssignments() {
             try { return JSON.parse(localStorage.getItem('portalSyncParsedV1') || '[]'); } catch (e) { return []; }
         }
@@ -9004,11 +9004,8 @@ body.dark-theme[data-palette="mint"] {
                         allDay: true,
                         feedLabel: 'Portal Sync',
                         score: a.score || '',
-                        // Which portal(s) this came from -- Skyward is this school's actual
-                        // transcript system, Canvas is used for assignment tracking that
-                        // isn't necessarily the same number (a club's point system, etc.), so
-                        // the Grades view needs this to avoid presenting the two as equivalent.
-                        sources: Array.isArray(a.sources) ? a.sources : (a.source ? [a.source] : []),
+                        submittedAt: a.submittedAt || '',
+                        status: a.status || '',
                         uid: 'portal-sync|' + normalizePortalSyncKey(a)
                     });
                 } else {
@@ -9073,38 +9070,31 @@ body.dark-theme[data-palette="mint"] {
         }
 
         // ===================== GRADES VIEW =====================
-        // Grades don't come through Canvas's ICS calendar feed (no score data in an .ics file),
-        // so the only source right now is Portal Sync imports -- both the ones that got a usable
-        // due date (folded into canvasAssignments) and the ones that didn't but still carry a score.
-        // Canvas and Skyward are NOT the same thing at every school -- at some, Canvas is used
-        // purely for assignment/participation tracking (club point systems, service hours, etc.)
-        // while Skyward stays the one authoritative transcript/report-card gradebook. This view
-        // has no way to know which situation a given school is in, so it never claims a Canvas
-        // score IS a grade -- it labels every row by which portal(s) it actually came from and
-        // leaves the "is this official" judgment to the student looking at it.
-        function gradeSourceBadgeHtml(sources) {
-            if (!sources || !sources.length) return '';
-            const label = sources.length > 1 ? 'Skyward + Canvas' : sources[0] === 'skyward' ? 'Skyward' : 'Canvas';
-            const color = sources.length > 1 ? '#6366f1' : sources[0] === 'skyward' ? '#16a34a' : '#2563eb';
-            return `<span class="category-badge" style="margin-left:0.5rem; background:${color}; color:#fff;">${escapeHtml(label)}</span>`;
+        // Grades come in through Portal Sync (Skyward scrape) -- both entries that got a usable
+        // due date (folded into canvasAssignments alongside real ICS calendar events) and ones
+        // that didn't parse but still carry a score.
+        function gradeStatusBadgeHtml(status, dueAt, submittedAt) {
+            const normalized = (status || '').toLowerCase();
+            const overdueUnsubmitted = !submittedAt && typeof dueAt === 'number' && !isNaN(dueAt) && dueAt < Date.now();
+            if (normalized.includes('missing') || overdueUnsubmitted) {
+                return `<span class="category-badge" style="margin-left:0.5rem; background:#ef4444; color:#fff;">Missing</span>`;
+            }
+            if (submittedAt || normalized.includes('submit') || normalized.includes('turned in')) {
+                return `<span class="category-badge" style="margin-left:0.5rem; background:#16a34a; color:#fff;">Submitted</span>`;
+            }
+            return '';
         }
         function renderGradesView() {
             const container = document.getElementById('grades-view-content');
             if (!container) return;
             const scored = canvasAssignments
                 .filter(a => a.score)
-                .map(a => ({ title: a.title, course: a.courseCode || 'Uncategorized', dueDate: a.dueAt ? new Date(a.dueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '', score: a.score, sources: a.sources || [] }))
-                .concat(loadPortalSyncUnparsed().filter(a => a.score).map(a => ({ title: a.title, course: a.course || 'Uncategorized', dueDate: a.dueDate || '', score: a.score, sources: a.sources || (a.source ? [a.source] : []) })));
-
-            const banner = `
-                <div class="mb-6 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4 text-sm text-gray-600 dark:text-gray-300">
-                    Canvas and Skyward aren't necessarily tracking the same thing -- if your school uses Canvas for club/participation tracking rather than official grades, treat Skyward-labeled rows as the real ones. Each row below is tagged by which portal it came from.
-                </div>
-            `;
+                .map(a => ({ title: a.title, course: a.courseCode || 'Uncategorized', dueAt: a.dueAt, dueDate: a.dueAt ? new Date(a.dueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '', submittedAt: a.submittedAt || '', status: a.status || '', score: a.score }))
+                .concat(loadPortalSyncUnparsed().filter(a => a.score).map(a => ({ title: a.title, course: a.course || 'Uncategorized', dueAt: NaN, dueDate: a.dueDate || '', submittedAt: a.submittedAt || '', status: a.status || '', score: a.score })));
 
             if (!scored.length) {
-                container.innerHTML = banner + `
-                    <p class="home-widget-empty">No grade data yet. Grades come in through Portal Sync (Settings &gt; Portal Sync) since Canvas's calendar feed doesn't carry scores.</p>
+                container.innerHTML = `
+                    <p class="home-widget-empty">No grade data yet. Grades come in through Portal Sync (Settings &gt; Portal Sync).</p>
                 `;
                 return;
             }
@@ -9115,15 +9105,15 @@ body.dark-theme[data-palette="mint"] {
                 byCourse[a.course].push(a);
             });
 
-            container.innerHTML = banner + Object.keys(byCourse).sort().map(course => `
+            container.innerHTML = Object.keys(byCourse).sort().map(course => `
                 <div class="mb-8">
                     <h2 class="text-2xl font-bold mb-3">${escapeHtml(course)}</h2>
                     <div class="home-list">
                         ${byCourse[course].map(a => `
                             <div class="home-list-item">
                                 <div class="min-w-0" style="flex-grow:1;">
-                                    <p class="home-item-title">${escapeHtml(a.title)}${gradeSourceBadgeHtml(a.sources)}</p>
-                                    <p class="home-item-sub">${escapeHtml(a.dueDate)}</p>
+                                    <p class="home-item-title">${escapeHtml(a.title)}${gradeStatusBadgeHtml(a.status, a.dueAt, a.submittedAt)}</p>
+                                    <p class="home-item-sub">${escapeHtml([a.dueDate ? 'Due ' + a.dueDate : '', a.submittedAt ? 'Submitted ' + a.submittedAt : ''].filter(Boolean).join(' · '))}</p>
                                 </div>
                                 <span class="home-due-countdown">${escapeHtml(a.score)}</span>
                             </div>
