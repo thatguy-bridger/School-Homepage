@@ -4567,6 +4567,10 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function renderSideStackedGroupHTML(group) {
+            // A group with only one category in it (an odd leftover at the end of a run, or a
+            // 2/3-per-row category with no neighbor sharing that count) has nothing to sit beside
+            // -- render it full width instead of leaving it stranded at half/third width.
+            if (group.length === 1) return renderFullWidthCategoryHTML(group[0]);
             const widthClass = group[0].perRow === 3 ? 'stacked-three' : 'stacked-two';
             const groupItemsHTML = group.map(category => {
                 const classCardsHTML = category.classes.map(createClassCardHTML).join('');
@@ -4743,6 +4747,9 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function renderModalSideStackedGroupHTML(group) {
+            // Same "stranded leftover goes full width" rule as the main-screen render -- keeps
+            // the editor's layout matching what's actually shown.
+            if (group.length === 1) return renderModalFullWidthCategoryHTML(group[0].category, group[0].index);
             const widthClass = group[0].category.perRow === 3 ? 'stacked-three-modal' : 'stacked-two-modal';
 
             const groupItemsHTML = group.map(item => {
