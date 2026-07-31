@@ -808,17 +808,17 @@ body.dark-theme[data-palette="mint"] {
         /* Text inside these two widgets specifically reads smaller than the normal home-list
            item -- there's less room and more items to skim, so density wins over size here. */
         .home-widget-compact-list .home-item-title {
-            font-size: 0.8rem;
+            font-size: clamp(0.8rem, 3.2cqmin, 1.5rem);
             line-height: 1.2;
         }
         .home-widget-compact-list .home-item-sub {
-            font-size: 0.62rem;
+            font-size: clamp(0.62rem, 2.4cqmin, 1.15rem);
             line-height: 1.15;
         }
         /* The days-left number is the whole point of a countdown row, so it stays the biggest
            thing in it even though the title/date around it are shrunk down (see above). */
         .home-widget-compact-list .home-due-countdown {
-            font-size: 1.05rem;
+            font-size: clamp(1.05rem, 3.6cqmin, 2rem);
             font-weight: 800;
         }
         #planner-countdowns-container .home-due-countdown {
@@ -1880,25 +1880,39 @@ body.dark-theme[data-palette="mint"] {
         @container homewidget (min-height: 340px) {
             .home-widget-compact-list { max-height: none; }
         }
-        /* Fluid, continuous scaling tied to the widget's own box width (cqw = 1% of the
-           container's inline size) so content keeps growing smoothly as a widget is resized
-           larger instead of stopping dead at whatever the last fixed tier above happened to be
-           (e.g. "Current Class" dragged out to a huge tile previously stayed at 2rem forever). */
-        .home-widget h2 { font-size: clamp(0.82rem, 5.2cqw, 1.6rem); }
-        .home-item-title { font-size: clamp(0.78rem, 3.6cqw, 1.05rem); }
-        .home-item-sub { font-size: clamp(0.68rem, 2.8cqw, 0.92rem); }
-        .home-widget-empty { font-size: clamp(0.75rem, 3cqw, 1rem); }
-        .home-next-class-big { font-size: clamp(1.1rem, 8.5cqw, 2.75rem); }
-        .home-due-countdown { font-size: clamp(0.82rem, 3.4cqw, 1.2rem); }
+        /* Fluid, continuous scaling tied to the widget's own box size -- cqmin (1% of whichever
+           of the container's width/height is currently smaller) so content keeps growing
+           smoothly as a widget is resized larger in EITHER direction, not just wider, instead of
+           stopping dead at a low cap (e.g. "Current Class" dragged out to a huge tile previously
+           stayed pinned to ~2rem text forever, using up a quarter of the box). Caps are generous
+           on purpose -- a widget dragged to fill most of the screen should show correspondingly
+           big text, not the same size as a modest one. */
+        .home-widget h2 { font-size: clamp(0.82rem, 6.5cqmin, 2.75rem); }
+        .home-item-title { font-size: clamp(0.78rem, 4.4cqmin, 1.9rem); }
+        .home-item-sub { font-size: clamp(0.68rem, 3.4cqmin, 1.55rem); }
+        .home-widget-empty { font-size: clamp(0.75rem, 3.6cqmin, 1.7rem); }
+        .home-next-class-big { font-size: clamp(1.1rem, 11cqmin, 5.5rem); }
+        .home-due-countdown { font-size: clamp(0.82rem, 4.2cqmin, 2.2rem); }
         #home-widget-next-class .class-meta-chip {
-            font-size: clamp(0.62rem, 2.6cqw, 0.85rem);
-            padding: clamp(0.2rem, 1cqw, 0.4rem) clamp(0.4rem, 2cqw, 0.7rem);
+            font-size: clamp(0.62rem, 3cqmin, 1.35rem);
+            padding: clamp(0.2rem, 1.2cqmin, 0.65rem) clamp(0.4rem, 2.4cqmin, 1.1rem);
         }
         .home-widget-add-btn, .home-widget-settings-btn {
-            width: clamp(1.3rem, 6cqw, 1.9rem);
-            height: clamp(1.3rem, 6cqw, 1.9rem);
-            font-size: clamp(0.8rem, 3.6cqw, 1.1rem);
+            width: clamp(1.3rem, 6cqmin, 2.6rem);
+            height: clamp(1.3rem, 6cqmin, 2.6rem);
+            font-size: clamp(0.8rem, 3.6cqmin, 1.5rem);
         }
+        /* ---- Fill behavior: the widget is a column (title, optional settings panel, then the
+           content body); the body is told to actually consume whatever vertical space the box
+           has instead of staying top-packed and leaving the rest of a big widget empty. Widgets
+           whose content is a handful of short lines (Next Class, the empty states) get it
+           centered so a huge box doesn't just push the text to the top with dead space below;
+           list-based widgets keep their list top-aligned (a centered *list* would look broken)
+           but the list itself still grows via the fluid font sizes above. */
+        .home-widget { display: flex; flex-direction: column; }
+        .home-widget-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+        .home-widget-body.is-fill-center { justify-content: center; }
+        .home-widget-body .home-list { flex: 1; }
         .home-widget-header-actions { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
         .home-widget-settings-btn {
             border-radius: 50%;
@@ -2758,7 +2772,7 @@ body.dark-theme[data-palette="mint"] {
                                 </div>
                             </h2>
                             <div id="home-widget-settings-panel-next-class" class="home-widget-settings-panel hidden"></div>
-                            <div id="home-next-class-content"></div>
+                            <div id="home-next-class-content" class="home-widget-body is-fill-center"></div>
                         </div>
                         <div class="home-widget" id="home-widget-due-soon">
                             <h2>
@@ -2768,7 +2782,7 @@ body.dark-theme[data-palette="mint"] {
                                 </div>
                             </h2>
                             <div id="home-widget-settings-panel-due-soon" class="home-widget-settings-panel hidden"></div>
-                            <div id="home-due-soon-content"></div>
+                            <div id="home-due-soon-content" class="home-widget-body"></div>
                         </div>
                         <div class="home-widget home-widget-compact" id="home-widget-countdowns">
                             <h2>
@@ -2800,7 +2814,7 @@ body.dark-theme[data-palette="mint"] {
                                 </div>
                             </h2>
                             <div id="home-widget-settings-panel-upcoming" class="home-widget-settings-panel hidden"></div>
-                            <div id="home-upcoming-content"></div>
+                            <div id="home-upcoming-content" class="home-widget-body"></div>
                         </div>
                         <div class="home-widget" id="home-widget-calendar-preview">
                             <div id="home-calendar-preview"></div>
@@ -7791,9 +7805,9 @@ body.dark-theme[data-palette="mint"] {
                 </button>
             ` : '';
             const catToggle = (group, label) => `
-                <label class="mini-cal-config-row">
+                <label class="ui-setting-row mini-cal-config-row" title="Show ${escapeAttr(label)} in every calendar preview">
                     <span>${escapeHtml(label)}</span>
-                    <input type="checkbox" class="ui-switch" ${previewConfig.categories[group] !== false ? 'checked' : ''} onchange="toggleCalPreviewCategory('${group}', this.checked)" title="Show ${escapeAttr(label)} in every calendar preview">
+                    <input type="checkbox" class="ui-switch" ${previewConfig.categories[group] !== false ? 'checked' : ''} onchange="toggleCalPreviewCategory('${group}', this.checked)">
                 </label>
             `;
             const optToggle = (key, label, tooltip) => `
