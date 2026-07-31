@@ -4642,7 +4642,7 @@ body.dark-theme[data-palette="mint"] {
             const extraLinks = (classItem.links || []).filter(l => l.url);
             return `
                 <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}
-                     onclick="window.location.href='${escapeJsAttr(classItem.url)}'">
+                     onclick="openClassLink('${escapeJsAttr(classItem.url)}')">
                     <div class="flex items-start justify-between gap-2 mb-2 pr-8">
                         <h4 class="text-xl font-bold">${escapeHtml(classItem.title)}</h4>
                     </div>
@@ -4652,7 +4652,7 @@ body.dark-theme[data-palette="mint"] {
                     </div>
                     ${extraLinks.length ? `
                         <div class="class-links-dropdown" onclick="event.stopPropagation()">
-                            ${extraLinks.map(l => `<a href="${escapeAttr(l.url)}" target="_blank" rel="noopener">${classItemTypeIconSvg(l.type)}<span>${escapeHtml(l.label || l.url)}</span></a>`).join('')}
+                            ${extraLinks.map(l => `<a href="${escapeAttr(normalizeExternalUrl(l.url))}" target="_blank" rel="noopener">${classItemTypeIconSvg(l.type)}<span>${escapeHtml(l.label || l.url)}</span></a>`).join('')}
                         </div>
                     ` : ''}
                     <div class="class-note-box ${hasNote ? '' : 'hidden'}" id="note-box-${noteId}" onclick="event.stopPropagation()">
@@ -4662,7 +4662,7 @@ body.dark-theme[data-palette="mint"] {
                         </div>
                         <textarea class="class-note-textarea" placeholder="Quick note..." oninput="autoGrowTextarea(this); document.getElementById('note-charcount-${noteId}').textContent = this.value.length;" onchange="saveClassNote('${noteId}', this.value)">${escapeHtml(noteValue)}</textarea>
                     </div>
-                    <button class="new-tab-button" onclick="event.stopPropagation(); window.open('${escapeJsAttr(classItem.url)}', '_blank');" title="Open in new tab">
+                    <button class="new-tab-button" onclick="event.stopPropagation(); openClassLink('${escapeJsAttr(classItem.url)}');" title="Open in new tab">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     </button>
                     <div class="class-url-display" title="${escapeAttr(classItem.url)}">${escapeHtml(classItem.url)}</div>
@@ -6554,7 +6554,7 @@ body.dark-theme[data-palette="mint"] {
                 }
                 if (url && url !== '#') {
                     widget.classList.add('is-clickable');
-                    widget.onclick = () => { window.location.href = url; };
+                    widget.onclick = () => openClassLink(url);
                 } else {
                     widget.classList.remove('is-clickable');
                     widget.onclick = null;
@@ -6650,7 +6650,7 @@ body.dark-theme[data-palette="mint"] {
             const todaysClasses = getClassesForDate(today);
             const classesRowHtml = todaysClasses.length ? `
                 <div class="home-today-classes-row">${todaysClasses.map(({ classItem, timeRange }) => `
-                    <a class="home-today-class-chip" href="${escapeAttr(classItem.url || '#')}" ${classItem.color ? `style="border-left: 3px solid ${escapeAttr(classItem.color)};"` : ''}${classPopupAttr(classItem)} onclick="${classItem.url ? '' : 'return false;'}">
+                    <a class="home-today-class-chip" href="${escapeAttr(normalizeExternalUrl(classItem.url) || '#')}" target="_blank" rel="noopener" ${classItem.color ? `style="border-left: 3px solid ${escapeAttr(classItem.color)};"` : ''}${classPopupAttr(classItem)} onclick="${classItem.url ? '' : 'return false;'}">
                         <p class="home-item-title">${escapeHtml(classItem.title)}</p>
                         ${timeRange ? `<p class="home-item-sub">${escapeHtml(timeRange)}</p>` : ''}
                     </a>
@@ -6856,7 +6856,7 @@ body.dark-theme[data-palette="mint"] {
 
             promptedAssignmentKeys.add(key);
             showConfirmationModal(`"${next.title}" is due soon for ${matchedClass.title}. Open the class now?`, [
-                { text: 'Continue', action: () => { window.location.href = matchedClass.url; } },
+                { text: 'Continue', action: () => openClassLink(matchedClass.url) },
                 { text: 'Cancel', action: () => {} }
             ], { clickAnywhereConfirms: true });
         }
@@ -6878,9 +6878,7 @@ body.dark-theme[data-palette="mint"] {
             lastPromptedScheduleSlot = info.scheduleSlot;
 
             showConfirmationModal(`Open ${scheduled.title} now?`, [
-                { text: 'Continue', action: () => {
-                    window.location.href = scheduled.url;
-                }},
+                { text: 'Continue', action: () => openClassLink(scheduled.url) },
                 { text: 'Cancel', action: () => {} }
             ], { clickAnywhereConfirms: true });
         }
@@ -7291,7 +7289,7 @@ body.dark-theme[data-palette="mint"] {
                 const advisory = findClassBySlot('ADVISORY');
                 if (!advisory) { showActionToast('No class assigned to Advisory.'); return; }
                 if (!advisory.url || advisory.url === '#') { showActionToast(`No link set for ${advisory.title || 'Advisory'}.`); return; }
-                window.location.href = advisory.url;
+                openClassLink(advisory.url);
                 return;
             }
             // Deliberately NOT getDayType() -- that reads userADaysCal/userBDaysCal, which only
@@ -7313,7 +7311,7 @@ body.dark-theme[data-palette="mint"] {
             }
             if (!classItem) { showActionToast(`No class assigned to period ${n}${force ? '' : ' today'}.`); return; }
             if (!classItem.url || classItem.url === '#') { showActionToast(`No link set for ${classItem.title || 'this class'}.`); return; }
-            window.location.href = classItem.url;
+            openClassLink(classItem.url);
         }
         function showKeyboardShortcutsHelp() {
             showConfirmationModal(
@@ -8172,7 +8170,7 @@ body.dark-theme[data-palette="mint"] {
                         ${classesToday.map(c => {
                             const noteText = classNoteText(c.classItem);
                             return `
-                            <a class="day-class-row" style="${c.classItem.color ? `border-left: 3px solid ${escapeAttr(c.classItem.color)};` : ''}" href="${escapeAttr(c.classItem.url || '#')}"${classPopupAttr(c.classItem)} onclick="${c.classItem.url ? '' : 'return false;'}">
+                            <a class="day-class-row" style="${c.classItem.color ? `border-left: 3px solid ${escapeAttr(c.classItem.color)};` : ''}" href="${escapeAttr(normalizeExternalUrl(c.classItem.url) || '#')}" target="_blank" rel="noopener"${classPopupAttr(c.classItem)} onclick="${c.classItem.url ? '' : 'return false;'}">
                                 <span class="min-w-0">
                                     <span class="flex items-center gap-2 font-medium">${classDotHtml(c.classItem)}${classNameHtml(c.classItem)}</span>
                                     ${noteText ? `<span class="day-class-note">${escapeHtml(noteText)}</span>` : ''}
@@ -8306,7 +8304,7 @@ body.dark-theme[data-palette="mint"] {
                 const color = c.classItem.color || 'var(--accent-2)';
                 return `
                     <a class="day-grid-event" style="top:${top}px; height:${height}px; left:0.25rem; right:36%; background:color-mix(in srgb, ${color} 20%, var(--glass-bg-strong)); border-left: 3px solid ${escapeAttr(color)};"
-                       href="${escapeAttr(c.classItem.url || '#')}"${classPopupAttr(c.classItem)} onclick="${c.classItem.url ? '' : 'return false;'}">
+                       href="${escapeAttr(normalizeExternalUrl(c.classItem.url) || '#')}" target="_blank" rel="noopener"${classPopupAttr(c.classItem)} onclick="${c.classItem.url ? '' : 'return false;'}">
                         <span class="day-grid-event-title">${classNameHtml(c.classItem)}</span>
                         <span class="day-grid-event-time">${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>
                     </a>
@@ -10860,6 +10858,24 @@ body.dark-theme[data-palette="mint"] {
         // pasted URLs, etc.) can easily contain.
         function escapeJsAttr(str) {
             return escapeAttr((str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+        }
+        // Class/link URLs are free-typed by the user and often left without a scheme (e.g.
+        // "student.canyonsdistrict.org") -- as a plain string that's a RELATIVE url, so
+        // window.location.href/an <a href> silently resolves it underneath this app's own path
+        // (.../School-Homepage/student.canyonsdistrict.org) instead of leaving the site. Add
+        // https:// whenever there's no scheme so it's always treated as absolute.
+        function normalizeExternalUrl(url) {
+            const trimmed = (url || '').trim();
+            if (!trimmed || trimmed === '#') return trimmed;
+            if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed) || trimmed.startsWith('//')) return trimmed;
+            return 'https://' + trimmed;
+        }
+        // Every class/schedule link opens in a new tab rather than navigating the app itself away
+        // -- opening in-place would replace this whole dashboard with the external site.
+        function openClassLink(url) {
+            const normalized = normalizeExternalUrl(url);
+            if (!normalized || normalized === '#') return;
+            window.open(normalized, '_blank', 'noopener');
         }
 
         function initCalendar() {
