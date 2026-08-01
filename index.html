@@ -1716,11 +1716,15 @@ body.dark-theme[data-palette="mint"] {
             min-width: 0;
         }
         .month-event-dot-inner {
-            width: 0.4rem;
-            height: 0.4rem;
+            width: 0.7rem;
+            height: 0.7rem;
             border-radius: 50%;
-            background: var(--ev-color);
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            color: #fff;
         }
         .month-event-bar-title {
             font-size: 0.62rem;
@@ -1732,11 +1736,14 @@ body.dark-theme[data-palette="mint"] {
             min-width: 0;
         }
         .month-event-more { font-size: 0.6rem; color: var(--text-muted); align-self: center; }
-        /* Below this width there's no room to read a title anyway -- collapse every bar/line down
-           to just its color, matching how the dot-only fallback always looked, so the cell reads
-           as "busy with N things" instead of a wall of unreadable ellipsized text. */
+        /* Below this width there's no room to read a title anyway -- collapse every bar down to
+           just its icon dot, matching the dot-only fallback further down. Critically, the bars
+           ALSO switch from a single vertical column (right for full-width title bars) to a
+           wrapping row -- otherwise the collapsed dots kept stacking straight down one per line
+           instead of filling the row and wrapping like the dot-only fallback does. */
         @container daycell (max-width: 92px) {
-            .month-event-bar { padding: 0; background: none; justify-content: center; }
+            .month-event-bars { flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 0.25rem; }
+            .month-event-bar { padding: 0; background: none; width: auto; }
             .month-event-bar-title { display: none; }
             .month-allday-line { height: 0.3rem; padding: 0; font-size: 0; }
         }
@@ -8225,7 +8232,7 @@ body.dark-theme[data-palette="mint"] {
                 <div class="month-event-bars">
                     ${barsShown.map(e => `
                         <div class="month-event-bar" style="--ev-color:${e.color};" title="${escapeAttr(e.title)} — ${escapeAttr(categoryLabel(e.category))} — ${escapeAttr(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, true)">
-                            <span class="month-event-dot-inner"></span>
+                            <span class="month-event-dot-inner" style="background:${e.color};">${categoryIconSvg(e.category, 9)}</span>
                             <span class="month-event-bar-title">${escapeHtml(e.title)}</span>
                         </div>
                     `).join('')}

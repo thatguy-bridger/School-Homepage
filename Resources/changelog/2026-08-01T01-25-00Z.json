@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T01:25:00Z",
+  "title": "Fixed month view event dots not wrapping",
+  "summary": [
+    "Collapsed event bars (on a narrow day cell or small screen) were stacking straight down one per line instead of filling the row and wrapping like the dot-only overflow list already did -- they now wrap into a grid the same way.",
+    "Every collapsed event dot now shows its category icon (assignment checkmark, sports star, etc.) instead of a plain color circle."
+  ]
+}
