@@ -3344,8 +3344,11 @@ body.dark-theme[data-palette="mint"] {
     </div>
 
     <!-- Class Schedule (Day Type) Editor -->
-    <div id="day-type-editor-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="closeDayTypeEditor(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-4xl h-[90vh] flex flex-col p-8 border" onclick="event.stopPropagation()">
+    <!-- z-[60], not the shared z-50 every other modal uses -- this one is opened FROM inside the
+         Settings modal (which stays open underneath it), and with equal z-index the later modal
+         in DOM order (Settings, further down the page) was painting on top instead. -->
+    <div id="day-type-editor-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[60] hidden opacity-0" onclick="closeDayTypeEditor(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[98vw] h-[97vh] flex flex-col p-8 border" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h3 class="text-2xl font-bold tracking-tight">Class Schedule Editor</h3>
                 <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeDayTypeEditor()">
@@ -3369,6 +3372,31 @@ body.dark-theme[data-palette="mint"] {
 
             <div class="flex justify-end gap-4 mt-6 flex-shrink-0">
                 <button type="button" class="modal-footer-button bg-green-600" onclick="closeDayTypeEditor()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Day note editor -- opened from inside the Class Schedule Editor, so it needs a higher
+         z-index than that modal's z-[60]. Replaces the old two-prompt()-in-a-row flow with the
+         same title+notes form the Day view's own edit mode already uses. -->
+    <div id="day-type-note-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[70] hidden opacity-0" onclick="closeDayTypeEditorNoteModal(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-md p-6 border" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="day-type-note-modal-title" class="text-lg font-bold"></h3>
+                <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeDayTypeEditorNoteModal()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <label class="block text-sm font-semibold mb-2" for="day-type-note-title-input">Title</label>
+            <input type="text" id="day-type-note-title-input" class="form-input mb-4" placeholder="e.g. Field Trip, Quiz in German">
+            <label class="block text-sm font-semibold mb-2" for="day-type-note-notes-input">Notes</label>
+            <textarea id="day-type-note-notes-input" class="form-textarea h-32 mb-5" placeholder="Add extra details for this day..."></textarea>
+            <div class="flex justify-between items-center gap-3">
+                <button type="button" class="modal-footer-button bg-red-600" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="removeDayTypeEditorNote()">Remove</button>
+                <div class="flex gap-2">
+                    <button type="button" class="modal-footer-button is-secondary" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="closeDayTypeEditorNoteModal()">Cancel</button>
+                    <button type="button" class="modal-footer-button bg-green-600" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="saveDayTypeEditorNote()">Save</button>
+                </div>
             </div>
         </div>
     </div>
@@ -5745,10 +5773,22 @@ body.dark-theme[data-palette="mint"] {
             renderDayTypeEditor();
         }
 
+        // Classes are hidden by default -- with a whole month of day-type/no-school/note info
+        // already in each cell, the class list on top made it feel too busy for what's meant to
+        // be a fast bulk-editing view. Off unless the user opts in via the toolbar toggle.
+        let dayTypeEditorShowClasses = false;
+        function dayTypeEditorToggleShowClasses(checked) {
+            dayTypeEditorShowClasses = checked;
+            renderDayTypeEditor();
+        }
         function renderDayTypeEditorScheduleOptions() {
             const el = document.getElementById('day-type-editor-toolbar');
             if (!el) return;
             el.innerHTML = `
+                <label class="ui-setting-row" style="gap:0.4rem;" title="Show which classes meet on each day in the grid">
+                    <span style="font-size:0.8rem;">Show classes</span>
+                    <input type="checkbox" class="ui-switch" ${dayTypeEditorShowClasses ? 'checked' : ''} onchange="dayTypeEditorToggleShowClasses(this.checked)">
+                </label>
                 <button type="button" class="modal-footer-button bg-red-600" style="padding:0.4rem 0.75rem;font-size:0.8rem;" onclick="dayTypeEditorMarkNoSchool()">Mark Selection No School</button>
                 <span class="text-gray-500 dark:text-gray-400">Tag special schedule:</span>
                 ${scheduleTypes.filter(st => st.id !== 'regular').map(st => `
@@ -5878,17 +5918,44 @@ body.dark-theme[data-palette="mint"] {
             });
         }
 
+        let dayTypeEditorNoteKey = null;
         function dayTypeEditorEditNote(key, event) {
             if (event) event.stopPropagation();
+            dayTypeEditorNoteKey = key;
             const existing = dayNotes[key] || { title: '', notes: '' };
-            const title = prompt('Note title for ' + key + ' (leave both blank to remove):', existing.title || '');
-            if (title === null) return;
-            const notes = prompt('Note details (optional):', existing.notes || '');
-            if (notes === null) return;
-            if (!title.trim() && !notes.trim()) delete dayNotes[key];
-            else dayNotes[key] = { title: title.trim(), notes: notes.trim() };
+            const d = parseDateKey(key);
+            document.getElementById('day-type-note-modal-title').textContent = 'Note for ' + d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            document.getElementById('day-type-note-title-input').value = existing.title || '';
+            document.getElementById('day-type-note-notes-input').value = existing.notes || '';
+            const modal = document.getElementById('day-type-note-modal');
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => { modal.classList.remove('opacity-0'); modal.classList.add('show'); });
+        }
+        function closeDayTypeEditorNoteModal(event) {
+            const modal = document.getElementById('day-type-note-modal');
+            const content = modal.querySelector('.modal-content');
+            if (event && content.contains(event.target)) return;
+            modal.classList.add('opacity-0');
+            modal.classList.remove('show');
+            modal.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
+            dayTypeEditorNoteKey = null;
+        }
+        function saveDayTypeEditorNote() {
+            if (!dayTypeEditorNoteKey) return;
+            const title = document.getElementById('day-type-note-title-input').value.trim();
+            const notes = document.getElementById('day-type-note-notes-input').value.trim();
+            if (!title && !notes) delete dayNotes[dayTypeEditorNoteKey];
+            else dayNotes[dayTypeEditorNoteKey] = { title, notes };
             saveDayNotes();
             renderDayTypeEditor();
+            closeDayTypeEditorNoteModal();
+        }
+        function removeDayTypeEditorNote() {
+            if (!dayTypeEditorNoteKey) return;
+            delete dayNotes[dayTypeEditorNoteKey];
+            saveDayNotes();
+            renderDayTypeEditor();
+            closeDayTypeEditorNoteModal();
         }
 
         function renderDayTypeEditor() {
@@ -5921,7 +5988,7 @@ body.dark-theme[data-palette="mint"] {
                 const scheduleType = scheduleId ? scheduleTypes.find(s => s.id === scheduleId) : null;
                 const isToday = isSameDay(d, today);
                 const note = dayNotes[key];
-                const classesPreview = dayType ? getClassesForDate(d).filter(c => !c.classItem.synthetic).slice(0, 3) : [];
+                const classesPreview = (dayType && dayTypeEditorShowClasses) ? getClassesForDate(d).filter(c => !c.classItem.synthetic).slice(0, 3) : [];
                 return `
                     <div class="day-cell p-1.5 rounded-lg border ${outside ? 'outside-month opacity-40' : ''} ${isToday ? 'is-today' : ''} ${weekend ? 'opacity-50' : 'cursor-pointer'}"
                          data-key="${key}" style="min-height:5.5rem;"

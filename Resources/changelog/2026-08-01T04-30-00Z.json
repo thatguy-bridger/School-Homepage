@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-08-01T04:30:00Z",
+  "title": "Class Schedule Editor polish: stacking, size, class-list toggle, custom note editor",
+  "summary": [
+    "Fixed the Class Schedule Editor rendering underneath the Settings modal instead of above it -- both used the same z-index, so whichever was later in the page (Settings) painted on top. It now uses a higher z-index.",
+    "The editor modal now takes almost the full screen instead of being capped at a fixed max width, so it feels less cramped.",
+    "Classes are now hidden by default in the editor grid (it was too busy with everything else already shown) -- a 'Show classes' toggle in the toolbar brings them back on request.",
+    "Editing a day's note now opens a proper modal with a title field and notes textarea, matching the same form used on the Day view, instead of two chained browser prompt() dialogs."
+  ]
+}
