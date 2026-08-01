@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T09:00:00Z",
+  "title": "Fixed sync finding the wrong gist (root cause of old data sticking around)",
+  "summary": [
+    "Found the actual reason restoring wasn't overwriting old classes/calendar/schedule data: if a device ever auto-pushed before a restore fully completed, it could create its OWN separate synced-data gist for the same token, since it had no local record of an existing one yet. From then on, sync could pick whichever of the (now multiple) matching gists happened to be most recently touched -- which was often the wrong, mostly-empty one -- instead of the real data.",
+    "Fixed two ways: pushing now always searches for an existing gist for your token before ever creating a new one, so a duplicate can no longer be created going forward. And when more than one matching gist is ever found, sync now picks the oldest one (the original), not whichever was updated most recently."
+  ]
+}

@@ -13057,6 +13057,16 @@ body.dark-theme[data-palette="mint"] {
             try {
                 const payload = buildAppDataPayload();
                 let gistId = localStorage.getItem('githubGistId');
+                // A device with no local githubGistId (never restored, or storage got cleared)
+                // used to always POST a brand new gist here -- if that happened on a device that
+                // should have restored existing data first, it silently created a DUPLICATE
+                // "school-dashboard-data.json" gist for the same token. Since findAppDataGistId
+                // can then only guess which of several matching gists is the "real" one, search for
+                // an existing gist for this token before ever creating a new one, so push is always
+                // find-or-create and a token can never end up with more than one data gist.
+                if (!gistId) {
+                    try { gistId = await findAppDataGistId(token); } catch (e) { /* fall through to create */ }
+                }
                 const headers = {
                     'Authorization': `Bearer ${token}`,
                     'Accept': 'application/vnd.github+json',
@@ -13276,18 +13286,29 @@ body.dark-theme[data-palette="mint"] {
         // with more gists than that would silently never find the sync gist if it wasn't on the
         // first page, surfacing as a false "No synced data found for this token" even though the
         // data was pushed successfully. Walk every page until one comes back short.
+        // Collects EVERY matching gist across all pages rather than returning the first hit, then
+        // picks the OLDEST one (by created_at). GitHub's list-gists endpoint sorts by updated_at
+        // descending by default, so a naive "first match wins" is fragile the moment more than one
+        // gist ever ends up with our filename -- and that can genuinely happen (e.g. a device
+        // that's supposed to restore first but instead auto-pushes its own still-default data
+        // before the restore check finishes would create a brand new gist, since it had no local
+        // githubGistId yet). Whichever gist was created FIRST is overwhelmingly likely to be the
+        // real one with actual user data, since duplicates only ever appear later by accident.
         async function findAppDataGistId(token) {
             const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' };
             let page = 1;
+            const matches = [];
             while (true) {
                 const res = await fetch(`https://api.github.com/gists?per_page=100&page=${page}`, { headers });
                 if (!res.ok) throw new Error(`GitHub API ${res.status}`);
                 const gists = await res.json();
-                const match = gists.find(g => g.files && g.files[APP_DATA_GIST_FILENAME]);
-                if (match) return match.id;
-                if (gists.length < 100) return null;
+                gists.forEach(g => { if (g.files && g.files[APP_DATA_GIST_FILENAME]) matches.push(g); });
+                if (gists.length < 100) break;
                 page++;
             }
+            if (!matches.length) return null;
+            matches.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            return matches[0].id;
         }
 
         async function fetchAppDataFromGist(token, gistId) {
