@@ -2346,18 +2346,19 @@ body.dark-theme[data-palette="mint"] {
             text-align: center;
         }
         /* The actual 7-column day-cell grid (as opposed to the weekday-header row above it).
-           NOTE: this used to also be flex:1 + grid-auto-rows:1fr to actively grow into leftover
-           widget height, but that combination blew up in practice -- a grid item with flex-basis
-           0 stretched to fill whatever height the (buggy, inflated) flex chain handed it, dividing
-           that across 6 rows and making every cell enormous while only one week's worth was
-           visible without scrolling. Reverted to natural content-sized rows -- extra widget
-           height now just becomes blank/scrollable space below the grid (via
-           .mini-calendar-panel's own overflow-y:auto) instead of the grid trying to claim it. */
-        .mini-month-days-grid { flex: 0 0 auto; }
+           This previously used flex:1 + grid-auto-rows:1fr and blew up: "1fr" alone is really
+           minmax(auto, 1fr), and that "auto" minimum still respects each cell's own min-height
+           (below), so once 6 rows' worth of floors added up to more than the widget's actual
+           available height, the rows couldn't shrink to fit -- they overflowed and required
+           scrolling instead of evenly dividing the space, which read as "only one week visible,
+           cells enormous." minmax(0, 1fr) removes that floor from the TRACK-SIZING calculation
+           (each day cell's own min-height below still applies as long as there's room) so the
+           grid can now actually fill -- and be evenly divided across -- whatever height flex:1
+           hands it, growing with the widget the way it's supposed to. */
+        .mini-month-days-grid { flex: 1; grid-auto-rows: minmax(0, 1fr); }
         /* Keeps the header/weekday-row/agenda-list at their natural size rather than getting
            squeezed by flexbox's default flex-shrink:1 when things don't fit -- see the header
-           clipping this was originally added for. Harmless now that the day-grid isn't fighting
-           for space the way it was above, but still correct to keep. */
+           clipping this was originally added for. */
         .mini-calendar-panel > *:not(.mini-month-days-grid) { flex-shrink: 0; }
         .mini-day-cell {
             position: relative;
@@ -2369,11 +2370,12 @@ body.dark-theme[data-palette="mint"] {
             border-radius: 0.6rem;
             border: 1px solid var(--glass-border);
             padding: 0.3rem 0.2rem;
+            overflow: hidden;
             /* Fluid instead of a flat 3.4rem -- a 6-row month grid at a fixed per-cell height
-               can't shrink below ~20rem tall no matter how small the widget is dragged, which is
-               exactly what was overflowing past the widget's box and getting clipped. cqmin ties
-               it to the widget's own size so it shrinks on a small widget; it does NOT grow
-               unbounded any more (see .mini-month-days-grid above), it's just a floor. */
+               can't shrink below ~20rem tall no matter how small the widget is dragged. This is a
+               FLOOR the grid tries to respect when there's room (see minmax(0, 1fr) above) -- on
+               a widget too short for even this, the cell shrinks below it rather than the grid
+               overflowing, thanks to that minmax(0, ...) and the overflow:hidden just above. */
             min-height: clamp(1.5rem, 5cqmin, 3.2rem);
             transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
         }

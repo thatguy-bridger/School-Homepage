@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T03:15:00Z",
+  "title": "Calendar preview month grid actually fills the widget now",
+  "summary": [
+    "Found the real cause of the earlier 'giant cells, only one week visible' bug: grid-auto-rows:1fr is shorthand for minmax(auto, 1fr), and that 'auto' minimum still respected each day cell's own min-height floor, so once six rows' worth of floors exceeded the widget's real height, the grid overflowed and needed scrolling instead of shrinking to fit.",
+    "Switched to minmax(0, 1fr), which removes that floor from the grid's own sizing math (each cell's min-height still applies whenever there's room) -- the month grid now evenly fills whatever vertical space the widget actually has, growing when you resize it larger instead of stopping around half height."
+  ]
+}
