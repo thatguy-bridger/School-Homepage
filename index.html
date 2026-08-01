@@ -3560,14 +3560,14 @@ body.dark-theme[data-palette="mint"] {
          above the Day view itself (which isn't a modal) with room to spare below the note/
          schedule-type-editor modals it doesn't nest inside. -->
     <div id="day-view-daytype-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[65] hidden opacity-0" onclick="closeDayViewDayTypeModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-md p-6 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-2xl max-h-[85vh] flex flex-col p-6 border" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4">
                 <h3 id="day-view-daytype-modal-title" class="text-lg font-bold">Day Type</h3>
                 <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeDayViewDayTypeModal()">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <div id="day-view-daytype-modal-body"></div>
+            <div id="day-view-daytype-modal-body" class="overflow-y-auto pr-1" style="min-height:0;"></div>
             <div class="flex justify-end mt-5">
                 <button type="button" class="modal-footer-button bg-green-600" onclick="closeDayViewDayTypeModal()">Done</button>
             </div>
@@ -6661,6 +6661,13 @@ body.dark-theme[data-palette="mint"] {
             // this one date, without touching the schedule type's times for any other date
             // tagged with it.
             if (entry.customTimes && entry.customTimes[slot.value]) return entry.customTimes[slot.value];
+            // Other days deliberately don't ride on the shared A_/B_ schedule-type system at all --
+            // not even for universal slots like Advisory/Assembly, which would otherwise silently
+            // fall back to whatever the 'regular' schedule type has configured for them below. That
+            // made Advisory/Assembly classes appear on every Other day regardless of whether the
+            // user actually toggled them on in the Other-day picker. Only an explicit customTimes
+            // entry (handled above) should ever produce a time on an Other day.
+            if (entry.dayType === 'OTHER') return null;
             if (!slot.times) return null;
             const scheduleId = entry.schedule || 'regular';
             const t = slot.times[scheduleId];
@@ -6937,7 +6944,7 @@ body.dark-theme[data-palette="mint"] {
 
                 scheduleSectionHtml = `
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Other days don't follow the A/B bell schedule -- toggle on whichever periods run this day and set their own times.</p>
-                    <div class="overflow-y-auto mb-2" style="max-height:16rem;">
+                    <div class="overflow-y-auto mb-2" style="max-height:26rem;">
                         ${kindsHtml}
                         ${adHocHtml}
                     </div>
@@ -6957,7 +6964,7 @@ body.dark-theme[data-palette="mint"] {
                 const periods = userScheduleSlotOptions.filter(slot => slotAppliesToDayType(slot, dayType) &&
                     (getSlotTimeForDate(slot, d) !== null || (entry.customTimes && entry.customTimes[slot.value] !== undefined)));
                 const periodsGridHtml = periods.length
-                    ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto" style="max-height:14rem;">
+                    ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto" style="max-height:22rem;">
                         ${periods.map(slot => `
                             <div class="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm space-y-1">
                                 <p class="font-semibold text-xs text-gray-900 dark:text-white truncate">${escapeHtml(slot.label)}</p>

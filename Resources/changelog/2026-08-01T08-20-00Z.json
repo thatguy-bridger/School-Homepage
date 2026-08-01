@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T08:20:00Z",
+  "title": "Fixed Advisory auto-appearing on Other days, bigger day-type modal",
+  "summary": [
+    "Advisory (and Assembly, or any other universal period) was silently appearing on every 'Other' day even when it wasn't toggled on, because it was falling back to the regular schedule's default time instead of respecting Other days' 'no shared schedule' rule -- only periods you explicitly toggle on now show up.",
+    "The Day view's day-type/schedule picker modal is bigger now, with more room for the Other-day period list before it needs to scroll."
+  ]
+}
