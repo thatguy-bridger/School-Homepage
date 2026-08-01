@@ -1885,6 +1885,35 @@ body.dark-theme[data-palette="mint"] {
         body.dark-theme .day-badge.badge-b { background-color: rgba(251, 191, 36, 0.2); color: #fbbf24; }
         body.dark-theme .day-badge.badge-none { background-color: rgba(148, 163, 184, 0.18); color: #cbd5e1; }
 
+        /* Day view's single-date type card -- same .day-cell/.day-badge visual language as the
+           bulk Day Type editor's grid cells, just sized up and centered for the prominent
+           single-date context (see dayViewTypeCardHtml / openDayViewDayTypeModal). */
+        .day-view-type-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            border-radius: 0.9rem;
+            padding: 0.5rem 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .day-view-type-card:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+        .day-view-type-card:active { transform: scale(0.96); }
+        .day-view-type-card .day-badge { font-size: 0.85rem; padding: 0.2rem 0.65rem; }
+        .day-view-type-tag {
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 0.1rem 0.4rem;
+            border-radius: 9999px;
+            background: rgba(147, 51, 234, 0.15);
+            color: #7e22ce;
+        }
+        body.dark-theme .day-view-type-tag { background: rgba(192, 132, 252, 0.2); color: #d8b4fe; }
+        .day-view-type-tag.day-view-type-custom { background: color-mix(in srgb, var(--accent-2) 18%, transparent); color: var(--accent-2); }
+
         .countdown-chip {
             display: inline-flex;
             align-items: center;
@@ -3496,6 +3525,26 @@ body.dark-theme[data-palette="mint"] {
                     <button type="button" class="modal-footer-button is-secondary" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="closeDayTypeEditorNoteModal()">Cancel</button>
                     <button type="button" class="modal-footer-button bg-green-600" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="saveDayTypeEditorNote()">Save</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Day view: single-date type/schedule/custom-times picker -- opened by clicking the Day
+         view's type card. Same underlying scheduleCalendar data as the bulk Class Schedule (Day
+         Type) Editor, just scoped to the one date currently being viewed. z-[65] so it can stack
+         above the Day view itself (which isn't a modal) with room to spare below the note/
+         schedule-type-editor modals it doesn't nest inside. -->
+    <div id="day-view-daytype-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[65] hidden opacity-0" onclick="closeDayViewDayTypeModal(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-md p-6 border" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="day-view-daytype-modal-title" class="text-lg font-bold">Day Type</h3>
+                <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeDayViewDayTypeModal()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="day-view-daytype-modal-body"></div>
+            <div class="flex justify-end mt-5">
+                <button type="button" class="modal-footer-button bg-green-600" onclick="closeDayViewDayTypeModal()">Done</button>
             </div>
         </div>
     </div>
@@ -6473,15 +6522,165 @@ body.dark-theme[data-palette="mint"] {
             return scheduleCalendar[dateKey(date)] || null;
         }
         function getSlotTimeForDate(slot, date) {
-            if (!slot || !slot.times) return null;
+            if (!slot) return null;
             const entry = getScheduleEntry(date);
             if (!entry || !entry.dayType) return null;
+            // A per-date custom override (set via the Day view's "Custom" option -- see
+            // scheduleCalendar[key].customTimes) wins over the shared schedule type's time for
+            // this one date, without touching the schedule type's times for any other date
+            // tagged with it.
+            if (entry.customTimes && entry.customTimes[slot.value]) return entry.customTimes[slot.value];
+            if (!slot.times) return null;
             const scheduleId = entry.schedule || 'regular';
             const t = slot.times[scheduleId];
             if (t === undefined || t === null) return null;
             if (typeof t === 'string') return t || null;
             const wave = lunchWaveByDayType[entry.dayType] || '1st';
             return t[wave] || t['1st'] || null;
+        }
+        // A slot is "relevant" to a given dayType if it's day-type-prefixed and matches, or if
+        // it's a universal slot that can run regardless of A/B (Advisory, Assembly, or a custom
+        // slot explicitly scoped to 'any') -- same rule schoolDayTimeSpan() uses.
+        function slotAppliesToDayType(slot, dayType) {
+            if (!slot.value) return false;
+            const slotDayType = slot.value.split('_')[0];
+            const isUniversal = slot.value === 'ADVISORY' || slot.value === 'ASSEMBLY' || (slot.custom && slot.scope === 'any');
+            return isUniversal || slotDayType === dayType;
+        }
+
+        // =====================================================================================
+        // ===================== DAY VIEW: single-date type/schedule/custom-times picker =====
+        // =====================================================================================
+        // Opened by clicking the Day view's type card (dayViewTypeCardHtml). Reuses exactly the
+        // same underlying data/functions as the bulk Class Schedule (Day Type) Editor
+        // (setScheduleCalendarDayType/clearScheduleCalendarDate/entry.schedule) -- this is just a
+        // single-day-focused surface onto the same scheduleCalendar, not a parallel data model.
+        // Every change applies immediately (same instant-apply pattern as the bulk editor's cell
+        // clicks and the Schedule Type Editor's time inputs) rather than needing a separate Save.
+        let dayViewDayTypeKey = null;
+        function openDayViewDayTypeModal() {
+            dayViewDayTypeKey = dateKey(currentDate);
+            renderDayViewDayTypeModal();
+            const modal = document.getElementById('day-view-daytype-modal');
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('show');
+            });
+        }
+        function closeDayViewDayTypeModal(event) {
+            const modal = document.getElementById('day-view-daytype-modal');
+            const content = modal.querySelector('.modal-content');
+            if (event && content.contains(event.target)) return;
+            modal.classList.add('opacity-0');
+            modal.classList.remove('show');
+            modal.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
+            dayViewDayTypeKey = null;
+            // Only the Day view's own card (and anything else reading scheduleCalendar) needs a
+            // refresh -- renderCalendar() re-renders whichever calendar view/mode is current.
+            renderCalendar();
+        }
+        function dayViewDayTypeSetType(type) {
+            const key = dayViewDayTypeKey;
+            if (!key) return;
+            if (type === null) clearScheduleCalendarDate(key);
+            else setScheduleCalendarDayType(key, type);
+            saveScheduleCalendar();
+            renderDayViewDayTypeModal();
+        }
+        function dayViewDayTypeSetSchedule(id) {
+            const entry = scheduleCalendar[dayViewDayTypeKey];
+            if (!entry) return;
+            entry.schedule = id;
+            saveScheduleCalendar();
+            renderDayViewDayTypeModal();
+        }
+        function dayViewDayTypeToggleCustom(checked) {
+            const entry = scheduleCalendar[dayViewDayTypeKey];
+            if (!entry) return;
+            if (checked) {
+                if (!entry.customTimes) entry.customTimes = {};
+            } else {
+                delete entry.customTimes;
+            }
+            saveScheduleCalendar();
+            renderDayViewDayTypeModal();
+        }
+        function dayViewDayTypeSetCustomTime(slotValue, timePart, value) {
+            const entry = scheduleCalendar[dayViewDayTypeKey];
+            if (!entry) return;
+            if (!entry.customTimes) entry.customTimes = {};
+            const slot = userScheduleSlotOptions.find(s => s.value === slotValue);
+            const date = parseDateKey(dayViewDayTypeKey);
+            const seed = entry.customTimes[slotValue] || (slot ? getSlotTimeForDate(slot, date) : null) || ' - ';
+            let [s, e] = seed.split(' - ');
+            if (timePart === 'start') s = value; else e = value;
+            entry.customTimes[slotValue] = `${s || ''} - ${e || ''}`;
+            saveScheduleCalendar();
+        }
+        function dayViewCustomTimeInputsHtml(slotValue, timeStr) {
+            const [s, e] = (timeStr || '').split(' - ');
+            return `<div class="flex gap-2 items-center">
+                <input type="time" class="form-input flex-1" value="${s || ''}" onchange="dayViewDayTypeSetCustomTime('${escapeJsAttr(slotValue)}', 'start', this.value)">
+                <span class="text-gray-600 dark:text-gray-300">-</span>
+                <input type="time" class="form-input flex-1" value="${e || ''}" onchange="dayViewDayTypeSetCustomTime('${escapeJsAttr(slotValue)}', 'end', this.value)">
+            </div>`;
+        }
+        function renderDayViewDayTypeModal() {
+            const key = dayViewDayTypeKey;
+            const body = document.getElementById('day-view-daytype-modal-body');
+            const titleEl = document.getElementById('day-view-daytype-modal-title');
+            if (!key || !body) return;
+            const d = parseDateKey(key);
+            if (titleEl) titleEl.textContent = d ? d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : 'Day Type';
+            const entry = scheduleCalendar[key];
+            const dayType = entry ? entry.dayType : null;
+            const scheduleId = entry ? (entry.schedule || 'regular') : 'regular';
+            const isCustom = !!(entry && entry.customTimes);
+
+            const typeBtn = (label, active, onclick) => `
+                <button type="button" class="modal-footer-button ${active ? 'bg-green-600' : 'is-secondary'}" style="flex:1;" onclick="${onclick}">${label}</button>
+            `;
+            const typeButtonsHtml = `
+                <div class="flex gap-2 mb-4">
+                    ${typeBtn('No School', !dayType, 'dayViewDayTypeSetType(null)')}
+                    ${typeBtn('A-Day', dayType === 'A', "dayViewDayTypeSetType('A')")}
+                    ${typeBtn('B-Day', dayType === 'B', "dayViewDayTypeSetType('B')")}
+                </div>
+            `;
+
+            let scheduleSectionHtml = '';
+            let customSectionHtml = '';
+            if (dayType) {
+                const scheduleOptions = scheduleTypes.map(st => `<option value="${escapeAttr(st.id)}" ${st.id === scheduleId ? 'selected' : ''}>${escapeHtml(st.label)}</option>`).join('');
+                scheduleSectionHtml = `
+                    <label class="block text-sm font-semibold mb-2" for="day-view-daytype-schedule-select">Schedule Tag</label>
+                    <select id="day-view-daytype-schedule-select" class="form-input mb-4" onchange="dayViewDayTypeSetSchedule(this.value)">${scheduleOptions}</select>
+                `;
+
+                const periods = userScheduleSlotOptions.filter(slot => slotAppliesToDayType(slot, dayType) &&
+                    (getSlotTimeForDate(slot, d) !== null || (entry.customTimes && entry.customTimes[slot.value] !== undefined)));
+                const periodsGridHtml = periods.length
+                    ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto" style="max-height:14rem;">
+                        ${periods.map(slot => `
+                            <div class="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm space-y-1">
+                                <p class="font-semibold text-xs text-gray-900 dark:text-white truncate">${escapeHtml(slot.label)}</p>
+                                ${dayViewCustomTimeInputsHtml(slot.value, entry.customTimes && entry.customTimes[slot.value] || getSlotTimeForDate(slot, d))}
+                            </div>
+                        `).join('')}
+                    </div>`
+                    : `<p class="text-sm text-gray-500 dark:text-gray-400">No periods run under this schedule type yet -- set them up in the Schedule Type Editor first.</p>`;
+
+                customSectionHtml = `
+                    <label class="ui-setting-row mb-3" title="Override just this date's period times, without changing the shared schedule type">
+                        <span>Custom times for this day</span>
+                        <input type="checkbox" class="ui-switch" ${isCustom ? 'checked' : ''} onchange="dayViewDayTypeToggleCustom(this.checked)">
+                    </label>
+                    ${isCustom ? periodsGridHtml : ''}
+                `;
+            }
+
+            body.innerHTML = typeButtonsHtml + scheduleSectionHtml + customSectionHtml;
         }
         function ordinalSuffix(n) {
             const rem100 = n % 100;
@@ -9742,14 +9941,26 @@ body.dark-theme[data-palette="mint"] {
             renderCalendar();
         }
 
-        function dayViewBadgeHtml(dayType, note) {
-            return dayType
-                ? `<span class="day-badge badge-${dayType.toLowerCase()} text-sm px-3 py-1">${dayType}-Day</span>`
-                : isNoSchoolDay(currentDate)
-                    ? `<span class="day-badge badge-none text-sm px-3 py-1">${NO_SCHOOL_ICON}No School</span>`
-                    : note.title || note.notes
-                        ? `<span class="day-badge bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-200 text-sm px-3 py-1">Event</span>`
-                        : `<span class="text-sm text-gray-500 dark:text-gray-400">No school scheduled</span>`;
+        // Replaces the old plain-text/tiny-badge summary with a clickable card matching the
+        // Class Schedule (Day Type) Editor's .day-cell/.day-badge look, just sized up for this
+        // single-date-focused context. Always shows a card -- even with no dayType set ("None") --
+        // so there's always something to click to open the per-day type/schedule/custom-times
+        // picker (openDayViewDayTypeModal), rather than plain unclickable text.
+        function dayViewTypeCardHtml(dayType, note) {
+            const key = dateKey(currentDate);
+            const entry = scheduleCalendar[key];
+            const scheduleId = entry ? (entry.schedule || 'regular') : null;
+            const scheduleType = scheduleId ? scheduleTypes.find(s => s.id === scheduleId) : null;
+            const hasCustom = !!(entry && entry.customTimes && Object.keys(entry.customTimes).length);
+            const badgeClass = dayType ? `badge-${dayType.toLowerCase()}` : 'badge-none';
+            const label = dayType ? `${dayType}-Day` : `${NO_SCHOOL_ICON}None`;
+            return `
+                <button type="button" class="day-view-type-card" onclick="openDayViewDayTypeModal()" title="Click to change this day's type">
+                    <span class="day-badge ${badgeClass}">${label}</span>
+                    ${scheduleType && scheduleId !== 'regular' ? `<span class="day-view-type-tag">${escapeHtml(scheduleType.label)}</span>` : ''}
+                    ${hasCustom ? `<span class="day-view-type-tag day-view-type-custom">&#9998; Custom</span>` : ''}
+                </button>
+            `;
         }
 
         function renderDayView() {
@@ -9758,7 +9969,7 @@ body.dark-theme[data-palette="mint"] {
             const externalEvents = getFilteredExternalEventsForDate(currentDate);
             const classesToday = getClassesForDateFiltered(currentDate);
             const remindersToday = getRemindersForDateFiltered(currentDate);
-            const badgeHtml = dayViewBadgeHtml(dayType, note);
+            const badgeHtml = dayViewTypeCardHtml(dayType, note);
 
             if (dayViewIsEditing) {
                 return renderDayViewEditMode(badgeHtml, note, classesToday, remindersToday, externalEvents);

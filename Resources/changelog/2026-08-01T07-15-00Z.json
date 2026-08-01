@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-01T07:15:00Z",
+  "title": "Change a single day's schedule right from the Day view",
+  "summary": [
+    "The Day view's A-Day/B-Day/No School badge is now a clickable card -- tap it to change just that one date's type, without opening the full Class Schedule Editor.",
+    "The picker also lets you tag the day with a special schedule (Short Day, Assembly Day, etc.) or pick \"Custom\" to override just that day's period times, leaving every other day using that schedule untouched.",
+    "A day with custom times now shows a small \"Custom\" tag on its card so it's obvious at a glance that it's been overridden."
+  ]
+}
