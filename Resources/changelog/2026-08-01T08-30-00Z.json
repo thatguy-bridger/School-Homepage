@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T08:30:00Z",
+  "title": "Every modal is now resizable",
+  "summary": [
+    "Added a drag handle to the bottom-right corner of every modal in the app -- drag it to scale the whole modal up or down. The aspect ratio always stays locked (it's a single uniform scale, nothing stretches or skews), and it's capped with hard limits: it won't shrink below half size or grow past leaving a 5% margin on every edge of the screen."
+  ]
+}

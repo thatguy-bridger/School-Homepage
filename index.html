@@ -1366,19 +1366,45 @@ body.dark-theme[data-palette="mint"] {
             transition: opacity var(--duration-base) var(--ease-out);
         }
         .modal-content {
+            --modal-user-scale: 1;
+            position: relative;
             background: var(--glass-bg-strong);
             border-color: var(--glass-border) !important;
             backdrop-filter: blur(32px) saturate(160%);
             -webkit-backdrop-filter: blur(32px) saturate(160%);
             box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35) !important;
             opacity: 0;
-            transform: translateY(29px) scale(0.92);
+            /* The open/close animation's own scale (0.92 -> 1) is layered on top of the user's
+               manual resize scale (see .modal-resize-handle / attachModalResizeHandle) rather than
+               overwriting it, so a resized modal still animates open/closed at its resized size
+               instead of snapping back to 100% every time it's reopened. */
+            transform: translateY(29px) scale(calc(0.92 * var(--modal-user-scale)));
             transition: transform 0.52s var(--ease-spring), opacity var(--duration-base) var(--ease-out), background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
         }
         .modal.show .modal-content {
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: translateY(0) scale(var(--modal-user-scale));
         }
+        .modal-content.is-resizing {
+            transition: none;
+        }
+        /* Bottom-right resize grip -- drag to scale the whole modal, preserving its aspect ratio
+           (a single uniform CSS scale can't skew it) and centered in place since .modal-content is
+           already centered by its parent .modal's flex layout. */
+        .modal-resize-handle {
+            position: absolute;
+            right: 0.35rem;
+            bottom: 0.35rem;
+            width: 1.15rem;
+            height: 1.15rem;
+            cursor: nwse-resize;
+            z-index: 5;
+            opacity: 0.35;
+            transition: opacity 0.15s ease-in-out;
+            touch-action: none;
+        }
+        .modal-resize-handle:hover, .modal-resize-handle.is-active { opacity: 0.9; }
+        .modal-resize-handle svg { width: 100%; height: 100%; display: block; color: var(--text-muted); }
 
         .modal-content h3 {
             color: var(--text-primary);
@@ -4929,6 +4955,96 @@ body.dark-theme[data-palette="mint"] {
                 document.dispatchEvent(new CustomEvent('app:click-ripple', { detail: { x: e.clientX, y: e.clientY } }));
             });
         }
+
+        // ===================== MODAL RESIZE HANDLE (shared, every .modal-content) =====================
+        // Drag the bottom-right grip to scale a modal up or down, applied as a single uniform CSS
+        // scale (see --modal-user-scale on .modal-content) so the aspect ratio is always preserved.
+        // Hard limits: never shrinks below MODAL_RESIZE_MIN_SCALE, and never grows past whatever
+        // scale would make the modal's box exceed 90% of the viewport in either axis (a flat 5%
+        // margin from the edge of the page) -- centered in place the whole time since the flex
+        // parent (.modal) is what centers .modal-content, not the scale itself.
+        const MODAL_RESIZE_MIN_SCALE = 0.5;
+        const MODAL_RESIZE_EDGE_MARGIN = 0.05; // 5% of viewport width/height, each side
+        function modalResizeMaxScale(el, baseScale) {
+            // Natural (unscaled) size = current rendered size divided by whatever scale is already
+            // applied, so this stays correct if called again mid-drag or after a previous resize.
+            const rect = el.getBoundingClientRect();
+            const naturalW = rect.width / baseScale;
+            const naturalH = rect.height / baseScale;
+            const maxW = window.innerWidth * (1 - MODAL_RESIZE_EDGE_MARGIN * 2);
+            const maxH = window.innerHeight * (1 - MODAL_RESIZE_EDGE_MARGIN * 2);
+            return Math.max(MODAL_RESIZE_MIN_SCALE, Math.min(maxW / naturalW, maxH / naturalH));
+        }
+        function attachModalResizeHandle(modalContent) {
+            if (!modalContent || modalContent.dataset.resizeHandleAttached) return;
+            modalContent.dataset.resizeHandleAttached = '1';
+            const handle = document.createElement('div');
+            handle.className = 'modal-resize-handle';
+            handle.title = 'Drag to resize';
+            handle.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 20L14 20M20 20L20 14M20 20L9 9"></path></svg>`;
+            modalContent.appendChild(handle);
+
+            let dragging = false;
+            let startX = 0, startY = 0, startScale = 1, maxScale = 1;
+
+            const onMove = (e) => {
+                if (!dragging) return;
+                const point = e.touches ? e.touches[0] : e;
+                // Diagonal drag distance (down-right grows, up-left shrinks), normalized against the
+                // modal's own current size so the drag feels proportional at any zoom level rather
+                // than needing huge mouse travel on a small modal or tiny travel on a big one.
+                const rect = modalContent.getBoundingClientRect();
+                const dx = point.clientX - startX;
+                const dy = point.clientY - startY;
+                const delta = (dx + dy) / ((rect.width + rect.height) / 2 / startScale);
+                let next = startScale + delta;
+                next = Math.max(MODAL_RESIZE_MIN_SCALE, Math.min(maxScale, next));
+                modalContent.style.setProperty('--modal-user-scale', next);
+            };
+            const onUp = () => {
+                if (!dragging) return;
+                dragging = false;
+                modalContent.classList.remove('is-resizing');
+                handle.classList.remove('is-active');
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onUp);
+            };
+            const onDown = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragging = true;
+                const point = e.touches ? e.touches[0] : e;
+                startX = point.clientX;
+                startY = point.clientY;
+                const current = parseFloat(getComputedStyle(modalContent).getPropertyValue('--modal-user-scale')) || 1;
+                startScale = current;
+                maxScale = modalResizeMaxScale(modalContent, current);
+                modalContent.classList.add('is-resizing');
+                handle.classList.add('is-active');
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+                document.addEventListener('touchmove', onMove, { passive: false });
+                document.addEventListener('touchend', onUp);
+            };
+            handle.addEventListener('mousedown', onDown);
+            handle.addEventListener('touchstart', onDown, { passive: false });
+        }
+        function attachModalResizeHandlesToAll() {
+            document.querySelectorAll('.modal-content').forEach(attachModalResizeHandle);
+        }
+        // Re-clamp every currently-scaled modal on viewport resize, so a modal you'd stretched out
+        // on a big window doesn't get left overflowing the page if the window shrinks.
+        window.addEventListener('resize', () => {
+            document.querySelectorAll('.modal-content').forEach(el => {
+                const current = parseFloat(getComputedStyle(el).getPropertyValue('--modal-user-scale')) || 1;
+                const max = modalResizeMaxScale(el, current);
+                if (current > max) el.style.setProperty('--modal-user-scale', max);
+            });
+        });
+        attachModalResizeHandlesToAll();
+        document.addEventListener('DOMContentLoaded', attachModalResizeHandlesToAll);
 
         // ===================== CONFIRMATION MODAL (shared) =====================
         // When opts.clickAnywhereConfirms is set, clicking anywhere in the modal other than the
