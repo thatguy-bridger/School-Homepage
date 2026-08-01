@@ -1117,8 +1117,12 @@ body.dark-theme[data-palette="mint"] {
             flex-wrap: wrap;
         }
         .home-today-class-chip {
-            flex: 1 1 0;
+            /* flex-grow:0 (not 1) so a lone class chip stays a compact pill instead of stretching
+               to fill the whole row width -- at full width it was visually indistinguishable from
+               the Upcoming Events list rendered right below it, reading as a stray/broken item. */
+            flex: 0 1 auto;
             min-width: 110px;
+            max-width: 220px;
             display: block;
             padding: 0.6rem 0.75rem;
             border-radius: 0.75rem;

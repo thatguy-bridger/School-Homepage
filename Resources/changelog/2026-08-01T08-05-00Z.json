@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T08:05:00Z",
+  "title": "Fixed today's class chip stretching full-width on Home",
+  "summary": [
+    "On the Upcoming Events widget, when only one class was scheduled for today, its chip would stretch to fill the entire row width -- at full width it looked like a stray, differently-styled item mixed into the events list below it instead of a class chip. It now stays a compact pill regardless of how many classes are shown."
+  ]
+}
