@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-01T03:45:00Z",
+  "title": "Event colors now match their category, all-day events get icons, preview bars go full width",
+  "summary": [
+    "Fixed a real bug: event colors were coming from the feed's own color swatch, not the category the rules engine actually assigned -- so a holiday/all-day event could show a color that didn't match its category at all. Colors now come from the event's category.",
+    "All-day event lines (both the full Calendar page and the Home preview) now show a small dot with the category icon next to the title, matching the timed-event bars instead of being plain colored text.",
+    "Fixed event bars in the Home widget's mini calendar preview not spanning the full cell width -- the mini cell centers its content (for the day number), which was also shrink-wrapping the event bars instead of letting them stretch like the full calendar's day cells already do."
+  ]
+}

@@ -1698,16 +1698,37 @@ body.dark-theme[data-palette="mint"] {
            container query further down, independent of that count-based cap. */
         .month-allday-stack { display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.3rem; }
         .month-allday-line {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
             border-radius: 0.2rem;
             padding: 0.05rem 0.3rem;
             font-size: 0.62rem;
             font-weight: 600;
             color: #fff;
             line-height: 1.3;
+            cursor: pointer;
+        }
+        /* Small dot behind the icon so it reads clearly against the line's own (already
+           category-colored) background, matching the dot+icon look .month-event-bar uses --
+           semi-transparent white rather than the category color again since the bar itself
+           already IS that color. */
+        .month-allday-dot {
+            width: 0.7rem;
+            height: 0.7rem;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.28);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .month-allday-title {
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
-            cursor: pointer;
+            min-width: 0;
         }
         .month-allday-more { font-size: 0.6rem; color: var(--text-muted); padding: 0 0.2rem; }
         .month-event-bars { display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.25rem; }
@@ -1751,7 +1772,8 @@ body.dark-theme[data-palette="mint"] {
             .month-event-bars { flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 0.25rem; }
             .month-event-bar { padding: 0; background: none; width: auto; }
             .month-event-bar-title { display: none; }
-            .month-allday-line { height: 0.3rem; padding: 0; font-size: 0; }
+            .month-allday-line { height: 0.3rem; padding: 0; }
+            .month-allday-dot, .month-allday-title { display: none; }
         }
         .day-cell:hover {
             transform: translateY(-2px);
@@ -2398,20 +2420,26 @@ body.dark-theme[data-palette="mint"] {
         .mini-day-cell .day-badge { font-size: 0.55rem; padding: 0.05rem 0.3rem; }
         .mini-day-cell .note-dot { position: static; width: 0.3rem; height: 0.3rem; box-shadow: none; }
         /* Scaled-down versions of the main calendar's .month-event-bar/.month-allday-line for
-           this much smaller cell -- same components, smaller type/gaps/caps. */
-        .mini-day-cell .month-allday-stack { gap: 0.1rem; margin-top: 0.15rem; }
+           this much smaller cell -- same components, smaller type/gaps/caps. align-self:stretch
+           + width:100% on the two wrapper rows because .mini-day-cell uses align-items:center
+           (to center the day number/badge) which otherwise shrink-wraps EVERY child to its own
+           content width instead of the cell's full width -- the main calendar's .day-cell has no
+           such override, which is why bars were already full-width there but not here. */
+        .mini-day-cell .month-allday-stack { gap: 0.1rem; margin-top: 0.15rem; align-self: stretch; width: 100%; }
         .mini-day-cell .month-allday-line { font-size: 0.5rem; padding: 0 0.15rem; line-height: 1.2; }
         .mini-day-cell .month-allday-more { font-size: 0.48rem; }
-        .mini-day-cell .month-event-bars { gap: 0.1rem; margin-top: 0.15rem; }
+        .mini-day-cell .month-event-bars { gap: 0.1rem; margin-top: 0.15rem; align-self: stretch; width: 100%; }
         .mini-day-cell .month-event-bar { gap: 0.2rem; padding: 0 0.15rem; }
         .mini-day-cell .month-event-dot-inner { width: 0.55rem; height: 0.55rem; }
         .mini-day-cell .month-event-bar-title { font-size: 0.5rem; }
         .mini-day-cell .month-event-more { font-size: 0.48rem; }
+        .mini-day-cell .month-allday-dot { width: 0.55rem; height: 0.55rem; }
         @container minidaycell (max-width: 58px) {
             .mini-day-cell .month-event-bar { padding: 0; background: none; }
             .mini-day-cell .month-event-bar-title { display: none; }
             .mini-day-cell .month-event-bars { flex-direction: row; flex-wrap: wrap; }
-            .mini-day-cell .month-allday-line { height: 0.22rem; padding: 0; font-size: 0; }
+            .mini-day-cell .month-allday-line { height: 0.22rem; padding: 0; }
+            .mini-day-cell .month-allday-dot, .mini-day-cell .month-allday-title { display: none; }
         }
         .calendar-event-dot { transition: transform 0.12s var(--ease-out, ease-out); }
         .calendar-event-dot:hover { transform: scale(1.4); }
@@ -8387,7 +8415,10 @@ body.dark-theme[data-palette="mint"] {
             const timedEvents = dayEvents.filter(e => !e.allDay);
 
             const allDayLinesHtml = allDayEvents.slice(0, MONTH_ALLDAY_LINE_CAP).map(e => `
-                <div class="month-allday-line" style="background:${e.color};" title="${escapeAttr(e.title)} — ${escapeAttr(categoryLabel(e.category))} — ${escapeAttr(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, ${useFilter})">${escapeHtml(e.title)}</div>
+                <div class="month-allday-line" style="background:${e.color};" title="${escapeAttr(e.title)} — ${escapeAttr(categoryLabel(e.category))} — ${escapeAttr(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, ${useFilter})">
+                    <span class="month-allday-dot">${categoryIconSvg(e.category, 9)}</span>
+                    <span class="month-allday-title">${escapeHtml(e.title)}</span>
+                </div>
             `).join('');
             const allDayOverflow = allDayEvents.length - MONTH_ALLDAY_LINE_CAP;
             const allDayStackHtml = allDayEvents.length ? `
@@ -10320,7 +10351,14 @@ body.dark-theme[data-palette="mint"] {
                 if (!entry) return;
                 entry.events.forEach(ev => {
                     if (!externalEventsByDate[ev.date]) externalEventsByDate[ev.date] = [];
-                    externalEventsByDate[ev.date].push({ title: ev.title, feedId: feed.id, feedLabel: feed.label, color: feed.color || feedColor(feed, i), category: categorizeFeedEvent(feed, ev.uid, ev.title), description: ev.description, timestamp: ev.timestamp, allDay: !!ev.allDay });
+                    // Color comes from the event's CATEGORY (so it reflects whatever the rules
+                    // engine/feed default actually assigned it to), not the feed's own color
+                    // swatch -- those can disagree once a feed's events get split across multiple
+                    // categories by a rule, and the category is what every other category-colored
+                    // thing (chips, legend, dots) already keys off.
+                    const category = categorizeFeedEvent(feed, ev.uid, ev.title);
+                    const categoryColor = findCategory(categoryGroup(category));
+                    externalEventsByDate[ev.date].push({ title: ev.title, feedId: feed.id, feedLabel: feed.label, color: (categoryColor && categoryColor.color) || feed.color || feedColor(feed, i), category, description: ev.description, timestamp: ev.timestamp, allDay: !!ev.allDay });
                 });
             });
             // Pass the cache along rather than having rebuildCanvasAssignmentsIndex re-read and
