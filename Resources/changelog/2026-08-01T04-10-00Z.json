@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T04:10:00Z",
+  "title": "Calendar name text now uses the feed's own color, not its category color",
+  "summary": [
+    "Added a separate feedSourceColor to every calendar event (the feed's own color from External Calendars settings) distinct from its category color -- wherever the ICS calendar/feed name is shown, it now uses that instead of the category color it was accidentally picking up after the last color fix."
+  ]
+}

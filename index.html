@@ -6945,7 +6945,7 @@ body.dark-theme[data-palette="mint"] {
                         <span class="home-dot" style="background:${event.color || 'var(--accent-2)'};"></span>
                         <div>
                             <p class="home-item-title">${escapeHtml(event.title)}</p>
-                            <p class="home-item-sub">${dateStr}${event.feedLabel ? ' · ' + `<span style="color:${event.color || 'var(--accent-2)'};">${escapeHtml(event.feedLabel)}</span>` : ''}</p>
+                            <p class="home-item-sub">${dateStr}${event.feedLabel ? ' · ' + `<span style="color:${event.feedSourceColor || event.color || 'var(--accent-2)'};">${escapeHtml(event.feedLabel)}</span>` : ''}</p>
                             ${desc ? `<p class="home-item-sub home-widget-extra-desc">${escapeHtml(desc.slice(0, 200))}</p>` : ''}
                         </div>
                     </div>
@@ -7575,7 +7575,7 @@ body.dark-theme[data-palette="mint"] {
                 <div class="class-meta-row" style="margin:0 0 0.5rem;">
                     <span class="class-meta-chip">${escapeHtml(categoryLabel(ev.category))}</span>
                     ${timeLabel ? `<span class="class-meta-chip">${escapeHtml(timeLabel)}</span>` : ''}
-                    ${ev.feedLabel ? `<span class="class-meta-chip" style="background:${ev.color}33; color:${ev.color};">${escapeHtml(ev.feedLabel)}</span>` : ''}
+                    ${ev.feedLabel ? `<span class="class-meta-chip" style="background:${ev.feedSourceColor || ev.color}33; color:${ev.feedSourceColor || ev.color};">${escapeHtml(ev.feedLabel)}</span>` : ''}
                 </div>
                 ${ev.description ? `<p class="day-hover-tooltip-item" style="color:var(--text-muted); white-space:pre-wrap;">${escapeHtml(ev.description)}</p>` : `<p class="day-hover-tooltip-empty">No description.</p>`}
             `;
@@ -8621,7 +8621,7 @@ body.dark-theme[data-palette="mint"] {
                                 <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${e.color}"></span>
                                 <span>${escapeHtml(e.title)}</span>
                                 <span class="category-badge" style="background:${e.color}33; color:${e.color};">${escapeHtml(categoryLabel(e.category))}</span>
-                                <span class="text-xs" style="color:${e.color};">(${escapeHtml(e.feedLabel)})</span>
+                                <span class="text-xs" style="color:${e.feedSourceColor || e.color};">(${escapeHtml(e.feedLabel)})</span>
                             </div>
                         `).join('')}
                     </div>
@@ -8923,7 +8923,7 @@ body.dark-theme[data-palette="mint"] {
                                 <span class="w-2 h-2 rounded-full flex-shrink-0 mt-1" style="background:${e.color}"></span>
                                 <div class="min-w-0">
                                     <p class="font-medium flex items-center gap-1.5 flex-wrap">${escapeHtml(e.title)}<span class="category-badge" style="background:${e.color}33; color:${e.color};">${escapeHtml(categoryLabel(e.category))}</span></p>
-                                    <p class="text-[11px]" style="color:${e.color};">${escapeHtml(e.feedLabel || '')}</p>
+                                    <p class="text-[11px]" style="color:${e.feedSourceColor || e.color};">${escapeHtml(e.feedLabel || '')}</p>
                                 </div>
                             </div>
                         `).join('')}
@@ -10351,14 +10351,16 @@ body.dark-theme[data-palette="mint"] {
                 if (!entry) return;
                 entry.events.forEach(ev => {
                     if (!externalEventsByDate[ev.date]) externalEventsByDate[ev.date] = [];
-                    // Color comes from the event's CATEGORY (so it reflects whatever the rules
-                    // engine/feed default actually assigned it to), not the feed's own color
-                    // swatch -- those can disagree once a feed's events get split across multiple
-                    // categories by a rule, and the category is what every other category-colored
-                    // thing (chips, legend, dots) already keys off.
+                    // color is the event's CATEGORY color (so dots/bars reflect whatever the
+                    // rules engine/feed default actually assigned it to -- those can disagree
+                    // with the feed's own swatch once a feed's events get split across multiple
+                    // categories by a rule). feedSourceColor is kept separately as the feed's own
+                    // color from External Calendars settings, for anywhere that specifically
+                    // labels which CALENDAR an event came from (as opposed to which category).
                     const category = categorizeFeedEvent(feed, ev.uid, ev.title);
                     const categoryColor = findCategory(categoryGroup(category));
-                    externalEventsByDate[ev.date].push({ title: ev.title, feedId: feed.id, feedLabel: feed.label, color: (categoryColor && categoryColor.color) || feed.color || feedColor(feed, i), category, description: ev.description, timestamp: ev.timestamp, allDay: !!ev.allDay });
+                    const feedSourceColor = feed.color || feedColor(feed, i);
+                    externalEventsByDate[ev.date].push({ title: ev.title, feedId: feed.id, feedLabel: feed.label, feedSourceColor, color: (categoryColor && categoryColor.color) || feedSourceColor, category, description: ev.description, timestamp: ev.timestamp, allDay: !!ev.allDay });
                 });
             });
             // Pass the cache along rather than having rebuildCanvasAssignmentsIndex re-read and
@@ -11927,7 +11929,7 @@ body.dark-theme[data-palette="mint"] {
                             <span class="min-w-0">
                                 <span style="font-weight:700;">${escapeHtml(e.title)}</span>
                                 <span class="category-badge" style="background:${e.color}33; color:${e.color}; margin-left:0.3rem;">${escapeHtml(categoryLabel(e.category))}</span>
-                                <br><span style="color:${e.color}; font-size:0.72rem;">${escapeHtml(e.feedLabel || '')}</span>
+                                <br><span style="color:${e.feedSourceColor || e.color}; font-size:0.72rem;">${escapeHtml(e.feedLabel || '')}</span>
                             </span>
                         </div>
                     `).join('')}
@@ -12019,7 +12021,7 @@ body.dark-theme[data-palette="mint"] {
                 </div>
                 <h3 class="text-xl font-bold mb-2">${escapeHtml(ev.title)}</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">${escapeHtml(dateLabel)} — ${escapeHtml(timeLabel)}</p>
-                ${ev.feedLabel ? `<p class="text-sm mb-3" style="color:${ev.color};">${escapeHtml(ev.feedLabel)}</p>` : ''}
+                ${ev.feedLabel ? `<p class="text-sm mb-3" style="color:${ev.feedSourceColor || ev.color};">${escapeHtml(ev.feedLabel)}</p>` : ''}
                 ${ev.description ? `<p class="text-sm whitespace-pre-wrap">${escapeHtml(ev.description)}</p>` : ''}
             `;
 
