@@ -9271,28 +9271,44 @@ body.dark-theme[data-palette="mint"] {
             localStorage.setItem('externalIcsCache', JSON.stringify(cache));
         }
 
+        // Tried in order: a direct fetch (works for feeds that actually send CORS headers), then
+        // a chain of public CORS proxies. corsproxy.io alone used to be enough, but its free
+        // unauthenticated tier has gotten unreliable (started 404ing on plenty of legitimate
+        // requests) -- allorigins and codetabs are independent services with their own uptime, so
+        // one dying doesn't take feed loading down with it.
+        const ICS_CORS_PROXIES = [
+            url => 'https://corsproxy.io/?url=' + encodeURIComponent(url),
+            url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+            url => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url)
+        ];
         async function fetchIcsWithFallback(url) {
+            const errors = [];
             try {
                 const res = await fetch(url, { cache: 'no-store' });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 return await res.text();
-            } catch (directErr) {
+            } catch (err) {
+                errors.push(`direct: ${err && err.message ? err.message : err}`);
+            }
+            for (let i = 0; i < ICS_CORS_PROXIES.length; i++) {
                 try {
-                    const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(url);
-                    const res2 = await fetch(proxyUrl);
-                    if (!res2.ok) throw new Error('proxy HTTP ' + res2.status);
-                    return await res2.text();
-                } catch (proxyErr) {
-                    // Surface both failures, not just whichever happened last -- "direct fetch
-                    // blocked by CORS" and "the CORS proxy itself is down/blocked" are different
-                    // problems with different fixes, and only reporting the proxy's error hides
-                    // that the direct request likely failed for an unrelated reason (a private
-                    // calendar returning 403, a typo'd URL, etc).
-                    const directMsg = directErr && directErr.message ? directErr.message : String(directErr);
-                    const proxyMsg = proxyErr && proxyErr.message ? proxyErr.message : String(proxyErr);
-                    throw new Error(`direct: ${directMsg}; via proxy: ${proxyMsg}`);
+                    const res = await fetch(ICS_CORS_PROXIES[i](url));
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const text = await res.text();
+                    // A proxy that's up but can't actually reach the target (or is silently
+                    // returning an HTML error page instead of failing the request) won't look
+                    // like a fetch error -- catch that case too rather than handing back garbage
+                    // that parseIcsToEvents would just silently find zero events in.
+                    if (!text.includes('BEGIN:VCALENDAR')) throw new Error('response was not an ICS calendar');
+                    return text;
+                } catch (err) {
+                    errors.push(`proxy ${i + 1}: ${err && err.message ? err.message : err}`);
                 }
             }
+            // Every attempt failed -- report all of them together (not just the last one) so it's
+            // clear whether the problem is the feed itself (e.g. a 403 on every attempt means it
+            // isn't actually public) versus one flaky proxy in the chain.
+            throw new Error(errors.join('; '));
         }
 
         function unescapeIcsText(str) {

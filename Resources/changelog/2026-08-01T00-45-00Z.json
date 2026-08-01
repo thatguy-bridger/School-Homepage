@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-01T00:45:00Z",
+  "title": "External calendar fetch is more resilient to a flaky CORS proxy",
+  "summary": [
+    "corsproxy.io's free tier has been intermittently 404ing on legitimate requests -- feed fetching now falls back through a chain of three independent proxies (corsproxy.io, allorigins, codetabs) instead of relying on just one.",
+    "A proxy response that isn't actually an ICS calendar (an HTML error page served with a 200, for instance) is now caught and treated as a failure instead of silently producing zero events.",
+    "When every attempt fails, the error message now lists what happened at each step (direct fetch + all three proxies) instead of just the last one, so it's clear whether it's the feed itself or one proxy having a bad day."
+  ]
+}
