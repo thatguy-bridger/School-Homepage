@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T08:15:00Z",
+  "title": "Fixed missing Other-day periods and wrong event heights in Day view",
+  "summary": [
+    "Custom periods added to an 'Other' day type now actually show up on the Day view's time grid, labeled and positioned at their real start/end time -- previously they saved correctly but never rendered anywhere.",
+    "External calendar events on the Day view now draw at their real duration instead of always being shown as a fixed 30-minute block, including recurring events."
+  ]
+}

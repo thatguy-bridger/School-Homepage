@@ -10368,9 +10368,37 @@ body.dark-theme[data-palette="mint"] {
         // spanning 30 minutes before the day's first timed item to 30 minutes after its last,
         // instead of the full 24 hours (most of which would just be empty for a school day). ---
         const DAY_GRID_PX_PER_MIN = 1.1;
+        // The "Other" day type's custom periods (scheduleCalendar[key].customTimes -- see
+        // dayViewOtherTogglePeriod/dayViewOtherAddCustomPeriod) never went through
+        // getClassesForDate (it excludes every slot whose prefix doesn't match dayType, and
+        // 'OTHER' matches nothing), so they were saved but invisible on the grid. This builds the
+        // synthetic block list for whatever periods aren't already covered by a real class card.
+        function getOtherDayPeriodBlocks(date, classesToday) {
+            const entry = scheduleCalendar[dateKey(date)];
+            if (!entry || !entry.customTimes) return [];
+            const claimedKeys = new Set(classesToday.map(c => c.classItem && c.classItem.scheduleSlot).filter(Boolean));
+            const blocks = [];
+            Object.keys(entry.customTimes).forEach(key => {
+                if (claimedKeys.has(key)) return;
+                const timeStr = entry.customTimes[key];
+                if (!timeStr || timeStr.indexOf(' - ') === -1) return;
+                const [s, e] = timeStr.split(' - ');
+                if (!s || !e) return;
+                const sm = parseTime(s), em = parseTime(e);
+                const sMin = sm.hour * 60 + sm.minute, eMin = em.hour * 60 + em.minute;
+                if (eMin <= sMin) return;
+                const slotOption = userScheduleSlotOptions.find(opt => opt.value === key);
+                const label = slotOption ? slotOption.label
+                    : (key.indexOf('OTHER_CUSTOM_') === 0 ? ((entry.customLabels && entry.customLabels[key]) || 'Custom Period') : 'Custom Period');
+                blocks.push({ key, label, sMin, eMin, timeRange: timeStr });
+            });
+            return blocks;
+        }
+
         function renderDayViewGrid(badgeHtml, classesToday, remindersToday, externalEvents) {
             const allDayEvents = externalEvents.filter(e => e.allDay);
             const timedEvents = externalEvents.filter(e => !e.allDay);
+            const otherPeriodBlocks = getOtherDayPeriodBlocks(currentDate, classesToday);
 
             let minMin = null, maxMin = null;
             classesToday.forEach(c => {
@@ -10384,8 +10412,20 @@ body.dark-theme[data-palette="mint"] {
             timedEvents.forEach(ev => {
                 const d = new Date(ev.timestamp);
                 const m = d.getHours() * 60 + d.getMinutes();
+                let endM = m + 30;
+                if (typeof ev.endTimestamp === 'number' && ev.endTimestamp > ev.timestamp) {
+                    const de = new Date(ev.endTimestamp);
+                    // Only trust the end time if it falls on the same calendar day as the start --
+                    // an event spanning midnight would otherwise blow the grid bounds out to
+                    // whatever huge minute value a next-day (or later) timestamp implies.
+                    endM = isSameDay(d, de) ? (de.getHours() * 60 + de.getMinutes()) : Math.max(m + 30, 24 * 60);
+                }
                 if (minMin === null || m < minMin) minMin = m;
-                if (maxMin === null || m + 30 > maxMin) maxMin = m + 30;
+                if (maxMin === null || endM > maxMin) maxMin = endM;
+            });
+            otherPeriodBlocks.forEach(b => {
+                if (minMin === null || b.sMin < minMin) minMin = b.sMin;
+                if (maxMin === null || b.eMin > maxMin) maxMin = b.eMin;
             });
 
             const topRowHtml = (allDayEvents.length || remindersToday.length) ? `
@@ -10443,11 +10483,34 @@ body.dark-theme[data-palette="mint"] {
                 const d = new Date(ev.timestamp);
                 const m = d.getHours() * 60 + d.getMinutes();
                 const top = (m - gridStart) * pxPerMin;
-                const height = Math.max(20, 30 * pxPerMin);
+                let endM = m + 30;
+                if (typeof ev.endTimestamp === 'number' && ev.endTimestamp > ev.timestamp) {
+                    const de = new Date(ev.endTimestamp);
+                    endM = isSameDay(d, de) ? (de.getHours() * 60 + de.getMinutes()) : gridEnd;
+                }
+                // Clip to the visible grid so one long/overnight event can't balloon past it.
+                endM = Math.min(endM, gridEnd);
+                const height = Math.max(20, (endM - m) * pxPerMin);
                 return `
                     <div class="day-grid-event day-grid-event-ext" style="top:${top}px; height:${height}px; left:65%; right:0.25rem; background:${ev.color}33; border-left: 3px solid ${ev.color};" title="${escapeAttr(ev.title)} — ${escapeAttr(categoryLabel(ev.category))}">
                         <span class="day-grid-event-title">${escapeHtml(ev.title)}</span>
                         <span class="day-grid-event-time">${escapeHtml(formatEventTimestamp(ev.timestamp))}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // "Other" day-type custom periods (see getOtherDayPeriodBlocks above) -- rendered like
+            // a class block (same column/position/left-border treatment) but as a plain <div>
+            // since there's no classItem/URL behind it to link to.
+            const OTHER_PERIOD_COLOR = '#e11d48'; // matches .day-badge.badge-other's hue
+            const otherBlocksHtml = otherPeriodBlocks.map(b => {
+                const top = (b.sMin - gridStart) * pxPerMin;
+                const height = Math.max(20, (b.eMin - b.sMin) * pxPerMin);
+                const timeLabel = formatTimeRangeLabel(b.timeRange);
+                return `
+                    <div class="day-grid-event" style="top:${top}px; height:${height}px; left:0.25rem; right:36%; background:color-mix(in srgb, ${OTHER_PERIOD_COLOR} 20%, var(--glass-bg-strong)); border-left: 3px solid ${OTHER_PERIOD_COLOR};" title="${escapeAttr(b.label)} — ${escapeAttr(timeLabel)}">
+                        <span class="day-grid-event-title">${escapeHtml(b.label)}</span>
+                        <span class="day-grid-event-time">${escapeHtml(timeLabel)}</span>
                     </div>
                 `;
             }).join('');
@@ -10465,6 +10528,7 @@ body.dark-theme[data-palette="mint"] {
                     <div class="day-grid" style="height:${totalMin * pxPerMin}px;">
                         ${hoursHtml}
                         ${classBlocksHtml}
+                        ${otherBlocksHtml}
                         ${eventBlocksHtml}
                         ${nowLineHtml}
                     </div>
@@ -11445,7 +11509,7 @@ body.dark-theme[data-palette="mint"] {
             lines.forEach(rawLine => {
                 const line = rawLine.trim();
                 if (line === 'BEGIN:VEVENT') {
-                    current = { summary: '', description: '', start: null, allDay: false, rrule: null, uid: '' };
+                    current = { summary: '', description: '', start: null, end: null, allDay: false, rrule: null, uid: '' };
                 } else if (line === 'END:VEVENT') {
                     if (current && current.start) events.push(current);
                     current = null;
@@ -11460,6 +11524,9 @@ body.dark-theme[data-palette="mint"] {
                         const parsed = parseIcsDateValue(prop.value);
                         current.start = parsed.date;
                         current.allDay = parsed.allDay || prop.params.some(p => p.toUpperCase() === 'VALUE=DATE');
+                    } else if (prop.name === 'DTEND') {
+                        const parsed = parseIcsDateValue(prop.value);
+                        current.end = parsed.date;
                     } else if (prop.name === 'RRULE') {
                         current.rrule = prop.value;
                     } else if (prop.name === 'UID') {
@@ -11473,8 +11540,13 @@ body.dark-theme[data-palette="mint"] {
                 const occurrences = ev.rrule
                     ? expandRecurrence(ev.start, ev.rrule, windowStart, windowEnd)
                     : (ev.start >= windowStart && ev.start <= windowEnd ? [ev.start] : []);
+                // Recurring events only carry the FIRST occurrence's DTSTART/DTEND -- every later
+                // occurrence keeps the same offset (duration) from its own start, so re-derive an
+                // end for each expanded occDate by applying that same offset relative to ev.start.
+                const durationMs = (ev.end && ev.start) ? (ev.end.getTime() - ev.start.getTime()) : null;
                 occurrences.forEach(occDate => {
-                    expanded.push({ title: ev.summary || '(No title)', description: ev.description, date: occDate, allDay: ev.allDay, uid: ev.uid });
+                    const occEnd = durationMs !== null ? new Date(occDate.getTime() + durationMs) : null;
+                    expanded.push({ title: ev.summary || '(No title)', description: ev.description, date: occDate, endDate: occEnd, allDay: ev.allDay, uid: ev.uid });
                 });
             });
             return expanded;
@@ -12009,7 +12081,7 @@ body.dark-theme[data-palette="mint"] {
                     const events = parseIcsToEvents(icsText, windowStart, windowEnd);
                     cache[feed.id] = {
                         fetchedAt: now,
-                        events: events.map(e => ({ title: e.title, description: e.description, date: dateKey(e.date), timestamp: e.date.getTime(), allDay: !!e.allDay, uid: e.uid || '' }))
+                        events: events.map(e => ({ title: e.title, description: e.description, date: dateKey(e.date), timestamp: e.date.getTime(), endTimestamp: e.endDate ? e.endDate.getTime() : null, allDay: !!e.allDay, uid: e.uid || '' }))
                     };
                 } catch (err) {
                     console.error('Failed to fetch external feed', feed.label, err);
@@ -12064,7 +12136,7 @@ body.dark-theme[data-palette="mint"] {
                     const category = categorizeFeedEvent(feed, ev.uid, ev.title);
                     const categoryColor = findCategory(categoryGroup(category));
                     const feedSourceColor = feed.color || feedColor(feed, i);
-                    externalEventsByDate[ev.date].push({ title: ev.title, feedId: feed.id, feedLabel: feed.label, feedSourceColor, color: (categoryColor && categoryColor.color) || feedSourceColor, category, description: ev.description, timestamp: ev.timestamp, allDay: !!ev.allDay });
+                    externalEventsByDate[ev.date].push({ title: ev.title, feedId: feed.id, feedLabel: feed.label, feedSourceColor, color: (categoryColor && categoryColor.color) || feedSourceColor, category, description: ev.description, timestamp: ev.timestamp, endTimestamp: (typeof ev.endTimestamp === 'number') ? ev.endTimestamp : null, allDay: !!ev.allDay });
                 });
             });
             // Pass the cache along rather than having rebuildCanvasAssignmentsIndex re-read and
