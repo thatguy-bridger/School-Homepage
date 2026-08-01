@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T02:05:00Z",
+  "title": "Fixed Calendar Preview month grid ballooning to giant rows",
+  "summary": [
+    "The day-grid's flex:1 + grid-auto-rows:1fr (added to make cells grow with the widget) was actually blowing up -- rows became enormous and only one week was visible without scrolling instead of the whole month. Reverted to natural, content-sized rows; the grid no longer tries to stretch to fill leftover widget height."
+  ]
+}

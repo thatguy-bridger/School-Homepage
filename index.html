@@ -2341,20 +2341,19 @@ body.dark-theme[data-palette="mint"] {
             color: var(--text-muted);
             text-align: center;
         }
-        /* The actual 7-column day-cell grid (as opposed to the weekday-header row above it) gets
-           the widget's leftover vertical space -- grid-auto-rows:1fr makes its rows share
-           whatever height flex:1 hands it, so dragging the widget taller genuinely grows the
-           cells instead of just adding blank/scrollable space below a grid that refused to
-           change size. min-height below is only the FLOOR for when the widget is small/short. */
-        .mini-month-days-grid { flex: 1; grid-auto-rows: 1fr; }
-        /* Everything else in the panel (the title/gear/"Open full calendar" header row, the
-           weekday-letter row, the config panel, the agenda list) has to keep its natural size --
-           without this, flexbox's default flex-shrink:1 let them get squeezed by the day-grid
-           whenever the widget was too short for everything to fit at full size, which read as
-           the header and its button getting clipped/cut off instead of the day-grid being the
-           one that shrinks. The day-grid is the only thing meant to flex; .mini-calendar-panel's
-           own overflow-y:auto (see the descendant rule above) handles the rest via scrolling if
-           the widget is genuinely too short for even the shrunk-to-floor content to fit. */
+        /* The actual 7-column day-cell grid (as opposed to the weekday-header row above it).
+           NOTE: this used to also be flex:1 + grid-auto-rows:1fr to actively grow into leftover
+           widget height, but that combination blew up in practice -- a grid item with flex-basis
+           0 stretched to fill whatever height the (buggy, inflated) flex chain handed it, dividing
+           that across 6 rows and making every cell enormous while only one week's worth was
+           visible without scrolling. Reverted to natural content-sized rows -- extra widget
+           height now just becomes blank/scrollable space below the grid (via
+           .mini-calendar-panel's own overflow-y:auto) instead of the grid trying to claim it. */
+        .mini-month-days-grid { flex: 0 0 auto; }
+        /* Keeps the header/weekday-row/agenda-list at their natural size rather than getting
+           squeezed by flexbox's default flex-shrink:1 when things don't fit -- see the header
+           clipping this was originally added for. Harmless now that the day-grid isn't fighting
+           for space the way it was above, but still correct to keep. */
         .mini-calendar-panel > *:not(.mini-month-days-grid) { flex-shrink: 0; }
         .mini-day-cell {
             position: relative;
@@ -2369,9 +2368,9 @@ body.dark-theme[data-palette="mint"] {
             /* Fluid instead of a flat 3.4rem -- a 6-row month grid at a fixed per-cell height
                can't shrink below ~20rem tall no matter how small the widget is dragged, which is
                exactly what was overflowing past the widget's box and getting clipped. cqmin ties
-               the FLOOR to the widget's own size; grid-auto-rows:1fr above (not this) is what
-               makes the cells actually grow taller when there's more room. */
-            min-height: clamp(1.5rem, 8cqmin, 5.5rem);
+               it to the widget's own size so it shrinks on a small widget; it does NOT grow
+               unbounded any more (see .mini-month-days-grid above), it's just a floor. */
+            min-height: clamp(1.5rem, 5cqmin, 3.2rem);
             transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
         }
         .mini-day-cell.is-outside { opacity: 0.35; }
