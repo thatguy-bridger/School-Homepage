@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T08:00:00Z",
+  "title": "Fixed Quick Note always opening the first class card",
+  "summary": [
+    "Saving changes in the class editor was rebuilding every class from the form fields and silently dropping each class's internal note ID (and extra links) in the process -- that collapsed every class down to the same blank ID, so clicking the note icon on any card always opened the first card's note instead of the one you clicked. Both are now carried over correctly on save.",
+    "Bumped the class card border width to 1.5x for a bit more definition."
+  ]
+}

@@ -1142,6 +1142,7 @@ body.dark-theme[data-palette="mint"] {
 
         .class-card {
             background: var(--glass-bg);
+            border-width: 1.5px;
             border-color: var(--glass-border) !important;
             backdrop-filter: blur(16px) saturate(160%);
             -webkit-backdrop-filter: blur(16px) saturate(160%);
@@ -5887,7 +5888,18 @@ body.dark-theme[data-palette="mint"] {
                     const orig = (classData[origCategoryIndex] && classData[origCategoryIndex].classes[origClassIndex]) || {};
 
                     if (title || url || scheduleSlot || teacher || room) {
-                        updatedCategory.classes.push({ title, url, scheduleSlot, teacher, room, canvasCourseCode, color: orig.color || '' });
+                        // noteId/links were being dropped here on every save (this rebuilds classData
+                        // from scratch from the form instead of patching the original objects) --
+                        // that collapsed every class's noteId to the same undefined/blank fallback,
+                        // so the Quick Note toggle always found the first "note-box-" element in the
+                        // DOM regardless of which card's button was actually clicked. Carry both over
+                        // from the original class (generating a fresh noteId only if it never had one).
+                        updatedCategory.classes.push({
+                            title, url, scheduleSlot, teacher, room, canvasCourseCode,
+                            color: orig.color || '',
+                            noteId: orig.noteId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)),
+                            links: Array.isArray(orig.links) ? orig.links : []
+                        });
                     }
                 });
                 newClassData.push(updatedCategory);
