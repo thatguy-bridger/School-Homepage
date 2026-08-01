@@ -3414,13 +3414,31 @@ body.dark-theme[data-palette="mint"] {
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <p class="text-gray-600 text-sm mb-4 dark:text-gray-300 flex-shrink-0">
-                Set the start/end time for each period under this schedule type (24-hour format). Leave both times on a period blank to skip it -- it simply won't run under this schedule (like Advisory not running on a Short Day).
+            <p class="text-gray-600 text-sm mb-2 dark:text-gray-300 flex-shrink-0">
+                Pick which periods run under this schedule type -- only checked ones get a time card below. Set each one's start/end time in 24-hour format.
             </p>
+            <div id="schedule-type-editor-period-picker" class="flex flex-wrap gap-x-4 gap-y-1 mb-4 flex-shrink-0 pb-3 border-b border-gray-200 dark:border-gray-700"></div>
             <div id="schedule-type-editor-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto flex-grow content-start"></div>
             <div class="flex justify-between items-center gap-3 mt-6 flex-shrink-0">
                 <button type="button" id="schedule-type-editor-delete-btn" class="modal-footer-button bg-red-600" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="removeScheduleTypeFromEditor()">Delete Schedule Type</button>
                 <button type="button" class="modal-footer-button bg-green-600" onclick="closeScheduleTypeEditor()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic single-text-field prompt() replacement -- renaming/naming a preset, entering a
+         password gate, etc. all route through showTextPromptModal() instead of the browser's own
+         prompt(), which the user explicitly doesn't want used anywhere in the app. z-[65] so it
+         can stack above any other modal it might be opened from (Settings at z-50, the nested
+         z-[60] modals like Custom Period/Schedule Type Editor). -->
+    <div id="text-prompt-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[65] hidden opacity-0" onclick="closeTextPromptModal(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-sm p-6 border" onclick="event.stopPropagation()">
+            <h3 id="text-prompt-modal-title" class="text-lg font-bold mb-2"></h3>
+            <p id="text-prompt-modal-desc" class="text-sm text-gray-600 dark:text-gray-300 mb-3"></p>
+            <input type="text" id="text-prompt-modal-input" class="form-input mb-5" onkeydown="if(event.key==='Enter'){event.preventDefault();submitTextPromptModal();}">
+            <div class="flex justify-end gap-2">
+                <button type="button" class="modal-footer-button is-secondary" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="closeTextPromptModal()">Cancel</button>
+                <button type="button" class="modal-footer-button bg-green-600" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="submitTextPromptModal()">OK</button>
             </div>
         </div>
     </div>
@@ -4752,6 +4770,49 @@ body.dark-theme[data-palette="mint"] {
             }, { once: true });
         }
 
+        // ---- Single-text-field prompt() replacement -- every place in the app that used to call
+        // the browser's own prompt() (renaming/naming a preset, a password gate, etc.) now goes
+        // through this instead, matching showConfirmationModal's pattern of a real in-app modal
+        // rather than a native dialog. onSubmit only fires with a non-empty, trimmed value; there
+        // is no "distinguish empty string from cancel" case to worry about like prompt() has --
+        // Cancel and closing without submitting both just do nothing. ----
+        let textPromptModalOnSubmit = null;
+        function showTextPromptModal(opts) {
+            opts = opts || {};
+            document.getElementById('text-prompt-modal-title').textContent = opts.title || '';
+            const descEl = document.getElementById('text-prompt-modal-desc');
+            descEl.textContent = opts.description || '';
+            descEl.classList.toggle('hidden', !opts.description);
+            const input = document.getElementById('text-prompt-modal-input');
+            input.type = opts.masked ? 'password' : 'text';
+            input.placeholder = opts.placeholder || '';
+            input.value = opts.value || '';
+            textPromptModalOnSubmit = typeof opts.onSubmit === 'function' ? opts.onSubmit : null;
+            const modal = document.getElementById('text-prompt-modal');
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('show');
+                input.focus();
+                input.select();
+            });
+        }
+        function closeTextPromptModal(event) {
+            const modal = document.getElementById('text-prompt-modal');
+            const content = modal.querySelector('.modal-content');
+            if (event && content.contains(event.target)) return;
+            modal.classList.add('opacity-0');
+            modal.classList.remove('show');
+            modal.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
+            textPromptModalOnSubmit = null;
+        }
+        function submitTextPromptModal() {
+            const value = document.getElementById('text-prompt-modal-input').value.trim();
+            const cb = textPromptModalOnSubmit;
+            closeTextPromptModal();
+            if (cb && value) cb(value);
+        }
+
         // =====================================================================================
         // ===================== CLASSES: SCHEDULE DATA =====================
         // =====================================================================================
@@ -5750,32 +5811,43 @@ body.dark-theme[data-palette="mint"] {
         function removeScheduleType(id) {
             const st = scheduleTypes.find(s => s.id === id);
             if (!st || st.builtin) return;
-            if (!confirm(`Remove "${st.label}"? Any days currently using it will fall back to Regular Day.`)) return;
-            scheduleTypes = scheduleTypes.filter(s => s.id !== id);
-            Object.values(scheduleCalendar).forEach(entry => {
-                if (entry && entry.schedule === id) entry.schedule = 'regular';
-            });
-            userScheduleSlotOptions.forEach(slot => { if (slot.times) delete slot.times[id]; });
-            saveScheduleTypes();
-            saveScheduleCalendar();
-            saveUserScheduleSlotOptions();
-            renderScheduleTypesEditor();
-            renderDayTypeEditorScheduleOptions();
+            showConfirmationModal(`Remove "${st.label}"? Any days currently using it will fall back to Regular Day.`, [
+                { text: 'Remove', action: () => {
+                    scheduleTypes = scheduleTypes.filter(s => s.id !== id);
+                    Object.values(scheduleCalendar).forEach(entry => {
+                        if (entry && entry.schedule === id) entry.schedule = 'regular';
+                    });
+                    userScheduleSlotOptions.forEach(slot => { if (slot.times) delete slot.times[id]; });
+                    saveScheduleTypes();
+                    saveScheduleCalendar();
+                    saveUserScheduleSlotOptions();
+                    renderScheduleTypesEditor();
+                    renderDayTypeEditorScheduleOptions();
+                }},
+                { text: 'Cancel', action: () => {} }
+            ]);
         }
 
         // ----- Custom Periods: extra period slots beyond the built-in 1st-8th/Lunch/Advisory/
         // Assembly set, selectable in any class's period picker and given their own time cards in
         // every schedule type's editor, same as a built-in period. -----
+        // Lists every period, not just custom ones -- built-ins (Period 1-8, Lunch, Advisory,
+        // Assembly) shown alongside anything custom for a full picture of what's available to
+        // pick from in the Schedule Type Editor's period selector, just without a Remove button
+        // since they're structural (classes/other logic reference them directly by value).
         function renderCustomPeriodsList() {
             const el = document.getElementById('custom-periods-list');
             if (!el) return;
-            const customSlots = userScheduleSlotOptions.filter(s => s.custom);
-            el.innerHTML = customSlots.length ? customSlots.map(s => `
+            const allSlots = userScheduleSlotOptions.filter(s => s.value !== '');
+            el.innerHTML = allSlots.map(s => {
+                const scopeLabel = s.custom ? (s.scope === 'any' ? 'any day' : s.scope + ' Day only') : (s.value === 'ADVISORY' || s.value === 'ASSEMBLY' ? 'any day' : (s.value.split('_')[0] === 'A' ? 'A Day only' : 'B Day only'));
+                return `
                 <div class="flex items-center gap-2 ui-setting-row">
-                    <span class="flex-1 font-medium">${escapeHtml(s.label)} <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(${s.scope === 'any' ? 'any day' : s.scope + ' Day only'})</span></span>
-                    <button type="button" class="modal-footer-button bg-red-600" style="padding:0.35rem 0.75rem;font-size:0.75rem;" onclick="removeCustomPeriodSlot('${escapeJsAttr(s.value)}')">Remove</button>
+                    <span class="flex-1 font-medium">${escapeHtml(s.label)} <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(${scopeLabel}${s.custom ? '' : ' &middot; built-in'})</span></span>
+                    ${s.custom ? `<button type="button" class="modal-footer-button bg-red-600" style="padding:0.35rem 0.75rem;font-size:0.75rem;" onclick="removeCustomPeriodSlot('${escapeJsAttr(s.value)}')">Remove</button>` : ''}
                 </div>
-            `).join('') : `<p class="text-sm text-gray-500 dark:text-gray-400">No custom periods yet.</p>`;
+            `;
+            }).join('');
         }
         function openCustomPeriodModal() {
             document.getElementById('custom-period-label-input').value = '';
@@ -5813,13 +5885,17 @@ body.dark-theme[data-palette="mint"] {
         function removeCustomPeriodSlot(value) {
             const slot = userScheduleSlotOptions.find(s => s.value === value);
             if (!slot || !slot.custom) return;
-            if (!confirm(`Remove the "${slot.label}" period? Any classes currently assigned to it will be unassigned.`)) return;
-            userScheduleSlotOptions = userScheduleSlotOptions.filter(s => s.value !== value);
-            classData.forEach(cat => cat.classes.forEach(c => { if (c.scheduleSlot === value) c.scheduleSlot = ''; }));
-            saveUserScheduleSlotOptions();
-            saveToLocalStorage();
-            renderCustomPeriodsList();
-            renderClassEditor(document.getElementById('class-links-container'));
+            showConfirmationModal(`Remove the "${slot.label}" period? Any classes currently assigned to it will be unassigned.`, [
+                { text: 'Remove', action: () => {
+                    userScheduleSlotOptions = userScheduleSlotOptions.filter(s => s.value !== value);
+                    classData.forEach(cat => cat.classes.forEach(c => { if (c.scheduleSlot === value) c.scheduleSlot = ''; }));
+                    saveUserScheduleSlotOptions();
+                    saveToLocalStorage();
+                    renderCustomPeriodsList();
+                    renderClassEditor(document.getElementById('class-links-container'));
+                }},
+                { text: 'Cancel', action: () => {} }
+            ]);
         }
 
         // ----- Schedule Type Editor modal: create-or-edit one schedule type's name + period times -----
@@ -5870,35 +5946,72 @@ body.dark-theme[data-palette="mint"] {
         }
         // Same per-slot time cards as the old shared grid, just scoped to ONE schedule type
         // (scheduleTypeEditorId) instead of rendering every type's rows for every slot at once.
+        // The picker checkbox for a period IS just whether it has a times[stId] entry -- checking
+        // it creates one (seeded from Regular Day's time for that period, same starting-point
+        // idea as a brand-new schedule type), unchecking removes it, and only checked periods get
+        // a card below. No separate "which periods are enabled" field needed since this is
+        // exactly what "does this period run under this schedule" already meant.
+        function renderScheduleTypeEditorPicker() {
+            const picker = document.getElementById('schedule-type-editor-period-picker');
+            if (!picker || !scheduleTypeEditorId) return;
+            const stId = scheduleTypeEditorId;
+            const allSlots = userScheduleSlotOptions.filter(option => option.value !== '');
+            picker.innerHTML = allSlots.map(slot => {
+                const checked = slot.times && slot.times[stId] !== undefined;
+                return `<label class="flex items-center gap-1.5 text-xs cursor-pointer">
+                    <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleScheduleTypeEditorPeriod('${escapeJsAttr(slot.value)}', this.checked)">
+                    ${escapeHtml(slot.label)}
+                </label>`;
+            }).join('');
+        }
+        function toggleScheduleTypeEditorPeriod(slotValue, checked) {
+            const slot = userScheduleSlotOptions.find(s => s.value === slotValue);
+            if (!slot || !scheduleTypeEditorId) return;
+            if (!slot.times) slot.times = {};
+            const stId = scheduleTypeEditorId;
+            if (checked) {
+                const regular = slot.times.regular;
+                slot.times[stId] = (regular && typeof regular === 'object') ? Object.assign({}, regular) : (regular || '');
+            } else {
+                delete slot.times[stId];
+            }
+            saveUserScheduleSlotOptions();
+            renderScheduleTypeEditorGrid();
+        }
         function renderScheduleTypeEditorGrid() {
+            renderScheduleTypeEditorPicker();
             const grid = document.getElementById('schedule-type-editor-grid');
             if (!grid || !scheduleTypeEditorId) return;
             const stId = scheduleTypeEditorId;
-            const periodsToDisplay = userScheduleSlotOptions.filter(option => option.value !== '');
+            // Only periods this schedule type actually has a times[] entry for (i.e. checked in
+            // the picker above) get a card -- unlike before, an unchecked/never-enabled period
+            // doesn't show a "Not used" placeholder card at all, keeping the grid to just what's
+            // relevant for this particular day type.
+            const periodsToDisplay = userScheduleSlotOptions.filter(option => option.value !== '' && option.times && option.times[stId] !== undefined);
             // Denser 3-up grid, smaller type/padding -- the old 2-col p-4/text-lg cards took up
             // far more room than a start/end time pair needs, especially with 12+ periods to
             // scroll through.
             grid.className = 'grid grid-cols-2 sm:grid-cols-3 gap-2 overflow-y-auto flex-grow content-start';
+            if (!periodsToDisplay.length) {
+                grid.innerHTML = `<p class="text-sm text-gray-500 dark:text-gray-400 col-span-full text-center">No periods selected yet -- check some above.</p>`;
+                return;
+            }
             grid.innerHTML = periodsToDisplay.map(slot => {
-                const t = slot.times ? slot.times[stId] : undefined;
+                const t = slot.times[stId];
                 let rowsHtml;
-                if (t === undefined) {
-                    rowsHtml = `<p class="text-xs text-gray-500 dark:text-gray-400 text-center">Not used</p>${timeRangeInputsHtml(slot.value, stId, '', '')}`;
-                } else if (t && typeof t === 'object') {
+                if (t && typeof t === 'object') {
                     rowsHtml = `<div><label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">1st Lunch</label>${timeRangeInputsHtml(slot.value, stId, '1st', t['1st'])}</div>
                                 <div class="mt-1"><label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">2nd Lunch</label>${timeRangeInputsHtml(slot.value, stId, '2nd', t['2nd'])}</div>`;
                 } else {
                     rowsHtml = timeRangeInputsHtml(slot.value, stId, '', t);
                 }
-                // A period whose time was only ever cleared to blank text (not actually removed)
-                // used to save as a literal " - " string, which getSlotTimeForDate would then
-                // treat as a real (garbage) time instead of "this period doesn't run" -- the
-                // explicit clear button below removes the key outright instead of relying on
-                // blank inputs to mean that.
+                // The clear button here is equivalent to unchecking this period in the picker
+                // above -- both just delete the times[stId] entry -- kept as a convenient
+                // shortcut right next to the fields you're already looking at.
                 return `<div class="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm space-y-1">
                     <div class="flex items-center justify-between gap-1">
                         <p class="font-semibold text-xs text-gray-900 dark:text-white truncate">${escapeHtml(slot.label)}</p>
-                        ${t !== undefined ? `<button type="button" class="text-gray-400 hover:text-red-600 transition flex-shrink-0" title="Clear this period's time for this schedule type" onclick="clearScheduleTypeEditorSlot('${escapeJsAttr(slot.value)}')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>` : ''}
+                        <button type="button" class="text-gray-400 hover:text-red-600 transition flex-shrink-0" title="Remove this period from this schedule type" onclick="clearScheduleTypeEditorSlot('${escapeJsAttr(slot.value)}')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                     </div>
                     ${rowsHtml}
                 </div>`;
@@ -7221,18 +7334,23 @@ body.dark-theme[data-palette="mint"] {
             if (id === 'custom') return;
             const preset = findHomePreset(id);
             if (!preset) return;
-            const name = (prompt('Rename this preset:', preset.label) || '').trim();
-            if (!name || name === preset.label) return;
-            if (isHomeUserPresetId(id)) {
-                const list = loadHomeUserPresets();
-                const match = list.find(p => p.id === id);
-                if (match) { match.label = name; saveHomeUserPresets(list); }
-            } else {
-                const overrides = loadHomePresetLabelOverrides();
-                overrides[id] = name;
-                saveHomePresetLabelOverrides(overrides);
-            }
-            renderHomePresetOptions();
+            showTextPromptModal({
+                title: 'Rename this preset',
+                value: preset.label,
+                onSubmit: (name) => {
+                    if (name === preset.label) return;
+                    if (isHomeUserPresetId(id)) {
+                        const list = loadHomeUserPresets();
+                        const match = list.find(p => p.id === id);
+                        if (match) { match.label = name; saveHomeUserPresets(list); }
+                    } else {
+                        const overrides = loadHomePresetLabelOverrides();
+                        overrides[id] = name;
+                        saveHomePresetLabelOverrides(overrides);
+                    }
+                    renderHomePresetOptions();
+                }
+            });
         }
 
         // ---- User-saved presets: same shape as the built-in ones, just kept separately so a
@@ -7275,20 +7393,23 @@ body.dark-theme[data-palette="mint"] {
                 .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
         }
         function saveCurrentAsHomePreset() {
-            const name = (prompt('Name this preset:') || '').trim();
-            if (!name) return;
-            const preset = {
-                id: 'user-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-                label: name,
-                layout: loadHomeWidgetLayout(),
-                digest: loadHomeDigestConfig(),
-                calPreview: loadCalPreviewConfig()
-            };
-            const list = loadHomeUserPresets();
-            list.push(preset);
-            saveHomeUserPresets(list);
-            renderHomePresetOptions();
-            setHomePresetSelection(preset.id);
+            showTextPromptModal({
+                title: 'Name this preset',
+                onSubmit: (name) => {
+                    const preset = {
+                        id: 'user-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                        label: name,
+                        layout: loadHomeWidgetLayout(),
+                        digest: loadHomeDigestConfig(),
+                        calPreview: loadCalPreviewConfig()
+                    };
+                    const list = loadHomeUserPresets();
+                    list.push(preset);
+                    saveHomeUserPresets(list);
+                    renderHomePresetOptions();
+                    setHomePresetSelection(preset.id);
+                }
+            });
         }
         // Handles both kinds -- a user-saved preset gets removed outright, a built-in gets added
         // to the deleted-id list so it drops out of the dropdown without touching its definition.
@@ -12004,16 +12125,21 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function promptSetAsSiteDefaults() {
-            const entered = prompt('Enter the password to make your current classes, schedule, theme, reminders, and calendar feeds the new defaults for every fresh install of this app:');
-            if (entered === null) return;
-            if (entered !== SET_DEFAULTS_PASSWORD) {
-                showActionToast('Wrong password -- nothing changed.', null);
-                return;
-            }
-            showConfirmationModal(`This will commit directly to ${DEFAULTS_REPO_OWNER}/${DEFAULTS_REPO_NAME} (${DEFAULTS_FILE_PATH}) on GitHub, replacing the app's default classes, schedule, theme, reminders, and calendar feeds with what you have right now. This can't be undone from here. Continue?`, [
-                { text: 'Confirm', action: () => setAsSiteDefaults() },
-                { text: 'Cancel', action: () => {} }
-            ]);
+            showTextPromptModal({
+                title: 'Enter password',
+                description: 'Makes your current classes, schedule, theme, reminders, and calendar feeds the new defaults for every fresh install of this app.',
+                masked: true,
+                onSubmit: (entered) => {
+                    if (entered !== SET_DEFAULTS_PASSWORD) {
+                        showActionToast('Wrong password -- nothing changed.', null);
+                        return;
+                    }
+                    showConfirmationModal(`This will commit directly to ${DEFAULTS_REPO_OWNER}/${DEFAULTS_REPO_NAME} (${DEFAULTS_FILE_PATH}) on GitHub, replacing the app's default classes, schedule, theme, reminders, and calendar feeds with what you have right now. This can't be undone from here. Continue?`, [
+                        { text: 'Confirm', action: () => setAsSiteDefaults() },
+                        { text: 'Cancel', action: () => {} }
+                    ]);
+                }
+            });
         }
 
         async function setAsSiteDefaults() {

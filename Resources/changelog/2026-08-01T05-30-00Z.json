@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-01T05:30:00Z",
+  "title": "No more browser confirm()/prompt() dialogs, and a period picker in the Schedule Type Editor",
+  "summary": [
+    "Every remaining browser confirm()/prompt() dialog in the app (removing a schedule type or custom period, renaming/naming a Home layout preset, the site-defaults password gate) now uses the app's own modals instead -- a new reusable text-prompt modal for the single-text-field cases, and the existing confirmation modal for the yes/no ones.",
+    "The Custom Periods list in Settings now shows every period (Period 1-8, Lunch, Advisory, Assembly, and anything custom), not just custom ones, so there's one place to see everything available.",
+    "The Schedule Type Editor now has a period picker at the top -- check which periods actually run under this schedule type, and only checked ones get a time card below, instead of always showing every period whether it's used or not."
+  ]
+}
