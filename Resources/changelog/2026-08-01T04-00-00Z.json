@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T04:00:00Z",
+  "title": "Calendar name now shows in its event's color everywhere",
+  "summary": [
+    "Wherever an event preview shows which ICS calendar it came from (day-hover tooltip, digest event hover popup, Day view, Agenda view, Upcoming Events, and the event detail modal), that text is now tinted with the event's own color instead of plain gray."
+  ]
+}
