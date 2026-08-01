@@ -5723,6 +5723,7 @@ body.dark-theme[data-palette="mint"] {
                 <div class="flex items-center gap-2 ui-setting-row">
                     <span class="flex-1 font-medium">${escapeHtml(st.label)}${st.builtin ? ' <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(built-in)</span>' : ''}</span>
                     <button type="button" class="modal-footer-button" style="padding:0.35rem 0.75rem;font-size:0.75rem;" onclick="openScheduleTypeEditor('${escapeJsAttr(st.id)}')">Edit</button>
+                    ${st.builtin ? '' : `<button type="button" class="modal-footer-button bg-red-600" style="padding:0.35rem 0.75rem;font-size:0.75rem;" onclick="removeScheduleType('${escapeJsAttr(st.id)}')">Delete</button>`}
                 </div>
             `).join('');
         }
@@ -5744,7 +5745,7 @@ body.dark-theme[data-palette="mint"] {
             saveUserScheduleSlotOptions();
             renderScheduleTypesEditor();
             renderDayTypeEditorScheduleOptions();
-            openScheduleTypeEditor(id);
+            openScheduleTypeEditor(id, true);
         }
         function removeScheduleType(id) {
             const st = scheduleTypes.find(s => s.id === id);
@@ -5823,7 +5824,7 @@ body.dark-theme[data-palette="mint"] {
 
         // ----- Schedule Type Editor modal: create-or-edit one schedule type's name + period times -----
         let scheduleTypeEditorId = null;
-        function openScheduleTypeEditor(id) {
+        function openScheduleTypeEditor(id, focusName) {
             const st = scheduleTypes.find(s => s.id === id);
             if (!st) return;
             scheduleTypeEditorId = id;
@@ -5835,7 +5836,13 @@ body.dark-theme[data-palette="mint"] {
             renderScheduleTypeEditorGrid();
             const modal = document.getElementById('schedule-type-editor-modal');
             modal.classList.remove('hidden');
-            requestAnimationFrame(() => { modal.classList.remove('opacity-0'); modal.classList.add('show'); });
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('show');
+                // Right after creating a brand-new type, jump straight into naming it instead of
+                // requiring an extra click into the field first.
+                if (focusName) { nameInput.focus(); nameInput.select(); }
+            });
         }
         function closeScheduleTypeEditor(event) {
             const modal = document.getElementById('schedule-type-editor-modal');
@@ -5868,22 +5875,41 @@ body.dark-theme[data-palette="mint"] {
             if (!grid || !scheduleTypeEditorId) return;
             const stId = scheduleTypeEditorId;
             const periodsToDisplay = userScheduleSlotOptions.filter(option => option.value !== '');
+            // Denser 3-up grid, smaller type/padding -- the old 2-col p-4/text-lg cards took up
+            // far more room than a start/end time pair needs, especially with 12+ periods to
+            // scroll through.
+            grid.className = 'grid grid-cols-2 sm:grid-cols-3 gap-2 overflow-y-auto flex-grow content-start';
             grid.innerHTML = periodsToDisplay.map(slot => {
                 const t = slot.times ? slot.times[stId] : undefined;
                 let rowsHtml;
                 if (t === undefined) {
-                    rowsHtml = `<p class="text-sm text-gray-500 dark:text-gray-400 text-center">Not used by this schedule type.</p>${timeRangeInputsHtml(slot.value, stId, '', '')}`;
+                    rowsHtml = `<p class="text-xs text-gray-500 dark:text-gray-400 text-center">Not used</p>${timeRangeInputsHtml(slot.value, stId, '', '')}`;
                 } else if (t && typeof t === 'object') {
-                    rowsHtml = `<div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">1st Lunch</label>${timeRangeInputsHtml(slot.value, stId, '1st', t['1st'])}</div>
-                                <div class="mt-2"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">2nd Lunch</label>${timeRangeInputsHtml(slot.value, stId, '2nd', t['2nd'])}</div>`;
+                    rowsHtml = `<div><label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">1st Lunch</label>${timeRangeInputsHtml(slot.value, stId, '1st', t['1st'])}</div>
+                                <div class="mt-1"><label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">2nd Lunch</label>${timeRangeInputsHtml(slot.value, stId, '2nd', t['2nd'])}</div>`;
                 } else {
                     rowsHtml = timeRangeInputsHtml(slot.value, stId, '', t);
                 }
-                return `<div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm space-y-2">
-                    <p class="font-semibold text-lg text-center text-gray-900 dark:text-white">${escapeHtml(slot.label)}</p>
+                // A period whose time was only ever cleared to blank text (not actually removed)
+                // used to save as a literal " - " string, which getSlotTimeForDate would then
+                // treat as a real (garbage) time instead of "this period doesn't run" -- the
+                // explicit clear button below removes the key outright instead of relying on
+                // blank inputs to mean that.
+                return `<div class="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm space-y-1">
+                    <div class="flex items-center justify-between gap-1">
+                        <p class="font-semibold text-xs text-gray-900 dark:text-white truncate">${escapeHtml(slot.label)}</p>
+                        ${t !== undefined ? `<button type="button" class="text-gray-400 hover:text-red-600 transition flex-shrink-0" title="Clear this period's time for this schedule type" onclick="clearScheduleTypeEditorSlot('${escapeJsAttr(slot.value)}')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>` : ''}
+                    </div>
                     ${rowsHtml}
                 </div>`;
             }).join('');
+        }
+        function clearScheduleTypeEditorSlot(slotValue) {
+            const slot = userScheduleSlotOptions.find(s => s.value === slotValue);
+            if (!slot || !slot.times || !scheduleTypeEditorId) return;
+            delete slot.times[scheduleTypeEditorId];
+            saveUserScheduleSlotOptions();
+            renderScheduleTypeEditorGrid();
         }
 
         // =====================================================================================
