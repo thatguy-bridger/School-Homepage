@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T07:40:00Z",
+  "title": "Day type badge is now flush left",
+  "summary": [
+    "The A-Day/B-Day/None card in the Day view was sitting slightly off-center between an invisible spacer and the Edit Day button -- it's now pinned to the far left instead."
+  ]
+}
