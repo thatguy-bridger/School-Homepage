@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-08-01T07:50:00Z",
+  "title": "New \"Other\" day type for one-off schedules",
+  "summary": [
+    "The Calendar Day view's day type picker now has an \"Other\" option alongside No School/A-Day/B-Day, for days that don't follow the regular A/B bell schedule at all -- field trips, assemblies-only days, half days with a totally custom lineup, etc.",
+    "Other days get their own period builder: toggle on whichever periods actually run that day and set their own start/end times, or add fully custom one-off periods (like \"Bus Departure\") that don't exist anywhere else in your schedule.",
+    "A new \"Save as reusable schedule\" button turns an Other day's periods into a brand-new Schedule Tag, so the same lineup can be reused as a Schedule Tag on any future A-Day or B-Day.",
+    "Other days show up with their own distinct badge color everywhere day types are displayed."
+  ]
+}

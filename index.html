@@ -1909,9 +1909,11 @@ body.dark-theme[data-palette="mint"] {
         .day-badge.badge-a { background-color: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }
         .day-badge.badge-b { background-color: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
         .day-badge.badge-none { background-color: rgba(100, 116, 139, 0.16); color: var(--text-muted); }
+        .day-badge.badge-other { background-color: rgba(244, 63, 94, 0.15); color: #e11d48; }
         body.dark-theme .day-badge.badge-a { background-color: rgba(34, 211, 238, 0.2); color: #67e8f9; }
         body.dark-theme .day-badge.badge-b { background-color: rgba(251, 191, 36, 0.2); color: #fbbf24; }
         body.dark-theme .day-badge.badge-none { background-color: rgba(148, 163, 184, 0.18); color: #cbd5e1; }
+        body.dark-theme .day-badge.badge-other { background-color: rgba(251, 113, 133, 0.22); color: #fda4af; }
 
         /* Day view's single-date type card -- same .day-cell/.day-badge visual language as the
            bulk Day Type editor's grid cells, just sized up and centered for the prominent
@@ -6617,7 +6619,7 @@ body.dark-theme[data-palette="mint"] {
                             <span class="text-xs font-medium">${d.getDate()}</span>
                             ${!weekend ? `<button type="button" class="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" title="Add/edit note" onclick="dayTypeEditorEditNote('${key}', event)">${note ? '&#128221;' : '+'}</button>` : ''}
                         </div>
-                        ${dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}-Day</span>` : (weekend ? '' : '<span class="text-[0.65rem] text-gray-400">No School</span>')}
+                        ${dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayTypeLabel(dayType)}</span>` : (weekend ? '' : '<span class="text-[0.65rem] text-gray-400">No School</span>')}
                         ${scheduleType && scheduleId !== 'regular' ? `<div class="text-[0.65rem] mt-0.5 px-1 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-200 inline-block">${escapeHtml(scheduleType.label)}</div>` : ''}
                         ${classesPreview.length ? `<div class="mt-1 space-y-0.5">${classesPreview.map(c => `<div class="text-[0.6rem] truncate text-gray-500 dark:text-gray-400">${escapeHtml(c.classItem.title)}</div>`).join('')}</div>` : ''}
                         ${note ? `<div class="text-[0.6rem] truncate text-cyan-600 dark:text-cyan-300 mt-0.5">${escapeHtml(note.title || 'Note')}</div>` : ''}
@@ -6670,6 +6672,11 @@ body.dark-theme[data-palette="mint"] {
         // Every change applies immediately (same instant-apply pattern as the bulk editor's cell
         // clicks and the Schedule Type Editor's time inputs) rather than needing a separate Save.
         let dayViewDayTypeKey = null;
+        // Transient "Saved as ..." confirmation text shown next to the "Save as reusable
+        // schedule" button after dayViewOtherSaveAsSchedule() succeeds -- cleared after ~2s,
+        // same spirit as the #save-indicator "Saved" flash elsewhere in the app, just scoped to
+        // this modal's own re-render instead of a fixed DOM node.
+        let dayViewOtherSaveMessage = null;
         function openDayViewDayTypeModal() {
             dayViewDayTypeKey = dateKey(currentDate);
             renderDayViewDayTypeModal();
@@ -6738,6 +6745,122 @@ body.dark-theme[data-palette="mint"] {
                 <input type="time" class="form-input flex-1" value="${e || ''}" onchange="dayViewDayTypeSetCustomTime('${escapeJsAttr(slotValue)}', 'end', this.value)">
             </div>`;
         }
+        // Other-day period kinds: userScheduleSlotOptions deduplicated by stripping any A_/B_
+        // prefix (so "1st period" only shows once even though A_1/B_1 both exist), keeping
+        // universal slots (Advisory/Assembly/scope:'any' custom periods) as-is. Whichever slot
+        // is kept for a given suffix is the one whose .value is actually used as the
+        // entry.customTimes key -- safe because getSlotTimeForDate checks customTimes[slot.value]
+        // before any A_/B_/schedule-type semantics, so it doesn't matter that e.g. 'A_1' is used
+        // to key a period on a day that isn't an A-Day at all.
+        function otherDayPeriodKinds() {
+            const seenSuffix = new Set();
+            const kinds = [];
+            userScheduleSlotOptions.forEach(slot => {
+                if (!slot.value) return;
+                const isUniversal = slot.value === 'ADVISORY' || slot.value === 'ASSEMBLY' || (slot.custom && slot.scope === 'any');
+                if (isUniversal) { kinds.push(slot); return; }
+                const parts = slot.value.split('_');
+                const prefix = parts[0];
+                if (prefix !== 'A' && prefix !== 'B') { kinds.push(slot); return; }
+                const suffix = parts.slice(1).join('_');
+                if (seenSuffix.has(suffix)) return;
+                seenSuffix.add(suffix);
+                kinds.push(slot);
+            });
+            return kinds;
+        }
+        function dayViewOtherTogglePeriod(slotValue, checked) {
+            const entry = scheduleCalendar[dayViewDayTypeKey];
+            if (!entry) return;
+            if (!entry.customTimes) entry.customTimes = {};
+            if (checked) {
+                if (entry.customTimes[slotValue] === undefined) entry.customTimes[slotValue] = ' - ';
+            } else {
+                delete entry.customTimes[slotValue];
+            }
+            saveScheduleCalendar();
+            renderDayViewDayTypeModal();
+        }
+        // Fully ad-hoc periods with no userScheduleSlotOptions counterpart at all (e.g. a
+        // one-off "Bus Departure" slot on a field trip day) -- tracked in entry.customTimes
+        // under a synthesized key alongside a parallel entry.customLabels map for the
+        // user-given label, since customTimes values are otherwise just time-range strings.
+        function dayViewOtherAddCustomPeriod() {
+            if (!dayViewDayTypeKey) return;
+            showTextPromptModal({
+                title: 'Add custom period',
+                description: 'A one-off period just for this day (e.g. "Bus Departure").',
+                placeholder: 'e.g. Bus Departure',
+                onSubmit: (label) => {
+                    const entry = scheduleCalendar[dayViewDayTypeKey];
+                    if (!entry) return;
+                    if (!entry.customTimes) entry.customTimes = {};
+                    if (!entry.customLabels) entry.customLabels = {};
+                    const key = 'OTHER_CUSTOM_' + Date.now().toString(36);
+                    entry.customTimes[key] = ' - ';
+                    entry.customLabels[key] = label;
+                    saveScheduleCalendar();
+                    renderDayViewDayTypeModal();
+                }
+            });
+        }
+        function dayViewOtherRemoveCustomPeriod(key) {
+            const entry = scheduleCalendar[dayViewDayTypeKey];
+            if (!entry) return;
+            if (entry.customTimes) delete entry.customTimes[key];
+            if (entry.customLabels) delete entry.customLabels[key];
+            saveScheduleCalendar();
+            renderDayViewDayTypeModal();
+        }
+        // Exports this Other day's periods as a brand-new, reusable Schedule Tag -- same
+        // scheduleTypes.push({ id, label, builtin: false }) convention addCustomScheduleType()
+        // already uses. Only periods that map onto a real userScheduleSlotOptions slot can be
+        // attached to the new schedule type (that's the only place a schedule-type time can
+        // live); ad-hoc periods with no slot counterpart are skipped -- there's nowhere to put
+        // them under the shared schedule-type system. This day itself is left completely
+        // untouched (still OTHER, still its own independent customTimes) -- it's purely
+        // "export a copy", not a conversion.
+        function dayViewOtherSaveAsSchedule() {
+            const entry = scheduleCalendar[dayViewDayTypeKey];
+            if (!entry || !entry.customTimes) return;
+            showTextPromptModal({
+                title: 'Save as reusable schedule',
+                description: 'Creates a new Schedule Tag from this day\'s periods, so it can be reused on any A-Day or B-Day. Custom one-off periods without a matching period kind are skipped.',
+                placeholder: 'e.g. Field Trip Day',
+                onSubmit: (label) => {
+                    const id = 'custom_' + Date.now().toString(36);
+                    scheduleTypes.push({ id, label, builtin: false });
+                    Object.entries(entry.customTimes).forEach(([slotValue, time]) => {
+                        const slot = userScheduleSlotOptions.find(s => s.value === slotValue);
+                        if (!slot) return; // ad-hoc period -- no shared slot to attach a time to
+                        const isUniversal = slot.value === 'ADVISORY' || slot.value === 'ASSEMBLY' || (slot.custom && slot.scope === 'any');
+                        const targets = [slot];
+                        if (!isUniversal) {
+                            const parts = slot.value.split('_');
+                            const prefix = parts[0];
+                            const suffix = parts.slice(1).join('_');
+                            const otherPrefix = prefix === 'A' ? 'B' : (prefix === 'B' ? 'A' : null);
+                            if (otherPrefix) {
+                                const sibling = userScheduleSlotOptions.find(s => s.value === otherPrefix + '_' + suffix);
+                                if (sibling) targets.push(sibling);
+                            }
+                        }
+                        targets.forEach(s => {
+                            if (!s.times) s.times = {};
+                            s.times[id] = time;
+                        });
+                    });
+                    saveScheduleTypes();
+                    saveUserScheduleSlotOptions();
+                    dayViewOtherSaveMessage = `Saved as "${label}"`;
+                    renderDayViewDayTypeModal();
+                    setTimeout(() => {
+                        dayViewOtherSaveMessage = null;
+                        renderDayViewDayTypeModal();
+                    }, 2000);
+                }
+            });
+        }
         function renderDayViewDayTypeModal() {
             const key = dayViewDayTypeKey;
             const body = document.getElementById('day-view-daytype-modal-body');
@@ -6758,12 +6881,56 @@ body.dark-theme[data-palette="mint"] {
                     ${typeBtn('No School', !dayType, 'dayViewDayTypeSetType(null)')}
                     ${typeBtn('A-Day', dayType === 'A', "dayViewDayTypeSetType('A')")}
                     ${typeBtn('B-Day', dayType === 'B', "dayViewDayTypeSetType('B')")}
+                    ${typeBtn('Other', dayType === 'OTHER', "dayViewDayTypeSetType('OTHER')")}
                 </div>
             `;
 
             let scheduleSectionHtml = '';
             let customSectionHtml = '';
-            if (dayType) {
+            if (dayType === 'OTHER') {
+                // Other days skip the shared "Schedule Tag" select entirely -- that's the whole
+                // point of Other, it doesn't ride on the shared A_/B_ time-schedule system -- and
+                // instead get a period-kind picker + ad-hoc period builder, both writing straight
+                // into entry.customTimes (see otherDayPeriodKinds/dayViewOtherTogglePeriod/
+                // dayViewOtherAddCustomPeriod above).
+                if (!entry.customTimes) entry.customTimes = {};
+                const kinds = otherDayPeriodKinds();
+                const kindsHtml = kinds.map(slot => {
+                    const checked = entry.customTimes[slot.value] !== undefined;
+                    return `
+                        <label class="ui-setting-row mini-cal-config-row" title="Include ${escapeAttr(slot.label)} on this day">
+                            <span>${escapeHtml(slot.label)}</span>
+                            <input type="checkbox" class="ui-switch" ${checked ? 'checked' : ''} onchange="dayViewOtherTogglePeriod('${escapeJsAttr(slot.value)}', this.checked)">
+                        </label>
+                        ${checked ? `<div class="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm mb-2">${dayViewCustomTimeInputsHtml(slot.value, entry.customTimes[slot.value])}</div>` : ''}
+                    `;
+                }).join('');
+
+                const customLabels = entry.customLabels || {};
+                const adHocKeys = Object.keys(entry.customTimes).filter(k => k.indexOf('OTHER_CUSTOM_') === 0);
+                const adHocHtml = adHocKeys.map(k => `
+                    <div class="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm space-y-1 mb-2">
+                        <div class="flex items-center justify-between gap-1">
+                            <p class="font-semibold text-xs text-gray-900 dark:text-white truncate">${escapeHtml(customLabels[k] || 'Custom Period')}</p>
+                            <button type="button" class="text-gray-400 hover:text-red-600 transition flex-shrink-0" title="Remove this period" onclick="dayViewOtherRemoveCustomPeriod('${escapeJsAttr(k)}')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                        </div>
+                        ${dayViewCustomTimeInputsHtml(k, entry.customTimes[k])}
+                    </div>
+                `).join('');
+
+                scheduleSectionHtml = `
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Other days don't follow the A/B bell schedule -- toggle on whichever periods run this day and set their own times.</p>
+                    <div class="overflow-y-auto mb-2" style="max-height:16rem;">
+                        ${kindsHtml}
+                        ${adHocHtml}
+                    </div>
+                    <button type="button" class="modal-footer-button is-secondary mb-3" style="width:100%;" onclick="dayViewOtherAddCustomPeriod()">+ Add custom period</button>
+                    <div class="flex items-center gap-2 mb-2">
+                        <button type="button" class="modal-footer-button" onclick="dayViewOtherSaveAsSchedule()">Save as reusable schedule&hellip;</button>
+                        ${dayViewOtherSaveMessage ? `<span class="text-xs text-green-600 dark:text-green-400 font-medium">${escapeHtml(dayViewOtherSaveMessage)}</span>` : ''}
+                    </div>
+                `;
+            } else if (dayType) {
                 const scheduleOptions = scheduleTypes.map(st => `<option value="${escapeAttr(st.id)}" ${st.id === scheduleId ? 'selected' : ''}>${escapeHtml(st.label)}</option>`).join('');
                 scheduleSectionHtml = `
                     <label class="block text-sm font-semibold mb-2" for="day-view-daytype-schedule-select">Schedule Tag</label>
@@ -6833,18 +7000,29 @@ body.dark-theme[data-palette="mint"] {
             const entry = getScheduleEntry(date);
             if (!entry || !entry.dayType) return null;
             let earliestStart = null, latestEnd = null;
-            userScheduleSlotOptions.forEach(slot => {
-                if (!slot.value) return;
-                const slotDayType = slot.value.split('_')[0];
-                const isUniversal = slot.value === 'ADVISORY' || slot.value === 'ASSEMBLY' || (slot.custom && slot.scope === 'any');
-                if (!isUniversal && slotDayType !== entry.dayType) return;
-                const range = getSlotTimeForDate(slot, date);
+            const consider = (range) => {
                 if (!range) return;
                 const [startStr, endStr] = range.split(' - ');
                 if (!startStr || !endStr) return;
                 if (earliestStart === null || startStr < earliestStart) earliestStart = startStr;
                 if (latestEnd === null || endStr > latestEnd) latestEnd = endStr;
-            });
+            };
+            if (entry.dayType === 'OTHER') {
+                // Other days don't follow the shared A_/B_-prefixed schedule system at all --
+                // every period on an Other day lives directly in entry.customTimes (both real
+                // slot values the user toggled on, and fully ad-hoc periods with no
+                // userScheduleSlotOptions counterpart), so just scan those ranges directly
+                // instead of walking userScheduleSlotOptions and filtering by dayType prefix.
+                if (entry.customTimes) Object.values(entry.customTimes).forEach(consider);
+            } else {
+                userScheduleSlotOptions.forEach(slot => {
+                    if (!slot.value) return;
+                    const slotDayType = slot.value.split('_')[0];
+                    const isUniversal = slot.value === 'ADVISORY' || slot.value === 'ASSEMBLY' || (slot.custom && slot.scope === 'any');
+                    if (!isUniversal && slotDayType !== entry.dayType) return;
+                    consider(getSlotTimeForDate(slot, date));
+                });
+            }
             if (earliestStart === null) return null;
             return `${formatTimeOnly(earliestStart)} - ${formatTimeOnly(latestEnd)}`;
         }
@@ -8808,6 +8986,12 @@ body.dark-theme[data-palette="mint"] {
             const entry = scheduleCalendar[dateKey(date)];
             return entry ? entry.dayType : null;
         }
+        // Human label for a dayType value -- 'A'/'B' read as "A-Day"/"B-Day", but 'OTHER' (a day
+        // that doesn't follow the shared A/B bell schedule at all) just reads as "Other" rather
+        // than the nonsensical "OTHER-Day".
+        function dayTypeLabel(dayType) {
+            return dayType === 'OTHER' ? 'Other' : `${dayType}-Day`;
+        }
         function getNote(date) {
             return dayNotes[dateKey(date)] || null;
         }
@@ -9545,7 +9729,7 @@ body.dark-theme[data-palette="mint"] {
                     const dayType = getDayType(cursor);
                     const note = getNote(cursor);
                     const externalEvents = filterPreviewEvents(getExternalEventsForDate(cursor));
-                    const badgeHtml = !previewConfig.showDayBadges ? '' : dayType ? `<span class="day-badge ${dayType === 'A' ? 'badge-a' : 'badge-b'}">${dayType}</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none" title="No School">${NO_SCHOOL_ICON}</span>` : '';
+                    const badgeHtml = !previewConfig.showDayBadges ? '' : dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none" title="No School">${NO_SCHOOL_ICON}</span>` : '';
                     const noteDotHtml = previewConfig.showNotes && note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
                     // Same event-bar/all-day-line rendering as the full Calendar page's month
                     // view (see buildMonthDayEventsHtml) so this preview scales the same way --
@@ -9585,7 +9769,7 @@ body.dark-theme[data-palette="mint"] {
                 const remindersToday = previewConfig.showReminders ? getRemindersForDate(currentDay) : [];
                 if (!opts.alwaysShow && !dayType && !noSchool && !note && !externalEvents.length && !remindersToday.length) return null;
 
-                const titleHtml = note && note.title ? `<p class="mini-upcoming-title">${escapeHtml(note.title)}</p>` : (dayType ? `<p class="mini-upcoming-title">${dayType}-Day</p>` : noSchool ? `<p class="mini-upcoming-title">No School</p>` : opts.alwaysShow ? '<p class="mini-upcoming-title" style="color:var(--text-muted);">Nothing scheduled</p>' : '<p class="mini-upcoming-title">Scheduled</p>');
+                const titleHtml = note && note.title ? `<p class="mini-upcoming-title">${escapeHtml(note.title)}</p>` : (dayType ? `<p class="mini-upcoming-title">${dayTypeLabel(dayType)}</p>` : noSchool ? `<p class="mini-upcoming-title">No School</p>` : opts.alwaysShow ? '<p class="mini-upcoming-title" style="color:var(--text-muted);">Nothing scheduled</p>' : '<p class="mini-upcoming-title">Scheduled</p>');
                 const notesHtml = note && note.notes ? `<p class="mini-upcoming-sub line-clamp-2">${escapeHtml(note.notes)}</p>` : '';
                 const classesToday = previewConfig.showClasses ? getClassesForDate(currentDay) : [];
                 const classesHtml = classesToday.length ? `<p class="mini-upcoming-sub truncate">${classesToday.map(c => `<span${classPopupAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>` : '';
@@ -9622,7 +9806,7 @@ body.dark-theme[data-palette="mint"] {
                     <div class="mini-upcoming-card">
                         <div class="flex items-center justify-between gap-2">
                             <span class="mini-upcoming-date">${currentDay.toLocaleDateString('en-US', { weekday: opts.showWeekday ? 'short' : undefined, month: 'short', day: 'numeric' })}</span>
-                            ${dayType ? `<span class="day-badge ${dayType === 'A' ? 'badge-a' : 'badge-b'}">${dayType}-Day</span>` : noSchool ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>` : ''}
+                            ${dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayTypeLabel(dayType)}</span>` : noSchool ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>` : ''}
                         </div>
                         ${titleHtml}
                         ${notesHtml}
@@ -9961,7 +10145,7 @@ body.dark-theme[data-palette="mint"] {
                 const note = getNote(cursor);
                 const externalEvents = getFilteredExternalEventsForDate(cursor);
                 const classesToday = getClassesForDateFiltered(cursor);
-                const badgeHtml = dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}-Day</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>` : '';
+                const badgeHtml = dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayTypeLabel(dayType)}</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>` : '';
                 const titleHtml = note && note.title ? `<p class="text-xs mt-1 truncate font-medium">${escapeHtml(note.title)}</p>` : '';
                 const dotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
                 const externalDotsHtml = buildMonthDayEventsHtml(cursor, today, externalEvents);
@@ -10006,7 +10190,7 @@ body.dark-theme[data-palette="mint"] {
                 const externalEvents = getFilteredExternalEventsForDate(d);
                 const classesToday = getClassesForDateFiltered(d);
                 const isNoSchool = isNoSchoolDay(d);
-                const badgeLabel = dayType ? `${dayType}-Day` : isNoSchool ? 'No School' : note && (note.title || note.notes) ? 'Event' : '';
+                const badgeLabel = dayType ? `${dayTypeLabel(dayType)}` : isNoSchool ? 'No School' : note && (note.title || note.notes) ? 'Event' : '';
                 const badgeClass = dayType ? `day-badge badge-${dayType.toLowerCase()}` : isNoSchool ? 'day-badge badge-none' : note && (note.title || note.notes) ? 'day-badge bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-200' : '';
                 const badgeHtml = badgeLabel ? `<span class="${badgeClass}">${isNoSchool ? NO_SCHOOL_ICON : ''}${badgeLabel}</span>` : '';
                 const titleHtml = note && note.title ? `<p class="text-sm mt-2 font-semibold">${escapeHtml(note.title)}</p>` : '';
@@ -10066,7 +10250,7 @@ body.dark-theme[data-palette="mint"] {
             const scheduleType = scheduleId ? scheduleTypes.find(s => s.id === scheduleId) : null;
             const hasCustom = !!(entry && entry.customTimes && Object.keys(entry.customTimes).length);
             const badgeClass = dayType ? `badge-${dayType.toLowerCase()}` : 'badge-none';
-            const label = dayType ? `${dayType}-Day` : `${NO_SCHOOL_ICON}None`;
+            const label = dayType ? `${dayTypeLabel(dayType)}` : `${NO_SCHOOL_ICON}None`;
             return `
                 <button type="button" class="day-view-type-card" onclick="openDayViewDayTypeModal()" title="Click to change this day's type">
                     <span class="day-badge ${badgeClass}">${label}</span>
@@ -10384,7 +10568,7 @@ body.dark-theme[data-palette="mint"] {
 
                 const isToday = isSameDay(entry.date, today);
                 const badgeHtml = dayType
-                    ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}-Day</span>`
+                    ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayTypeLabel(dayType)}</span>`
                     : noSchool
                         ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>`
                         : hasNote
@@ -10394,7 +10578,7 @@ body.dark-theme[data-palette="mint"] {
                 const titleText = note && note.title
                     ? note.title
                     : dayType
-                        ? `${dayType}-Day`
+                        ? `${dayTypeLabel(dayType)}`
                         : noSchool
                             ? 'No School'
                             : externalEvents.length
@@ -13399,7 +13583,7 @@ body.dark-theme[data-palette="mint"] {
             const dateLabel = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
             const badgeHtml = dayType
-                ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}-Day</span>`
+                ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayTypeLabel(dayType)}</span>`
                 : noSchool
                     ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>`
                     : '';
@@ -14021,7 +14205,7 @@ body.dark-theme[data-palette="mint"] {
                 // it gets its own compact header row instead of living inside .digest-items.
                 const dayHeaderHtml = (dayType || noSchool || hasDayNote) ? `
                     <div class="digest-day-summary">
-                        ${(dayType || noSchool) ? `<span class="day-badge ${dayType ? 'badge-' + dayType.toLowerCase() : 'badge-none'}">${dayType ? `${dayType}-Day` : `${NO_SCHOOL_ICON}No School`}</span>` : ''}
+                        ${(dayType || noSchool) ? `<span class="day-badge ${dayType ? 'badge-' + dayType.toLowerCase() : 'badge-none'}">${dayType ? `${dayTypeLabel(dayType)}` : `${NO_SCHOOL_ICON}No School`}</span>` : ''}
                         ${hasDayNote ? `
                             <span class="min-w-0">
                                 ${dayNote.title ? `<span style="font-weight:700;">${escapeHtml(dayNote.title)}</span>` : ''}
