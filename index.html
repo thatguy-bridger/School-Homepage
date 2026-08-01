@@ -214,7 +214,10 @@ body.dark-theme[data-palette="mint"] {
         0 4px 12px rgba(0,0,0,.06);
 }
 
-        /* Smooth fade for content scrolling under the fixed .app-topbar pill (prevents hard clip/pop). */
+        /* Smooth fade for content scrolling under the fixed .app-topbar pill (prevents hard clip/pop).
+           Height/gradient stops are recomputed in JS (updateTopbarFadeZone) so the solid region
+           extends past whatever page-level "screen selector" bar (e.g. the Calendar view-tabs) is
+           currently sitting just below the topbar, instead of fading right under the topbar itself. */
         .topbar-fade-overlay {
             position: fixed;
             top: 0;
@@ -224,6 +227,19 @@ body.dark-theme[data-palette="mint"] {
             z-index: 39; /* just under .app-topbar (z-index: 40) */
             pointer-events: none;
             background: linear-gradient(to bottom, var(--bg-solid) 0%, var(--bg-solid) 18%, transparent 100%);
+            opacity: 0.92;
+            transition: background-color 0.6s ease-in-out;
+        }
+        /* Symmetric fade-in at the bottom edge of the viewport. */
+        .bottom-fade-overlay {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 4.5rem;
+            z-index: 39;
+            pointer-events: none;
+            background: linear-gradient(to top, var(--bg-solid) 0%, var(--bg-solid) 18%, transparent 100%);
             opacity: 0.92;
             transition: background-color 0.6s ease-in-out;
         }
@@ -1222,10 +1238,11 @@ body.dark-theme[data-palette="mint"] {
         .class-links-badge svg { width: 0.85rem; height: 0.85rem; }
         .class-links-badge:hover { background: var(--glass-bg); }
         .class-links-dropdown {
-            position: absolute;
-            top: 3.25rem;
-            right: 1rem;
-            z-index: 20;
+            /* Positioned via JS (right by the mouse) when opened -- it's portaled to <body> at
+               that point (see toggleClassLinksDropdown) so a hovering .class-card's own
+               translateY transform can't hijack it as a fixed-position containing block. */
+            position: fixed;
+            z-index: 60;
             /* Noticeably more opaque than the usual glass-bg-strong -- this floats over a
                class-card that already has its own color tint plus the animated background blobs
                behind everything, so the normal frosted-glass level left link text hard to read. */
@@ -3007,6 +3024,7 @@ body.dark-theme[data-palette="mint"] {
     <!-- Fixed gradient overlay: fades scrolling content smoothly as it passes under the topbar pill,
          instead of hard-clipping/popping against it. Purely decorative, no pointer events. -->
     <div class="topbar-fade-overlay" aria-hidden="true"></div>
+    <div class="bottom-fade-overlay" aria-hidden="true"></div>
 
     <!-- Top bar: app-level navigation -->
     <header class="app-topbar">
@@ -3959,6 +3977,7 @@ body.dark-theme[data-palette="mint"] {
                 if (location.hash.replace('#', '') !== view) {
                     history.replaceState(null, '', '#' + view);
                 }
+                scheduleTopbarFadeZoneUpdate();
             };
             if (document.startViewTransition && !isReducedMotion()) {
                 document.startViewTransition(doSwitch);
@@ -3972,6 +3991,42 @@ body.dark-theme[data-palette="mint"] {
             const view = hashView === 'calendar' || hashView === 'classes' || hashView === 'reminders' ? hashView : 'home';
             if (view !== activeAppView) switchAppView(view);
         });
+
+        // Keeps the top fade zone's solid region extending past whatever page-level "screen
+        // selector" bar (currently just the Calendar view-tabs) is sitting below the topbar, so
+        // that bar stays fully opaque instead of getting faded along with scrolling content.
+        // Falls back to fading right under the topbar itself once that selector bar has scrolled
+        // out of view.
+        let topbarFadeZoneRaf = null;
+        function scheduleTopbarFadeZoneUpdate() {
+            if (topbarFadeZoneRaf) return;
+            topbarFadeZoneRaf = requestAnimationFrame(() => {
+                topbarFadeZoneRaf = null;
+                updateTopbarFadeZone();
+            });
+        }
+        function updateTopbarFadeZone() {
+            const overlay = document.querySelector('.topbar-fade-overlay');
+            if (!overlay) return;
+            const topbar = document.querySelector('.app-topbar');
+            const topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 80;
+            let solidEndPx = topbarBottom + 8;
+            if (activeAppView === 'calendar') {
+                const selector = document.getElementById('view-tabs');
+                if (selector) {
+                    const rect = selector.getBoundingClientRect();
+                    if (rect.height > 0 && rect.bottom > topbarBottom) solidEndPx = rect.bottom + 8;
+                }
+            }
+            const fadeDistance = 72;
+            const totalHeight = solidEndPx + fadeDistance;
+            overlay.style.height = totalHeight + 'px';
+            overlay.style.background = `linear-gradient(to bottom, var(--bg-solid) 0px, var(--bg-solid) ${solidEndPx}px, transparent ${totalHeight}px)`;
+        }
+        window.addEventListener('scroll', scheduleTopbarFadeZoneUpdate, { passive: true });
+        window.addEventListener('resize', scheduleTopbarFadeZoneUpdate);
+        document.addEventListener('DOMContentLoaded', scheduleTopbarFadeZoneUpdate);
+        scheduleTopbarFadeZoneUpdate();
 
         // Single dock-level Settings entry point: opens whichever settings modal matches the active view.
         function openContextualSettings() {
@@ -5155,6 +5210,8 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function renderClassLinks() {
+            if (typeof closeAllClassLinksDropdowns === 'function') closeAllClassLinksDropdowns();
+            document.querySelectorAll('body > .class-links-dropdown').forEach(d => d.remove());
             const container = document.getElementById('class-links-container');
             container.innerHTML = '';
 
@@ -5287,7 +5344,7 @@ body.dark-theme[data-palette="mint"] {
                     </div>
                     <div class="class-meta-row">
                         ${getClassMetaChips(classItem).map(c => `<span class="class-meta-chip">${escapeHtml(c)}</span>`).join('')}
-                        ${extraLinks.length ? `<span class="class-meta-chip class-links-badge" onclick="event.stopPropagation(); toggleClassLinksDropdown(this)" title="More links">${classItemTypeIconSvg('link')}${extraLinks.length}</span>` : ''}
+                        ${extraLinks.length ? `<span class="class-meta-chip class-links-badge" onclick="event.stopPropagation(); toggleClassLinksDropdown(this, event)" title="More links">${classItemTypeIconSvg('link')}${extraLinks.length}</span>` : ''}
                     </div>
                     ${extraLinks.length ? `
                         <div class="class-links-dropdown" onclick="event.stopPropagation()">
@@ -5314,17 +5371,57 @@ body.dark-theme[data-palette="mint"] {
             `;
         }
 
-        function toggleClassLinksDropdown(el) {
-            const scope = el.closest('.class-card') || document;
+        // Closes any open class-links dropdown, moving portaled ones (see toggleClassLinksDropdown)
+        // back into their original card so re-rendering the Classes page can't leave orphaned
+        // copies floating in <body>.
+        function closeAllClassLinksDropdowns() {
+            document.querySelectorAll('.class-links-dropdown.show').forEach(d => {
+                d.classList.remove('show');
+                d.style.left = '';
+                d.style.top = '';
+                if (d.dataset.portaled) {
+                    delete d.dataset.portaled;
+                    const home = document.getElementById(d.dataset.homeCardId);
+                    if (home) home.appendChild(d);
+                    else d.remove();
+                }
+            });
+        }
+        // Opens the dropdown right next to the mouse instead of pinned to the card's top-right
+        // corner -- it's temporarily moved to <body> with position:fixed so a hovering
+        // .class-card's translateY transform doesn't become its containing block (which would
+        // otherwise reposition it relative to the card instead of the viewport).
+        function toggleClassLinksDropdown(el, event) {
+            const card = el.closest('.class-card');
+            const scope = card || document;
             const dropdown = scope.querySelector('.class-links-dropdown');
             if (!dropdown) return;
             const wasOpen = dropdown.classList.contains('show');
-            document.querySelectorAll('.class-links-dropdown.show').forEach(d => d.classList.remove('show'));
-            if (!wasOpen) dropdown.classList.add('show');
+            closeAllClassLinksDropdowns();
+            if (wasOpen) return;
+
+            if (card) {
+                if (!card.id) card.id = 'class-card-' + Math.random().toString(36).slice(2);
+                dropdown.dataset.homeCardId = card.id;
+                dropdown.dataset.portaled = '1';
+                document.body.appendChild(dropdown);
+            }
+            dropdown.classList.add('show');
+
+            const pad = 12;
+            const clickX = event ? event.clientX : window.innerWidth / 2;
+            const clickY = event ? event.clientY : window.innerHeight / 2;
+            const rect = dropdown.getBoundingClientRect();
+            let left = Math.min(clickX + 10, window.innerWidth - rect.width - pad);
+            let top = Math.min(clickY + 10, window.innerHeight - rect.height - pad);
+            left = Math.max(pad, left);
+            top = Math.max(pad, top);
+            dropdown.style.left = left + 'px';
+            dropdown.style.top = top + 'px';
         }
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.class-links-badge') && !e.target.closest('.class-links-dropdown')) {
-                document.querySelectorAll('.class-links-dropdown.show').forEach(d => d.classList.remove('show'));
+                closeAllClassLinksDropdowns();
             }
         });
         // Grows a textarea to fit its content instead of scrolling internally.
@@ -9698,6 +9795,7 @@ body.dark-theme[data-palette="mint"] {
             });
             document.getElementById('nav-row').classList.toggle('hidden', view === 'agenda');
             renderCalendar();
+            scheduleTopbarFadeZoneUpdate();
         }
 
         function goToday() {

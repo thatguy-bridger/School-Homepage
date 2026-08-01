@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-01T07:30:00Z",
+  "title": "Smarter top/bottom fade + link popup follows your cursor",
+  "summary": [
+    "On the Calendar page, the top fade-under-the-navbar effect now starts below the Month/Week/Day/Agenda selector bar instead of right under the top nav pill, so that bar stays fully visible instead of getting dimmed along with scrolling content.",
+    "Added a matching fade-in effect at the bottom edge of the screen for a more polished, symmetric scroll feel.",
+    "The class links popup (the little link-count badge on a class card) now opens right next to your mouse instead of always snapping to the top-right corner of the card."
+  ]
+}
