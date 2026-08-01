@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T08:35:00Z",
+  "title": "Day view time labels no longer wrap",
+  "summary": [
+    "The hour labels down the side of the Day view's time grid (8:00 AM, 12:00 PM, etc.) were too narrow for their column and would wrap onto two lines. They now stay on one line at normal sizes, and only shrink/wrap as a last resort on very narrow screens."
+  ]
+}

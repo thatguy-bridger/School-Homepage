@@ -2636,7 +2636,7 @@ body.dark-theme[data-palette="mint"] {
         .day-grid {
             position: relative;
             border-top: 1px solid var(--glass-border);
-            margin-left: 3.5rem;
+            margin-left: 4.2rem;
         }
         .day-grid-hour-row {
             position: absolute;
@@ -2646,13 +2646,26 @@ body.dark-theme[data-palette="mint"] {
         }
         .day-grid-hour-label {
             position: absolute;
-            left: -3.5rem;
+            left: -4.2rem;
             top: -0.6rem;
-            width: 3.1rem;
+            width: 3.8rem;
             text-align: right;
             font-size: 0.7rem;
+            /* Wide enough for "12:00 PM" at this font size to always fit on one line -- only
+               a genuinely too-narrow viewport (the media query below) should ever wrap it. */
+            white-space: nowrap;
             color: var(--text-muted);
             background: var(--main-container-bg, transparent);
+        }
+        @media (max-width: 420px) {
+            .day-grid { margin-left: 3.2rem; }
+            .day-grid-hour-label {
+                left: -3.2rem;
+                width: 2.9rem;
+                font-size: 0.62rem;
+                white-space: normal;
+                line-height: 1.05;
+            }
         }
         .day-grid-event {
             position: absolute;
