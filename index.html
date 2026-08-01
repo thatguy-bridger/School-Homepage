@@ -214,10 +214,15 @@ body.dark-theme[data-palette="mint"] {
         0 4px 12px rgba(0,0,0,.06);
 }
 
-        /* Smooth fade for content scrolling under the fixed .app-topbar pill (prevents hard clip/pop).
-           Height/gradient stops are recomputed in JS (updateTopbarFadeZone) so the solid region
+        /* Frosted-glass obscuring for content scrolling under the fixed .app-topbar pill (prevents
+           hard clip/pop) -- a blurred, translucent pane rather than a flat color fade, matching the
+           glass look used everywhere else in the app (.app-topbar, modals, etc), so content
+           dissolves into blur instead of vanishing into a flat void.
+           Height/mask stops are recomputed in JS (updateTopbarFadeZone) so the fully-blurred region
            extends past whatever page-level "screen selector" bar (e.g. the Calendar view-tabs) is
-           currently sitting just below the topbar, instead of fading right under the topbar itself. */
+           currently sitting just below the topbar, instead of blurring right under the topbar itself.
+           The blur itself is masked out gradually (mask-image) rather than the background color, so
+           the effect reads as glass thinning out, not a color fading to black. */
         .topbar-fade-overlay {
             position: fixed;
             top: 0;
@@ -226,11 +231,14 @@ body.dark-theme[data-palette="mint"] {
             height: 6rem;
             z-index: 39; /* just under .app-topbar (z-index: 40) */
             pointer-events: none;
-            background: linear-gradient(to bottom, var(--bg-solid) 0%, var(--bg-solid) 18%, transparent 100%);
-            opacity: 0.92;
+            background: var(--glass-bg);
+            backdrop-filter: blur(18px) saturate(160%);
+            -webkit-backdrop-filter: blur(18px) saturate(160%);
+            mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
             transition: background-color 0.6s ease-in-out;
         }
-        /* Symmetric fade-in at the bottom edge of the viewport. */
+        /* Symmetric frosted fade-in at the bottom edge of the viewport. */
         .bottom-fade-overlay {
             position: fixed;
             left: 0;
@@ -239,8 +247,11 @@ body.dark-theme[data-palette="mint"] {
             height: 4.5rem;
             z-index: 39;
             pointer-events: none;
-            background: linear-gradient(to top, var(--bg-solid) 0%, var(--bg-solid) 18%, transparent 100%);
-            opacity: 0.92;
+            background: var(--glass-bg);
+            backdrop-filter: blur(18px) saturate(160%);
+            -webkit-backdrop-filter: blur(18px) saturate(160%);
+            mask-image: linear-gradient(to top, black 0%, black 55%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to top, black 0%, black 55%, transparent 100%);
             transition: background-color 0.6s ease-in-out;
         }
 
@@ -4021,7 +4032,11 @@ body.dark-theme[data-palette="mint"] {
             const fadeDistance = 72;
             const totalHeight = solidEndPx + fadeDistance;
             overlay.style.height = totalHeight + 'px';
-            overlay.style.background = `linear-gradient(to bottom, var(--bg-solid) 0px, var(--bg-solid) ${solidEndPx}px, transparent ${totalHeight}px)`;
+            // Mask the blur/glass itself out gradually (not the background color) -- this reads as
+            // the frosted pane thinning into clear glass, not a color dissolving into a void.
+            const maskGradient = `linear-gradient(to bottom, black 0px, black ${solidEndPx}px, transparent ${totalHeight}px)`;
+            overlay.style.maskImage = maskGradient;
+            overlay.style.webkitMaskImage = maskGradient;
         }
         window.addEventListener('scroll', scheduleTopbarFadeZoneUpdate, { passive: true });
         window.addEventListener('resize', scheduleTopbarFadeZoneUpdate);
