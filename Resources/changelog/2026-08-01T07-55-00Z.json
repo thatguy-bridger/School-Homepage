@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T07:55:00Z",
+  "title": "Fixed the fade zone overshooting on Calendar, smoothed its intensity",
+  "summary": [
+    "Fixed a bug where the top fade/blur zone on the Calendar page was stretching way too far down the page (it was sizing itself off the Month/Week/Day/Agenda selector bar's on-screen position, which could balloon it past 300px tall and blur the page title even at rest) -- it's back to a small, consistent size on every page.",
+    "The fade/blur effect now ramps smoothly from barely noticeable where content first reaches it up to fully blurred as it goes off-screen, instead of sitting at full strength for most of the zone and only tapering off right at the edge."
+  ]
+}

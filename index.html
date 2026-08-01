@@ -4005,40 +4005,52 @@ body.dark-theme[data-palette="mint"] {
             if (view !== activeAppView) switchAppView(view);
         });
 
-        // Keeps the top fade zone's solid region extending past whatever page-level "screen
-        // selector" bar (currently just the Calendar view-tabs) is sitting below the topbar, so
-        // that bar stays fully opaque instead of getting faded along with scrolling content.
-        // Falls back to fading right under the topbar itself once that selector bar has scrolled
-        // out of view.
+        // Eased intensity stops (percent-of-zone -> mask alpha), expressed from each overlay's own
+        // "off screen" edge (0%, e.g. right under the topbar, or the very bottom of the viewport)
+        // to its "first contact" edge (100%, where scrolling content first reaches the effect) --
+        // barely perceptible (1%) at first contact, ramping up faster and faster to fully
+        // opaque/blurred (100%) by the off-screen edge, instead of a flat plateau that then
+        // suddenly cuts off.
+        const FADE_INTENSITY_STOPS = [
+            [0, 1], [14, 0.65], [28, 0.42], [45, 0.24], [65, 0.10], [85, 0.03], [100, 0.01]
+        ];
+        function buildFadeMask(direction) {
+            // Both overlays' 0% gradient stop already lands on their own "off screen" edge --
+            // .topbar-fade-overlay's "to bottom" 0% is its top (under the topbar), and
+            // .bottom-fade-overlay's "to top" 0% is its bottom (the edge of the viewport) -- so the
+            // same stop shape works for both without needing to reverse anything.
+            const parts = FADE_INTENSITY_STOPS.map(([pct, alpha]) => `rgba(0,0,0,${alpha}) ${pct}%`);
+            return `linear-gradient(to ${direction}, ${parts.join(', ')})`;
+        }
+        // Fixed, modest zone height right under the topbar/above the bottom edge -- this used to
+        // stretch down to wherever the Calendar page's view-tabs bar happened to sit on screen,
+        // which made the blur zone balloon to 300+px tall and obscure the page title/toolbar even
+        // at rest. Keep it small and consistent across every page instead.
+        const FADE_ZONE_HEIGHT = 110;
+        function updateTopbarFadeZone() {
+            const overlay = document.querySelector('.topbar-fade-overlay');
+            if (!overlay) return;
+            overlay.style.height = FADE_ZONE_HEIGHT + 'px';
+            const maskGradient = buildFadeMask('bottom');
+            overlay.style.maskImage = maskGradient;
+            overlay.style.webkitMaskImage = maskGradient;
+        }
+        function updateBottomFadeZone() {
+            const overlay = document.querySelector('.bottom-fade-overlay');
+            if (!overlay) return;
+            overlay.style.height = FADE_ZONE_HEIGHT + 'px';
+            const maskGradient = buildFadeMask('top');
+            overlay.style.maskImage = maskGradient;
+            overlay.style.webkitMaskImage = maskGradient;
+        }
         let topbarFadeZoneRaf = null;
         function scheduleTopbarFadeZoneUpdate() {
             if (topbarFadeZoneRaf) return;
             topbarFadeZoneRaf = requestAnimationFrame(() => {
                 topbarFadeZoneRaf = null;
                 updateTopbarFadeZone();
+                updateBottomFadeZone();
             });
-        }
-        function updateTopbarFadeZone() {
-            const overlay = document.querySelector('.topbar-fade-overlay');
-            if (!overlay) return;
-            const topbar = document.querySelector('.app-topbar');
-            const topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 80;
-            let solidEndPx = topbarBottom + 8;
-            if (activeAppView === 'calendar') {
-                const selector = document.getElementById('view-tabs');
-                if (selector) {
-                    const rect = selector.getBoundingClientRect();
-                    if (rect.height > 0 && rect.bottom > topbarBottom) solidEndPx = rect.bottom + 8;
-                }
-            }
-            const fadeDistance = 72;
-            const totalHeight = solidEndPx + fadeDistance;
-            overlay.style.height = totalHeight + 'px';
-            // Mask the blur/glass itself out gradually (not the background color) -- this reads as
-            // the frosted pane thinning into clear glass, not a color dissolving into a void.
-            const maskGradient = `linear-gradient(to bottom, black 0px, black ${solidEndPx}px, transparent ${totalHeight}px)`;
-            overlay.style.maskImage = maskGradient;
-            overlay.style.webkitMaskImage = maskGradient;
         }
         window.addEventListener('scroll', scheduleTopbarFadeZoneUpdate, { passive: true });
         window.addEventListener('resize', scheduleTopbarFadeZoneUpdate);
