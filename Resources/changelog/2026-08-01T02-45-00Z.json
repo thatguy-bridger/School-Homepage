@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T02:45:00Z",
+  "title": "Home calendar preview layout fixed to match the Classes page",
+  "summary": [
+    "The Home widget version of the calendar preview was forced into display:flex/flex-direction:column while the Classes page renders the exact same markup with normal block layout and works correctly -- that forced flex-column was the actual cause of content overlapping in the Home widget. Reverted it to match Classes' layout; only the widget-specific background/padding stripping and scroll behavior remain Home-specific."
+  ]
+}
