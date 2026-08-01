@@ -1673,6 +1673,11 @@ body.dark-theme[data-palette="mint"] {
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
+        .day-cell.is-selected {
+            outline: 2px solid var(--accent-2);
+            outline-offset: -2px;
+            background: color-mix(in srgb, var(--accent-2) 12%, var(--glass-bg));
+        }
         .day-cell {
             background: var(--glass-bg);
             border-color: var(--glass-border) !important;
@@ -3272,28 +3277,54 @@ body.dark-theme[data-palette="mint"] {
 
                 <div class="mb-8">
                     <h4 class="text-2xl font-semibold mb-3">Class Schedule</h4>
-                    <div class="mb-6">
-                        <h5 class="text-lg font-semibold mb-2">A-Days</h5>
-                        <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Enter dates in M.D.YYYY format, separated by commas (e.g., 8.18.2025, 8.20.2025).</p>
-                        <textarea id="adays-input" class="form-input w-full h-32"></textarea>
+
+                    <div class="mb-6 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4">
+                        <h5 class="text-lg font-semibold mb-1">Day Type Calendar</h5>
+                        <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Click days to assign A/B rotation, mark a range no-school, or tag a Short/Assembly day -- across any month, past or future.</p>
+                        <button type="button" class="modal-footer-button" onclick="openDayTypeEditor()">Open Class Schedule Editor</button>
                     </div>
-                    <div class="mb-6">
-                        <h5 class="text-lg font-semibold mb-2">B-Days</h5>
-                        <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Enter dates in M.D.YYYY format, separated by commas (e.g., 8.19.2025, 8.21.2025).</p>
-                        <textarea id="bdays-input" class="form-input w-full h-32"></textarea>
+
+                    <div class="mb-6 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4">
+                        <h5 class="text-lg font-semibold mb-2">Lunch Wave</h5>
+                        <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Which lunch wave A Days and B Days each use -- controls which 3rd/7th period + Lunch time applies on multi-wave schedules (Regular, Assembly).</p>
+                        <div id="lunch-wave-settings" class="space-y-1"></div>
                     </div>
-                    <div class="mb-6">
-                        <h5 class="text-lg font-semibold mb-2">No School Days</h5>
-                        <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Holidays, breaks, teacher in-service days, etc. Same M.D.YYYY format as above. A date listed here overrides A/B Days -- no periods, no countdown, no calendar sync for that day. Nothing else gets shifted or rescheduled.</p>
-                        <textarea id="noschool-input" class="form-input w-full h-24"></textarea>
+
+                    <div class="mb-6 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4">
+                        <h5 class="text-lg font-semibold mb-1">Schedule Types</h5>
+                        <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Short Day and Assembly Day are built in; add your own for any other bell-schedule variant your school uses.</p>
+                        <div id="schedule-types-list" class="space-y-2 mb-3"></div>
+                        <button type="button" class="modal-footer-button" onclick="addCustomScheduleType()">+ Add Schedule Type</button>
                     </div>
+
                     <div>
                         <h5 class="text-lg font-semibold mb-2">Period Times</h5>
                         <p class="text-gray-600 text-sm mb-4 dark:text-gray-300">
-                            Adjust the start and end times for each period. Use 24-hour format (e.g., 07:45 for 7:45 AM, 13:00 for 1:00 PM).
+                            Adjust the start/end time for each period, per schedule type (and per lunch wave where it applies). Use 24-hour format (e.g., 07:45 for 7:45 AM, 13:00 for 1:00 PM).
                         </p>
                         <div id="time-slots-display" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                     </div>
+
+                    <details class="mt-6">
+                        <summary class="cursor-pointer text-sm font-semibold text-gray-600 dark:text-gray-300">Advanced: raw date lists</summary>
+                        <div class="mt-4">
+                            <div class="mb-6">
+                                <h5 class="text-lg font-semibold mb-2">A-Days</h5>
+                                <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Enter dates in M.D.YYYY format, separated by commas (e.g., 8.18.2025, 8.20.2025). Prefer the Class Schedule Editor above for everyday use -- this is a bulk import/export shortcut.</p>
+                                <textarea id="adays-input" class="form-input w-full h-32"></textarea>
+                            </div>
+                            <div class="mb-6">
+                                <h5 class="text-lg font-semibold mb-2">B-Days</h5>
+                                <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Enter dates in M.D.YYYY format, separated by commas (e.g., 8.19.2025, 8.21.2025).</p>
+                                <textarea id="bdays-input" class="form-input w-full h-32"></textarea>
+                            </div>
+                            <div class="mb-2">
+                                <h5 class="text-lg font-semibold mb-2">Clear / No School Days</h5>
+                                <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Dates listed here have their A/B assignment removed (back to no-school) on Save. A weekday not listed anywhere is already no-school by default -- this box is only needed to explicitly clear an existing assignment via text.</p>
+                                <textarea id="noschool-input" class="form-input w-full h-24"></textarea>
+                            </div>
+                        </div>
+                    </details>
                 </div>
 
                 <div class="mb-4">
@@ -3308,6 +3339,36 @@ body.dark-theme[data-palette="mint"] {
             <div class="flex justify-end gap-4 mt-6 flex-shrink-0" id="scheduling-settings-footer">
                 <button type="button" class="modal-footer-button bg-red-600" onclick="closeSchedulingSettingsModal()">Cancel</button>
                 <button type="button" class="modal-footer-button bg-green-600" onclick="saveSchedulingSettingsAndCloseModal()">Save & Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Class Schedule (Day Type) Editor -->
+    <div id="day-type-editor-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="closeDayTypeEditor(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-4xl h-[90vh] flex flex-col p-8 border" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                <h3 class="text-2xl font-bold tracking-tight">Class Schedule Editor</h3>
+                <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeDayTypeEditor()">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-3 flex-shrink-0">
+                <div class="flex items-center gap-2">
+                    <button type="button" class="modal-footer-button" style="padding:0.4rem 0.75rem;" onclick="dayTypeEditorShiftMonth(-1)">&larr;</button>
+                    <h4 id="day-type-editor-month-label" class="text-lg font-semibold w-40 text-center"></h4>
+                    <button type="button" class="modal-footer-button" style="padding:0.4rem 0.75rem;" onclick="dayTypeEditorShiftMonth(1)">&rarr;</button>
+                </div>
+                <div id="day-type-editor-toolbar" class="flex flex-wrap items-center gap-2 text-sm"></div>
+            </div>
+            <p class="text-gray-600 dark:text-gray-300 text-sm mb-3 flex-shrink-0">
+                Click a weekday to assign it the next A/B rotation, or click again to clear it back to no-school. Drag or shift-click a range to assign that whole range, alternating A/B in date order. Select a range and use the toolbar to mark it No School or tag it with a special schedule.
+            </p>
+
+            <div id="day-type-editor-grid" class="grid grid-cols-7 gap-1 overflow-y-auto flex-grow"></div>
+
+            <div class="flex justify-end gap-4 mt-6 flex-shrink-0">
+                <button type="button" class="modal-footer-button bg-green-600" onclick="closeDayTypeEditor()">Done</button>
             </div>
         </div>
     </div>
@@ -3699,9 +3760,13 @@ body.dark-theme[data-palette="mint"] {
         }
         function openAllSettingsModal(defaultCategory) {
             // Same prep each individual modal's own opener does, so every field is fresh.
+            loadScheduleTypes();
+            loadLunchWaveSettings();
             loadUserScheduleDates();
             loadUserScheduleSlotOptions();
             renderSchedulingSettingsForm();
+            renderLunchWaveSettingsUI();
+            renderScheduleTypesEditor();
             loadPreferences();
             document.getElementById('pref-default-view-select').value = localStorage.getItem('calendarView') || 'month';
             document.getElementById('pref-week-start-select').value = localStorage.getItem('weekStart') || '0';
@@ -3771,6 +3836,7 @@ body.dark-theme[data-palette="mint"] {
         // everything" and never made it into a backup).
         const ALL_DATA_KEYS = [
             'classDataV3', 'userADays', 'userBDays', 'noSchoolDaysV1', 'userScheduleSlotOptionsV2',
+            'scheduleCalendarV1', 'scheduleCalendarMigratedV1', 'userScheduleSlotOptionsV3', 'lunchWaveByDayTypeV1', 'scheduleTypesV1',
             'dayNotesV1', 'classNotesV1',
             'theme', 'themePalette', 'motionPref', 'timeFormat',
             'calendarView', 'weekStart', 'calendarCategoryFilter', 'calendarShowClasses', 'calendarShowReminders', 'recentCalendarSearches',
@@ -4612,21 +4678,71 @@ body.dark-theme[data-palette="mint"] {
         // =====================================================================================
         // ===================== CLASSES: SCHEDULE DATA =====================
         // =====================================================================================
+        // ---- Legacy A/B day arrays -----------------------------------------------------------
+        // These are now DERIVED from `scheduleCalendar` (see below) by deriveLegacyScheduleArrays()
+        // rather than being independently maintained -- kept around because a number of call
+        // sites across Home/Calendar/ICS-export read them directly via .includes(key). Treat them
+        // as a read-only cache; the authoritative data lives in scheduleCalendar.
         let userADays = [""]
         let userBDays = [""]
         let userNoSchoolDays = []
+
+        // ---- New per-date schedule model ------------------------------------------------------
+        // scheduleCalendar: { 'M.D.YYYY': { dayType: 'A'|'B', schedule: <scheduleTypes id> } }
+        // A weekday with NO entry here is implicitly a no-school day -- there is no separate
+        // "no school list" to maintain going forward (noSchoolDaysV1 is migrated in once, then
+        // retired). Weekends are never given entries and are never considered.
+        let scheduleCalendar = {};
+        // Which lunch wave ('1st' | '2nd') each day TYPE uses, independently for A and B days.
+        // Determines which of the two 3rd/7th-period (and Lunch) times applies on multi-wave
+        // schedule types (regular, assembly). Short/Friday has no wave split.
+        let lunchWaveByDayType = { A: '1st', B: '1st' };
+        // The registry of schedule "types" a day can use -- regular/short/assembly are the seeded
+        // built-ins (short=the old hardcoded Friday half-day, assembly=new 60-min assembly bell
+        // schedule); users can add their own via the Settings > Class Schedule editor.
+        const defaultScheduleTypes = [
+            { id: 'regular',  label: 'Regular Day',  builtin: true },
+            { id: 'short',    label: 'Short Day',    builtin: true },
+            { id: 'assembly', label: 'Assembly Day', builtin: true }
+        ];
+        let scheduleTypes = [];
+
         /*DEFAULTS:SCHEDULE_SLOTS_START*/
+        // Each slot's `times` gives its time string per schedule-type id. A schedule type that's
+        // simply absent from `times` means that period doesn't run under that schedule type (e.g.
+        // Advisory only exists on 'regular' days; Assembly only exists on 'assembly' days). For
+        // 3rd/7th period and Lunch -- which have a lunch-wave-dependent time on multi-wave
+        // schedules -- the value is an object keyed by wave ('1st'/'2nd') instead of a plain string.
         const defaultScheduleSlotOptions = [
             { label: 'None (Not Scheduled)', value: '' },
-            { label: 'Advisory',              value: 'ADVISORY', fullDayTime: '09:05 - 09:45', halfDayTime: null },
-            { label: 'Period 1 - A Day',      value: 'A_P1',     fullDayTime: '07:45 - 09:05', halfDayTime: '07:45 - 08:50' },
-            { label: 'Period 2 - A Day',      value: 'A_P2',     fullDayTime: '09:45 - 11:05', halfDayTime: '08:50 - 10:00' },
-            { label: 'Period 3 - A Day',      value: 'A_P3',     fullDayTime: '11:05 - 13:00', halfDayTime: '10:00 - 11:10' },
-            { label: 'Period 4 - A Day',      value: 'A_P4',     fullDayTime: '13:00 - 14:25', halfDayTime: '11:10 - 12:20' },
-            { label: 'Period 5 - B Day',      value: 'B_P5',     fullDayTime: '07:45 - 09:05', halfDayTime: '07:45 - 08:50' },
-            { label: 'Period 6 - B Day',      value: 'B_P6',     fullDayTime: '09:45 - 11:05', halfDayTime: '08:50 - 10:00' },
-            { label: 'Period 7 - B Day',      value: 'B_P7',     fullDayTime: '11:05 - 13:00', halfDayTime: '10:00 - 11:10' },
-            { label: 'Period 8 - B Day',      value: 'B_P8',     fullDayTime: '13:00 - 14:25', halfDayTime: '11:10 - 12:20' },
+            { label: 'Advisory',         value: 'ADVISORY', times: { regular: '09:10 - 09:40' } },
+            { label: 'Assembly',         value: 'ASSEMBLY',  times: { assembly: '09:03 - 10:03' } },
+            { label: 'Period 1 - A Day', value: 'A_P1', times: { regular: '07:45 - 09:05', short: '07:45 - 08:50', assembly: '07:45 - 08:58' } },
+            { label: 'Period 2 - A Day', value: 'A_P2', times: { regular: '09:45 - 11:05', short: '08:55 - 10:00', assembly: '10:08 - 11:21' } },
+            { label: 'Period 3 - A Day', value: 'A_P3', times: {
+                regular:  { '1st': '11:40 - 13:00', '2nd': '11:10 - 12:30' },
+                short:    '10:05 - 11:10',
+                assembly: { '1st': '11:56 - 13:09', '2nd': '11:26 - 12:39' }
+            } },
+            { label: 'Lunch - A Day',    value: 'A_LUNCH', times: {
+                regular:  { '1st': '11:05 - 11:35', '2nd': '12:30 - 13:00' },
+                short:    '12:20 - 12:45',
+                assembly: { '1st': '11:21 - 11:51', '2nd': '12:39 - 13:09' }
+            } },
+            { label: 'Period 4 - A Day', value: 'A_P4', times: { regular: '13:05 - 14:25', short: '11:15 - 12:20', assembly: '13:14 - 14:25' } },
+            { label: 'Period 5 - B Day', value: 'B_P5', times: { regular: '07:45 - 09:05', short: '07:45 - 08:50', assembly: '07:45 - 08:58' } },
+            { label: 'Period 6 - B Day', value: 'B_P6', times: { regular: '09:45 - 11:05', short: '08:55 - 10:00', assembly: '10:08 - 11:21' } },
+            { label: 'Period 7 - B Day', value: 'B_P7', times: {
+                regular:  { '1st': '11:40 - 13:00', '2nd': '11:10 - 12:30' },
+                short:    '10:05 - 11:10',
+                assembly: { '1st': '11:56 - 13:09', '2nd': '11:26 - 12:39' }
+            } },
+            { label: 'Lunch - B Day',    value: 'B_LUNCH', times: {
+                regular:  { '1st': '11:05 - 11:35', '2nd': '12:30 - 13:00' },
+                short:    '12:20 - 12:45',
+                assembly: { '1st': '11:21 - 11:51', '2nd': '12:39 - 13:09' }
+            } },
+            { label: 'Period 8 - B Day', value: 'B_P8', times: { regular: '13:05 - 14:25', short: '11:15 - 12:20', assembly: '13:14 - 14:25' } },
         ];
         /*DEFAULTS:SCHEDULE_SLOTS_END*/
 
@@ -5365,13 +5481,487 @@ body.dark-theme[data-palette="mint"] {
         }
 
         // --- SETTINGS MODAL FUNCTIONS (Classes) ---
+        // =====================================================================================
+        // ===================== scheduleCalendar: model, migration, resolver =====================
+        // =====================================================================================
+        // One-time migration of the legacy userADays/userBDays/noSchoolDaysV1 lists into the new
+        // per-date scheduleCalendar map. Guarded so it only ever runs once per browser -- after
+        // this, scheduleCalendarV1 in localStorage is authoritative and the legacy keys are only
+        // still written for backward/forward compatibility with old call sites that read them.
+        function migrateToScheduleCalendarV1() {
+            if (localStorage.getItem('scheduleCalendarMigratedV1')) return;
+            let savedA = [], savedB = [], savedNoSchool = [];
+            try { savedA = JSON.parse(localStorage.getItem('userADays') || '[]') || []; } catch (e) {}
+            try { savedB = JSON.parse(localStorage.getItem('userBDays') || '[]') || []; } catch (e) {}
+            try { savedNoSchool = JSON.parse(localStorage.getItem('noSchoolDaysV1') || '[]') || []; } catch (e) {}
+            const noSchoolSet = new Set(savedNoSchool);
+            const cal = {};
+            const assign = (key, dayType) => {
+                if (!key || noSchoolSet.has(key)) return;
+                const d = parseDateKey(key);
+                if (!d || isNaN(d.getTime())) return;
+                // Reproduce today's hardcoded "Friday = half day" behavior by default for existing
+                // data; everything else becomes 'regular'. Users can repaint any individual date
+                // afterward via the new Class Schedule editor.
+                cal[key] = { dayType, schedule: d.getDay() === 5 ? 'short' : 'regular' };
+            };
+            savedA.forEach(k => assign(k, 'A'));
+            savedB.forEach(k => assign(k, 'B'));
+            scheduleCalendar = cal;
+            localStorage.setItem('scheduleCalendarV1', JSON.stringify(scheduleCalendar));
+            localStorage.setItem('scheduleCalendarMigratedV1', '1');
+        }
+
+        function loadScheduleCalendar() {
+            migrateToScheduleCalendarV1();
+            const saved = localStorage.getItem('scheduleCalendarV1');
+            if (saved) {
+                try { scheduleCalendar = JSON.parse(saved) || {}; } catch (e) { scheduleCalendar = {}; }
+            }
+            deriveLegacyScheduleArrays();
+        }
+
+        function saveScheduleCalendar() {
+            localStorage.setItem('scheduleCalendarV1', JSON.stringify(scheduleCalendar));
+            deriveLegacyScheduleArrays();
+            scheduleGistSync();
+        }
+
+        // Rebuilds the read-only userADays/userBDays/userADaysCal/userBDaysCal/userNoSchoolDaysCal
+        // caches from scheduleCalendar. userNoSchoolDaysCal stays empty going forward (no-school is
+        // now implicit -- see isNoSchoolDay) except for legacy day-note-based "No School" titles,
+        // which isNoSchoolDay already checks separately.
+        function deriveLegacyScheduleArrays() {
+            const a = [], b = [];
+            Object.entries(scheduleCalendar).forEach(([key, entry]) => {
+                if (!entry) return;
+                if (entry.dayType === 'A') a.push(key);
+                else if (entry.dayType === 'B') b.push(key);
+            });
+            userADays = a;
+            userBDays = b;
+            userNoSchoolDays = [];
+            userADaysCal = a.slice();
+            userBDaysCal = b.slice();
+            userNoSchoolDaysCal = [];
+        }
+
+        // Under the new implicit model, "no school" is unbounded (every future weekday with no
+        // entry counts), which is fine for isNoSchoolDay(date) but wrong for anything that wants
+        // to enumerate "the no-school days" (countdown suggestions, "next no-school day" chip) --
+        // that would otherwise be an infinite list starting the day after the last assigned date.
+        // This scopes it to weekdays that fall WITHIN the known range of scheduleCalendar entries
+        // (i.e. actual gaps/holidays inside a school year that's actually been filled in) and have
+        // no entry, which is what those features mean by "the no-school days".
+        function getKnownNoSchoolWeekdaysInRange() {
+            const keys = Object.keys(scheduleCalendar);
+            if (!keys.length) return [];
+            const dates = keys.map(parseDateKey);
+            const min = new Date(Math.min(...dates));
+            const max = new Date(Math.max(...dates));
+            const result = [];
+            const cursor = new Date(min);
+            while (cursor <= max) {
+                if (isWeekday(cursor)) {
+                    const k = dateKey(cursor);
+                    const entry = scheduleCalendar[k];
+                    if (!entry || !entry.dayType) result.push(k);
+                }
+                cursor.setDate(cursor.getDate() + 1);
+            }
+            return result;
+        }
+
+        function isKeyFriday(key) {
+            const d = parseDateKey(key);
+            return !!d && !isNaN(d.getTime()) && d.getDay() === 5;
+        }
+
+        // Sets/overwrites a date's A/B assignment while preserving any special schedule type
+        // already on it; new dates default to 'short' on Fridays (matching the old hardcoded
+        // Friday-half-day behavior) and 'regular' otherwise.
+        function setScheduleCalendarDayType(key, dayType) {
+            const existing = scheduleCalendar[key];
+            scheduleCalendar[key] = { dayType, schedule: (existing && existing.schedule) || (isKeyFriday(key) ? 'short' : 'regular') };
+        }
+        function clearScheduleCalendarDate(key) {
+            delete scheduleCalendar[key];
+        }
+
+        function loadLunchWaveSettings() {
+            const saved = localStorage.getItem('lunchWaveByDayTypeV1');
+            if (saved) {
+                try { lunchWaveByDayType = Object.assign({ A: '1st', B: '1st' }, JSON.parse(saved)); } catch (e) { lunchWaveByDayType = { A: '1st', B: '1st' }; }
+            } else {
+                lunchWaveByDayType = { A: '1st', B: '1st' };
+            }
+        }
+        function saveLunchWaveSettings() {
+            localStorage.setItem('lunchWaveByDayTypeV1', JSON.stringify(lunchWaveByDayType));
+        }
+        function setLunchWave(dayType, wave) {
+            lunchWaveByDayType[dayType] = wave;
+            saveLunchWaveSettings();
+            renderCalendar();
+            renderClassLinks();
+        }
+
+        function loadScheduleTypes() {
+            const saved = localStorage.getItem('scheduleTypesV1');
+            if (saved) {
+                try { scheduleTypes = JSON.parse(saved) || []; } catch (e) { scheduleTypes = []; }
+            }
+            if (!scheduleTypes || !scheduleTypes.length) {
+                scheduleTypes = JSON.parse(JSON.stringify(defaultScheduleTypes));
+                saveScheduleTypes();
+            }
+        }
+        function saveScheduleTypes() {
+            localStorage.setItem('scheduleTypesV1', JSON.stringify(scheduleTypes));
+        }
+
+        function renderLunchWaveSettingsUI() {
+            const el = document.getElementById('lunch-wave-settings');
+            if (!el) return;
+            const waveOptions = [{ value: '1st', label: '1st Lunch' }, { value: '2nd', label: '2nd Lunch' }];
+            el.innerHTML =
+                uiSelectRow(lunchWaveByDayType.A || '1st', 'A Day Lunch', waveOptions, "setLunchWave('A', this.value)", 'Which lunch wave A Days use') +
+                uiSelectRow(lunchWaveByDayType.B || '1st', 'B Day Lunch', waveOptions, "setLunchWave('B', this.value)", 'Which lunch wave B Days use');
+        }
+
+        // ===================== SCHEDULE TYPES EDITOR (Settings) =====================
+        function renderScheduleTypesEditor() {
+            const el = document.getElementById('schedule-types-list');
+            if (!el) return;
+            el.innerHTML = scheduleTypes.map(st => `
+                <div class="flex items-center gap-2 ui-setting-row">
+                    <input type="text" class="form-input flex-1" value="${escapeAttr(st.label)}" ${st.id === 'regular' ? 'disabled' : ''}
+                           onchange="renameScheduleType('${escapeJsAttr(st.id)}', this.value)">
+                    ${st.builtin ? '<span class="text-xs text-gray-500 dark:text-gray-400 px-2">built-in</span>' : `<button type="button" class="modal-footer-button bg-red-600" style="padding:0.35rem 0.75rem;font-size:0.75rem;" onclick="removeScheduleType('${escapeJsAttr(st.id)}')">Remove</button>`}
+                </div>
+            `).join('');
+        }
+        function renameScheduleType(id, newLabel) {
+            const st = scheduleTypes.find(s => s.id === id);
+            if (!st || !newLabel.trim()) return;
+            st.label = newLabel.trim();
+            saveScheduleTypes();
+            renderSchedulingSettingsForm();
+            renderDayTypeEditorScheduleOptions();
+        }
+        function addCustomScheduleType() {
+            const label = (prompt('Name for the new schedule type (e.g. "Testing Day"):') || '').trim();
+            if (!label) return;
+            const id = 'custom_' + Date.now().toString(36);
+            scheduleTypes.push({ id, label, builtin: false });
+            // New schedule type starts with no times set for any period -- the user fills them in
+            // via the Period Times grid below (a schedule type with an unset time for a slot means
+            // that period simply doesn't run under it, same convention as Advisory/Assembly).
+            saveScheduleTypes();
+            renderScheduleTypesEditor();
+            renderSchedulingSettingsForm();
+            renderDayTypeEditorScheduleOptions();
+        }
+        function removeScheduleType(id) {
+            const st = scheduleTypes.find(s => s.id === id);
+            if (!st || st.builtin) return;
+            if (!confirm(`Remove "${st.label}"? Any days currently using it will fall back to Regular Day.`)) return;
+            scheduleTypes = scheduleTypes.filter(s => s.id !== id);
+            Object.values(scheduleCalendar).forEach(entry => {
+                if (entry && entry.schedule === id) entry.schedule = 'regular';
+            });
+            userScheduleSlotOptions.forEach(slot => { if (slot.times) delete slot.times[id]; });
+            saveScheduleTypes();
+            saveScheduleCalendar();
+            saveUserScheduleSlotOptions();
+            renderScheduleTypesEditor();
+            renderSchedulingSettingsForm();
+            renderDayTypeEditorScheduleOptions();
+        }
+
+        // =====================================================================================
+        // ===================== CLASS SCHEDULE (DAY TYPE) BULK EDITOR =====================
+        // =====================================================================================
+        // A Finder-selection-style click model for painting the A/B rotation onto the calendar:
+        //   - Plain click on a blank weekday  -> assigns it the next rotation type (see
+        //     nextRotationTypeBefore), determined by walking dates in TIME order, not click order.
+        //   - Plain click on an already-assigned weekday -> clears it back to no-school.
+        //   - Drag or shift-click a range -> immediately assigns the WHOLE range, continuing the
+        //     same alternating rotation across every weekday in it (weekends skipped and never
+        //     counted as a step in the rotation).
+        //   - A separate toolbar lets you drag/shift-click a range and then explicitly "Mark No
+        //     School" (clears every weekday in it) or tag it with a special schedule type (only
+        //     applies to already-assigned days -- a blank day has no A/B to tag, so tagging is a
+        //     no-op there; documented design choice, see report).
+        // Design choice: dragging/shift-clicking SELECTS a range and highlights it; the actual
+        // rotation-assign, no-school, or schedule-tag action only commits once you either release
+        // a genuine multi-cell drag (which auto-commits the rotation assign, matching "click-drag a
+        // range... assigns the whole range") or press a toolbar button for No School / a schedule
+        // tag while a range is selected.
+        let dayTypeEditorMonth = null;
+        let dayTypeEditorDragStartKey = null;
+        let dayTypeEditorDragActive = false;
+        let dayTypeEditorSelection = null; // { startKey, endKey } sorted chronologically
+        let dayTypeEditorLastClickKey = null; // anchor for shift-click
+        let dayTypeEditorPaintScheduleId = null; // active "tag special schedule" tool, or null
+
+        function openDayTypeEditor() {
+            loadScheduleCalendar();
+            loadScheduleTypes();
+            loadDayNotes();
+            const base = (currentDate instanceof Date && !isNaN(currentDate)) ? currentDate : appNow();
+            dayTypeEditorMonth = new Date(base.getFullYear(), base.getMonth(), 1);
+            dayTypeEditorSelection = null;
+            dayTypeEditorLastClickKey = null;
+            dayTypeEditorPaintScheduleId = null;
+            renderDayTypeEditorScheduleOptions();
+            renderDayTypeEditor();
+            const modal = document.getElementById('day-type-editor-modal');
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => { modal.classList.remove('opacity-0'); modal.classList.add('show'); });
+            window.addEventListener('mouseup', dayTypeEditorEndDrag);
+        }
+        function closeDayTypeEditor(event) {
+            const modal = document.getElementById('day-type-editor-modal');
+            const content = modal.querySelector('.modal-content');
+            if (event && content.contains(event.target)) return;
+            modal.classList.add('opacity-0');
+            modal.classList.remove('show');
+            modal.addEventListener('transitionend', () => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, { once: true });
+            window.removeEventListener('mouseup', dayTypeEditorEndDrag);
+            // The bulk editor is the primary UX now, but the legacy textarea fields + Period Times
+            // grid in the main Settings panel read from the same data -- keep them in sync.
+            renderSchedulingSettingsForm();
+            renderCalendar();
+            renderClassLinks();
+            updateCurrentClassHighlight();
+        }
+        function dayTypeEditorShiftMonth(delta) {
+            dayTypeEditorMonth = new Date(dayTypeEditorMonth.getFullYear(), dayTypeEditorMonth.getMonth() + delta, 1);
+            renderDayTypeEditor();
+        }
+
+        function renderDayTypeEditorScheduleOptions() {
+            const el = document.getElementById('day-type-editor-toolbar');
+            if (!el) return;
+            el.innerHTML = `
+                <button type="button" class="modal-footer-button bg-red-600" style="padding:0.4rem 0.75rem;font-size:0.8rem;" onclick="dayTypeEditorMarkNoSchool()">Mark Selection No School</button>
+                <span class="text-gray-500 dark:text-gray-400">Tag special schedule:</span>
+                ${scheduleTypes.filter(st => st.id !== 'regular').map(st => `
+                    <button type="button" class="modal-footer-button ${dayTypeEditorPaintScheduleId === st.id ? 'bg-green-600' : ''}" style="padding:0.4rem 0.75rem;font-size:0.8rem;" onclick="dayTypeEditorToggleTagTool('${escapeJsAttr(st.id)}')">${escapeHtml(st.label)}</button>
+                `).join('')}
+                <button type="button" class="modal-footer-button ${dayTypeEditorPaintScheduleId === 'regular' ? 'bg-green-600' : ''}" style="padding:0.4rem 0.75rem;font-size:0.8rem;" onclick="dayTypeEditorToggleTagTool('regular')">Regular</button>
+            `;
+        }
+        function dayTypeEditorToggleTagTool(id) {
+            dayTypeEditorPaintScheduleId = (dayTypeEditorPaintScheduleId === id) ? null : id;
+            renderDayTypeEditorScheduleOptions();
+        }
+
+        function nextRotationTypeBefore(dateKeyStr) {
+            const targetDate = parseDateKey(dateKeyStr);
+            let best = null;
+            Object.entries(scheduleCalendar).forEach(([k, v]) => {
+                if (!v || !v.dayType) return;
+                const d = parseDateKey(k);
+                if (d < targetDate && (!best || d > best.date)) best = { date: d, type: v.dayType };
+            });
+            // No prior assigned school day exists at all (e.g. the very first day ever assigned) --
+            // defaults to 'A'. Documented assumption per the task spec.
+            return best ? (best.type === 'A' ? 'B' : 'A') : 'A';
+        }
+
+        function dayTypeEditorKeysInRange(startKey, endKey) {
+            let start = parseDateKey(startKey), end = parseDateKey(endKey);
+            if (start > end) { const t = start; start = end; end = t; }
+            const keys = [];
+            const cursor = new Date(start);
+            while (cursor <= end) {
+                if (isWeekday(cursor)) keys.push(dateKey(cursor));
+                cursor.setDate(cursor.getDate() + 1);
+            }
+            return keys;
+        }
+
+        // Assigns a continuing A/B rotation across every weekday in [startKey, endKey], seeded by
+        // whatever type would come next after the nearest assigned day strictly before the range.
+        function dayTypeEditorAssignRotationRange(startKey, endKey) {
+            const keys = dayTypeEditorKeysInRange(startKey, endKey);
+            if (!keys.length) return;
+            let type = nextRotationTypeBefore(keys[0]);
+            keys.forEach(k => {
+                setScheduleCalendarDayType(k, type);
+                type = type === 'A' ? 'B' : 'A';
+            });
+            saveScheduleCalendar();
+        }
+
+        function dayTypeEditorMarkNoSchool() {
+            const sel = dayTypeEditorSelection;
+            const keys = sel ? dayTypeEditorKeysInRange(sel.startKey, sel.endKey) : (dayTypeEditorLastClickKey ? [dayTypeEditorLastClickKey] : []);
+            if (!keys.length) { alert('Drag/shift-click to select a range first.'); return; }
+            keys.forEach(k => clearScheduleCalendarDate(k));
+            saveScheduleCalendar();
+            dayTypeEditorSelection = null;
+            renderDayTypeEditor();
+        }
+
+        function dayTypeEditorCellClick(key, event) {
+            if (dayTypeEditorPaintScheduleId) {
+                // Tag tool active: only applies to already-assigned days (a Short/Assembly day is
+                // still an A or B day underneath) -- blank days are a no-op, per documented choice.
+                const entry = scheduleCalendar[key];
+                if (entry && entry.dayType) {
+                    entry.schedule = dayTypeEditorPaintScheduleId;
+                    saveScheduleCalendar();
+                    renderDayTypeEditor();
+                }
+                return;
+            }
+            if (event.shiftKey && dayTypeEditorLastClickKey) {
+                dayTypeEditorAssignRotationRange(dayTypeEditorLastClickKey, key);
+                dayTypeEditorSelection = null;
+                dayTypeEditorLastClickKey = key;
+                renderDayTypeEditor();
+                return;
+            }
+            // Plain click on a single weekday: assign-next-in-rotation, or clear if already assigned.
+            const d = parseDateKey(key);
+            if (!isWeekday(d)) return;
+            const entry = scheduleCalendar[key];
+            if (entry && entry.dayType) {
+                clearScheduleCalendarDate(key);
+            } else {
+                setScheduleCalendarDayType(key, nextRotationTypeBefore(key));
+            }
+            saveScheduleCalendar();
+            dayTypeEditorLastClickKey = key;
+            dayTypeEditorSelection = null;
+            renderDayTypeEditor();
+        }
+
+        function dayTypeEditorStartDrag(key, event) {
+            if (event.button !== 0 || dayTypeEditorPaintScheduleId) return;
+            dayTypeEditorDragStartKey = key;
+            dayTypeEditorDragActive = true;
+            dayTypeEditorSelection = { startKey: key, endKey: key };
+        }
+        function dayTypeEditorDragOver(key) {
+            if (!dayTypeEditorDragActive) return;
+            dayTypeEditorSelection = { startKey: dayTypeEditorDragStartKey, endKey: key };
+            renderDayTypeEditorSelectionHighlight();
+        }
+        function dayTypeEditorEndDrag() {
+            if (!dayTypeEditorDragActive) return;
+            dayTypeEditorDragActive = false;
+            const sel = dayTypeEditorSelection;
+            if (sel && sel.startKey !== sel.endKey) {
+                // A genuine multi-cell drag immediately commits the rotation assignment across the
+                // range, per spec ("click-drag a range... assigns the whole range").
+                dayTypeEditorAssignRotationRange(sel.startKey, sel.endKey);
+                dayTypeEditorLastClickKey = sel.endKey;
+                dayTypeEditorSelection = null;
+                renderDayTypeEditor();
+            }
+            // A single-cell "drag" (mousedown+mouseup on the same cell) is handled by the click
+            // handler instead, so nothing else to do here.
+        }
+        function renderDayTypeEditorSelectionHighlight() {
+            const sel = dayTypeEditorSelection;
+            const keys = sel ? new Set(dayTypeEditorKeysInRange(sel.startKey, sel.endKey)) : new Set();
+            document.querySelectorAll('#day-type-editor-grid [data-key]').forEach(cell => {
+                cell.classList.toggle('is-selected', keys.has(cell.dataset.key));
+            });
+        }
+
+        function dayTypeEditorEditNote(key, event) {
+            if (event) event.stopPropagation();
+            const existing = dayNotes[key] || { title: '', notes: '' };
+            const title = prompt('Note title for ' + key + ' (leave both blank to remove):', existing.title || '');
+            if (title === null) return;
+            const notes = prompt('Note details (optional):', existing.notes || '');
+            if (notes === null) return;
+            if (!title.trim() && !notes.trim()) delete dayNotes[key];
+            else dayNotes[key] = { title: title.trim(), notes: notes.trim() };
+            saveDayNotes();
+            renderDayTypeEditor();
+        }
+
+        function renderDayTypeEditor() {
+            const label = document.getElementById('day-type-editor-month-label');
+            const grid = document.getElementById('day-type-editor-grid');
+            if (!label || !grid) return;
+            label.textContent = dayTypeEditorMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const weekStart = 0;
+            const firstOfMonth = new Date(dayTypeEditorMonth);
+            const gridStart = new Date(firstOfMonth);
+            gridStart.setDate(gridStart.getDate() - ((firstOfMonth.getDay() - weekStart + 7) % 7));
+            const cells = [];
+            const cursor = new Date(gridStart);
+            for (let i = 0; i < 42; i++) {
+                cells.push(new Date(cursor));
+                cursor.setDate(cursor.getDate() + 1);
+            }
+            const dowLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const headerHtml = dowLabels.map(d => `<div class="text-center text-xs font-semibold text-gray-500 dark:text-gray-400 pb-1">${d}</div>`).join('');
+
+            const today = appNow();
+            const bodyHtml = cells.map(d => {
+                const key = dateKey(d);
+                const outside = d.getMonth() !== dayTypeEditorMonth.getMonth();
+                const weekend = !isWeekday(d);
+                const entry = scheduleCalendar[key];
+                const dayType = entry ? entry.dayType : null;
+                const scheduleId = entry ? (entry.schedule || 'regular') : null;
+                const scheduleType = scheduleId ? scheduleTypes.find(s => s.id === scheduleId) : null;
+                const isToday = isSameDay(d, today);
+                const note = dayNotes[key];
+                const classesPreview = dayType ? getClassesForDate(d).filter(c => !c.classItem.synthetic).slice(0, 3) : [];
+                return `
+                    <div class="day-cell p-1.5 rounded-lg border ${outside ? 'outside-month opacity-40' : ''} ${isToday ? 'is-today' : ''} ${weekend ? 'opacity-50' : 'cursor-pointer'}"
+                         data-key="${key}" style="min-height:5.5rem;"
+                         ${weekend ? '' : `onmousedown="dayTypeEditorStartDrag('${key}', event)" onmouseenter="dayTypeEditorDragOver('${key}')" onclick="dayTypeEditorCellClick('${key}', event)"`}>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-medium">${d.getDate()}</span>
+                            ${!weekend ? `<button type="button" class="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" title="Add/edit note" onclick="dayTypeEditorEditNote('${key}', event)">${note ? '&#128221;' : '+'}</button>` : ''}
+                        </div>
+                        ${dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}-Day</span>` : (weekend ? '' : '<span class="text-[0.65rem] text-gray-400">No School</span>')}
+                        ${scheduleType && scheduleId !== 'regular' ? `<div class="text-[0.65rem] mt-0.5 px-1 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-200 inline-block">${escapeHtml(scheduleType.label)}</div>` : ''}
+                        ${classesPreview.length ? `<div class="mt-1 space-y-0.5">${classesPreview.map(c => `<div class="text-[0.6rem] truncate text-gray-500 dark:text-gray-400">${escapeHtml(c.classItem.title)}</div>`).join('')}</div>` : ''}
+                        ${note ? `<div class="text-[0.6rem] truncate text-cyan-600 dark:text-cyan-300 mt-0.5">${escapeHtml(note.title || 'Note')}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+            grid.innerHTML = headerHtml + bodyHtml;
+        }
+
+        // The core resolver: given a schedule slot ({ times: {...} }) and a JS Date, returns the
+        // time-range string ('HH:MM - HH:MM') that applies on that date, or null if that slot
+        // doesn't run at all under that date's schedule type (e.g. Advisory on a Short day).
+        function getScheduleEntry(date) {
+            return scheduleCalendar[dateKey(date)] || null;
+        }
+        function getSlotTimeForDate(slot, date) {
+            if (!slot || !slot.times) return null;
+            const entry = getScheduleEntry(date);
+            if (!entry || !entry.dayType) return null;
+            const scheduleId = entry.schedule || 'regular';
+            const t = slot.times[scheduleId];
+            if (t === undefined || t === null) return null;
+            if (typeof t === 'string') return t || null;
+            const wave = lunchWaveByDayType[entry.dayType] || '1st';
+            return t[wave] || t['1st'] || null;
+        }
+
         function loadUserScheduleDates() {
-            const savedADays = localStorage.getItem('userADays');
-            const savedBDays = localStorage.getItem('userBDays');
-            const savedNoSchool = localStorage.getItem('noSchoolDaysV1');
-            if (savedADays) userADays = JSON.parse(savedADays);
-            if (savedBDays) userBDays = JSON.parse(savedBDays);
-            userNoSchoolDays = savedNoSchool ? JSON.parse(savedNoSchool) : [];
+            // No separate storage anymore -- the A/B/No-School textareas in Settings are just an
+            // alternate bulk-entry view onto scheduleCalendar (see renderSchedulingSettingsForm /
+            // saveUserScheduleDates), which is already loaded by loadScheduleCalendar().
         }
 
         function saveUserScheduleDates() {
@@ -5379,97 +5969,109 @@ body.dark-theme[data-palette="mint"] {
             const bDaysInput = document.getElementById('bdays-input').value;
             const noSchoolInput = document.getElementById('noschool-input').value;
 
-            userADays = aDaysInput.split(',').map(date => date.trim()).filter(date => date !== '');
-            userBDays = bDaysInput.split(',').map(date => date.trim()).filter(date => date !== '');
-            userNoSchoolDays = noSchoolInput.split(',').map(date => date.trim()).filter(date => date !== '');
+            const aList = aDaysInput.split(',').map(date => date.trim()).filter(date => date !== '');
+            const bList = bDaysInput.split(',').map(date => date.trim()).filter(date => date !== '');
+            const noSchoolList = noSchoolInput.split(',').map(date => date.trim()).filter(date => date !== '');
 
-            localStorage.setItem('userADays', JSON.stringify(userADays));
-            localStorage.setItem('userBDays', JSON.stringify(userBDays));
-            localStorage.setItem('noSchoolDaysV1', JSON.stringify(userNoSchoolDays));
-            scheduleGistSync();
+            aList.forEach(key => setScheduleCalendarDayType(key, 'A'));
+            bList.forEach(key => setScheduleCalendarDayType(key, 'B'));
+            noSchoolList.forEach(key => clearScheduleCalendarDate(key));
+
+            saveScheduleCalendar();
         }
 
         function loadUserScheduleSlotOptions() {
-            const savedScheduleSlots = localStorage.getItem('userScheduleSlotOptionsV2');
-            if (savedScheduleSlots) {
-                userScheduleSlotOptions = JSON.parse(savedScheduleSlots);
+            const savedV3 = localStorage.getItem('userScheduleSlotOptionsV3');
+            if (savedV3) {
+                try { userScheduleSlotOptions = JSON.parse(savedV3); return; } catch (e) {}
+            }
+            // Migrate from the old fullDayTime/halfDayTime shape if present, otherwise seed fresh.
+            const savedV2 = localStorage.getItem('userScheduleSlotOptionsV2');
+            if (savedV2) {
+                let old = [];
+                try { old = JSON.parse(savedV2) || []; } catch (e) { old = []; }
+                userScheduleSlotOptions = defaultScheduleSlotOptions.map(def => {
+                    const match = old.find(o => o.value === def.value);
+                    if (!match || !def.value) return JSON.parse(JSON.stringify(def));
+                    const times = {};
+                    if (def.times && def.times.regular !== undefined) times.regular = match.fullDayTime || def.times.regular;
+                    if (def.times && def.times.short !== undefined) times.short = match.halfDayTime || def.times.short;
+                    // Assembly/Lunch/Assembly-period times are brand new in this version -- there's
+                    // nothing to migrate from the old data, so seed them with the bell-schedule
+                    // defaults even though the rest of the slot is the user's customized version.
+                    if (def.times && def.times.assembly !== undefined) times.assembly = def.times.assembly;
+                    return { label: match.label || def.label, value: match.value, times };
+                });
             } else {
                 userScheduleSlotOptions = JSON.parse(JSON.stringify(defaultScheduleSlotOptions));
-                saveUserScheduleSlotOptions();
             }
+            saveUserScheduleSlotOptions();
         }
 
         function saveUserScheduleSlotOptions() {
-            localStorage.setItem('userScheduleSlotOptionsV2', JSON.stringify(userScheduleSlotOptions));
+            localStorage.setItem('userScheduleSlotOptionsV3', JSON.stringify(userScheduleSlotOptions));
         }
 
+        function timeRangeInputsHtml(slotValue, scheduleId, wave, timeStr) {
+            const [s, e] = (timeStr || '').split(' - ');
+            return `<div class="flex gap-2 items-center">
+                <input type="time" class="form-input flex-1" value="${s || ''}" data-slot-value="${escapeAttr(slotValue)}" data-schedule-id="${escapeAttr(scheduleId)}" data-wave="${escapeAttr(wave || '')}" data-time-part="start" onchange="updateScheduleTime(this)">
+                <span class="text-gray-600 dark:text-gray-300">-</span>
+                <input type="time" class="form-input flex-1" value="${e || ''}" data-slot-value="${escapeAttr(slotValue)}" data-schedule-id="${escapeAttr(scheduleId)}" data-wave="${escapeAttr(wave || '')}" data-time-part="end" onchange="updateScheduleTime(this)">
+            </div>`;
+        }
+
+        // Per-slot, per-schedule-type (and, for 3rd/7th/Lunch, per-lunch-wave) time editor grid --
+        // same visual pattern as the old Full Day/Half Day grid, generalized across every schedule
+        // type in `scheduleTypes` instead of hardcoding Mon-Thu/Fri.
         function renderSchedulingSettingsForm() {
             document.getElementById('adays-input').value = userADays.join(', ');
             document.getElementById('bdays-input').value = userBDays.join(', ');
             document.getElementById('noschool-input').value = userNoSchoolDays.join(', ');
 
             const timeSlotsDisplay = document.getElementById('time-slots-display');
+            if (!timeSlotsDisplay) return;
             timeSlotsDisplay.innerHTML = '';
 
             const periodsToDisplay = userScheduleSlotOptions.filter(option => option.value !== '');
 
             periodsToDisplay.forEach((slot) => {
-                const [fullDayStart, fullDayEnd] = slot.fullDayTime ? slot.fullDayTime.split(' - ') : ['', ''];
-                const [halfDayStart, halfDayEnd] = slot.halfDayTime ? slot.halfDayTime.split(' - ') : ['', ''];
-
+                let rowsHtml = '';
+                scheduleTypes.forEach(st => {
+                    const t = slot.times ? slot.times[st.id] : undefined;
+                    if (t === undefined) return; // this period doesn't run under this schedule type
+                    if (t && typeof t === 'object') {
+                        rowsHtml += `<div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">${escapeHtml(st.label)} &middot; 1st Lunch</label>${timeRangeInputsHtml(slot.value, st.id, '1st', t['1st'])}</div>`;
+                        rowsHtml += `<div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">${escapeHtml(st.label)} &middot; 2nd Lunch</label>${timeRangeInputsHtml(slot.value, st.id, '2nd', t['2nd'])}</div>`;
+                    } else {
+                        rowsHtml += `<div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">${escapeHtml(st.label)}</label>${timeRangeInputsHtml(slot.value, st.id, '', t)}</div>`;
+                    }
+                });
                 const div = document.createElement('div');
                 div.className = 'bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm space-y-3';
-                div.innerHTML = `
-                    <p class="font-semibold text-lg text-center text-gray-900 dark:text-white">${slot.label}</p>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Day (Mon-Thu)</label>
-                        <div class="flex gap-2 items-center">
-                            <input type="time" class="form-input flex-1" value="${fullDayStart}"
-                                   data-slot-value="${slot.value}" data-time-type="fullDayTime" data-time-part="start"
-                                   onchange="updateScheduleTime(this)">
-                            <span class="text-gray-600 dark:text-gray-300">-</span>
-                            <input type="time" class="form-input flex-1" value="${fullDayEnd}"
-                                   data-slot-value="${slot.value}" data-time-type="fullDayTime" data-time-part="end"
-                                   onchange="updateScheduleTime(this)">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Half Day (Fri)</label>
-                        <div class="flex gap-2 items-center">
-                            <input type="time" class="form-input flex-1" value="${halfDayStart}"
-                                   data-slot-value="${slot.value}" data-time-type="halfDayTime" data-time-part="start"
-                                   onchange="updateScheduleTime(this)" ${!slot.halfDayTime ? 'disabled' : ''}>
-                            <span class="text-gray-600 dark:text-gray-300">-</span>
-                            <input type="time" class="form-input flex-1" value="${halfDayEnd}"
-                                   data-slot-value="${slot.value}" data-time-type="halfDayTime" data-time-part="end"
-                                   onchange="updateScheduleTime(this)" ${!slot.halfDayTime ? 'disabled' : ''}>
-                        </div>
-                    </div>
-                `;
+                div.innerHTML = `<p class="font-semibold text-lg text-center text-gray-900 dark:text-white">${escapeHtml(slot.label)}</p>${rowsHtml || '<p class="text-sm text-gray-500 dark:text-gray-400 text-center">Not used by any schedule type.</p>'}`;
                 timeSlotsDisplay.appendChild(div);
             });
         }
 
         function updateScheduleTime(inputElement) {
-            const { slotValue, timeType, timePart } = inputElement.dataset;
+            const { slotValue, scheduleId, wave, timePart } = inputElement.dataset;
             const newTime = inputElement.value;
-
-            const slotIndex = userScheduleSlotOptions.findIndex(slot => slot.value === slotValue);
-            if (slotIndex === -1) {
-                console.error("Slot not found:", slotValue);
-                return;
+            const slot = userScheduleSlotOptions.find(s => s.value === slotValue);
+            if (!slot) { console.error('Slot not found:', slotValue); return; }
+            if (!slot.times) slot.times = {};
+            if (wave) {
+                let current = slot.times[scheduleId];
+                if (!current || typeof current !== 'object') current = {};
+                let [s, e] = (current[wave] || ' - ').split(' - ');
+                if (timePart === 'start') s = newTime; else e = newTime;
+                current[wave] = `${s} - ${e}`;
+                slot.times[scheduleId] = current;
+            } else {
+                let [s, e] = (typeof slot.times[scheduleId] === 'string' ? slot.times[scheduleId] : ' - ').split(' - ');
+                if (timePart === 'start') s = newTime; else e = newTime;
+                slot.times[scheduleId] = `${s} - ${e}`;
             }
-
-            let timeString = userScheduleSlotOptions[slotIndex][timeType];
-            if (!timeString) timeString = "00:00 - 00:00";
-
-            let [startTime, endTime] = timeString.split(' - ');
-            if (timePart === 'start') startTime = newTime;
-            else endTime = newTime;
-            userScheduleSlotOptions[slotIndex][timeType] = `${startTime} - ${endTime}`;
-
             saveUserScheduleSlotOptions();
             saveToLocalStorage();
         }
@@ -6957,26 +7559,23 @@ body.dark-theme[data-palette="mint"] {
         // --- PERIOD COUNTDOWN CHIP ---
         function getCurrentOrNextPeriodInfo() {
             const now = appNow();
-            const dateString = `${now.getMonth() + 1}.${now.getDate()}.${now.getFullYear()}`;
-            const isADay = userADays.includes(dateString);
-            const isBDay = userBDays.includes(dateString);
-            if (isNoSchoolDay(now) || (!isADay && !isBDay)) return null;
-            const isHalfDay = now.getDay() === 5;
+            if (isNoSchoolDay(now)) return null;
+            const dayType = getDayType(now);
+            if (!dayType) return null;
             const nowMinutes = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
 
             const candidates = [];
             userScheduleSlotOptions.forEach(slot => {
                 if (!slot.value) return;
                 const slotDayType = slot.value.split('_')[0];
-                if (slot.value === 'ADVISORY') {
-                    if (isHalfDay) return;
-                } else if (slotDayType === 'A' && !isADay) {
-                    return;
-                } else if (slotDayType === 'B' && !isBDay) {
+                // ADVISORY/ASSEMBLY are schedule-specific synthetic periods (not A/B-prefixed), so
+                // they're gated purely by whether that slot has a time under today's schedule type
+                // (see getSlotTimeForDate) rather than by dayType matching.
+                if (slot.value !== 'ADVISORY' && slot.value !== 'ASSEMBLY' && slotDayType !== dayType) {
                     return;
                 }
 
-                const timeStr = isHalfDay ? slot.halfDayTime : slot.fullDayTime;
+                const timeStr = getSlotTimeForDate(slot, now);
                 if (!timeStr) return;
                 const [startStr, endStr] = timeStr.split(' - ');
                 const start = parseTime(startStr);
@@ -7162,26 +7761,20 @@ body.dark-theme[data-palette="mint"] {
         // (no school today, between periods, or the matched class has no URL set).
         function getScheduledClassUrl() {
             const now = appNow();
-            const year = now.getFullYear();
-            const month = now.getMonth() + 1;
-            const dotw = now.getDay();
-            const day = now.getDate();
             const currentHour = now.getHours();
             const currentMinute = now.getMinutes();
-
-            const currentDateString = `${month}.${day}.${year}`;
             let scheduleSlotToFind = null;
 
-            const isADay = userADays.includes(currentDateString);
-            const isBDay = userBDays.includes(currentDateString);
-            const isHalfDay = (dotw === 5);
-
-            if (isNoSchoolDay(now) || (!isADay && !isBDay)) {
-                return null;
-            }
+            if (isNoSchoolDay(now)) return null;
+            const dayType = getDayType(now);
+            if (!dayType) return null;
 
             for (const slotOption of userScheduleSlotOptions) {
-                const timeStringToUse = isHalfDay ? slotOption.halfDayTime : slotOption.fullDayTime;
+                if (!slotOption.value) continue;
+                const slotDayType = slotOption.value.split('_')[0];
+                if (slotOption.value !== 'ADVISORY' && slotOption.value !== 'ASSEMBLY' && slotDayType !== dayType) continue;
+
+                const timeStringToUse = getSlotTimeForDate(slotOption, now);
                 if (!timeStringToUse) continue;
 
                 const [startTimeStr, endTimeStr] = timeStringToUse.split(' - ');
@@ -7194,21 +7787,8 @@ body.dark-theme[data-palette="mint"] {
                 if (endTimeInMinutes < startTimeInMinutes) endTimeInMinutes += 24 * 60;
 
                 if (currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes < endTimeInMinutes) {
-                    const slotValue = slotOption.value;
-                    const slotDayType = slotValue.split('_')[0];
-
-                    if (slotValue === 'ADVISORY' && (isADay || isBDay) && !isHalfDay) {
-                        scheduleSlotToFind = slotValue;
-                        break;
-                    }
-                    if (isADay && slotDayType === 'A') {
-                        scheduleSlotToFind = slotValue;
-                        break;
-                    }
-                    if (isBDay && slotDayType === 'B') {
-                        scheduleSlotToFind = slotValue;
-                        break;
-                    }
+                    scheduleSlotToFind = slotOption.value;
+                    break;
                 }
             }
 
@@ -7313,22 +7893,28 @@ body.dark-theme[data-palette="mint"] {
         // Shared "no entry" glyph for every No School badge, so it has the same iconic weight as
         // the A/B day badges instead of being a plain text pill.
         const NO_SCHOOL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9"></circle><line x1="6" y1="18" x2="18" y2="6"></line></svg>';
+        function isWeekday(date) {
+            const d = date.getDay();
+            return d !== 0 && d !== 6;
+        }
         function isNoSchoolDay(date) {
             const key = dateKey(date);
-            // Recognizes both the settings-modal "No School Days" list and a day note titled
-            // exactly "No School" -- which is what the CSV importer produces for a "No School"
-            // subject row (see parseColumnarCsv/applyImportedDayTypes), so a bulk-imported school
-            // calendar gets the same suppression/badges without needing the textarea too.
-            if (userNoSchoolDaysCal.includes(key)) return true;
+            // Recognizes a day note titled exactly "No School" -- what the CSV importer produces
+            // for a "No School" subject row (see parseColumnarCsv/applyImportedDayTypes) -- as well
+            // as the new implicit rule: any WEEKDAY with no scheduleCalendar entry is no school.
+            // Weekends are never flagged (they were never "school days" to begin with) and legacy
+            // userNoSchoolDaysCal is checked too for any residual explicit entries.
             const note = dayNotes[key];
-            return !!(note && note.title === 'No School');
+            if (note && note.title === 'No School') return true;
+            if (userNoSchoolDaysCal.includes(key)) return true;
+            if (!isWeekday(date)) return false;
+            const entry = scheduleCalendar[key];
+            return !entry || !entry.dayType;
         }
         function getDayType(date) {
-            const key = dateKey(date);
             if (isNoSchoolDay(date)) return null;
-            if (userADaysCal.includes(key)) return 'A';
-            if (userBDaysCal.includes(key)) return 'B';
-            return null;
+            const entry = scheduleCalendar[dateKey(date)];
+            return entry ? entry.dayType : null;
         }
         function getNote(date) {
             return dayNotes[dateKey(date)] || null;
@@ -7411,27 +7997,38 @@ body.dark-theme[data-palette="mint"] {
         }
 
         // --- CLASSES SCHEDULED FOR A GIVEN CALENDAR DATE ---
-        function getSlotTimeRange(slotValue, isHalfDay) {
+        function getSlotTimeRange(slotValue, date) {
             const opt = userScheduleSlotOptions.find(o => o.value === slotValue);
             if (!opt) return null;
-            return (isHalfDay ? opt.halfDayTime : opt.fullDayTime) || opt.fullDayTime || null;
+            return getSlotTimeForDate(opt, date);
         }
 
         function getClassesForDate(date) {
             const dayType = getDayType(date);
             if (!dayType) return [];
-            const isHalfDay = date.getDay() === 5;
             const items = [];
             classData.forEach(category => {
                 category.classes.forEach(classItem => {
                     if (!classItem.scheduleSlot) return;
-                    if (classItem.scheduleSlot === 'ADVISORY' && isHalfDay) return;
+                    const slot = userScheduleSlotOptions.find(o => o.value === classItem.scheduleSlot);
+                    if (!slot) return;
                     const slotDayType = classItem.scheduleSlot.split('_')[0];
-                    if (slotDayType !== dayType && classItem.scheduleSlot !== 'ADVISORY') return;
-                    const timeRange = getSlotTimeRange(classItem.scheduleSlot, isHalfDay);
-                    items.push({ classItem, timeRange, sortKey: timeRange ? timeRange.split(' - ')[0] : '99:99' });
+                    if (slotDayType !== dayType && classItem.scheduleSlot !== 'ADVISORY' && classItem.scheduleSlot !== 'ASSEMBLY') return;
+                    const timeRange = getSlotTimeForDate(slot, date);
+                    if (!timeRange) return; // e.g. Advisory doesn't run under today's schedule type
+                    items.push({ classItem, timeRange, sortKey: timeRange.split(' - ')[0] });
                 });
             });
+            // Synthetic Lunch block: shows even if the user hasn't made a class card for it, so
+            // Lunch is always a real, visible block in Day/Week views (per the new bell schedule).
+            const lunchSlotValue = dayType + '_LUNCH';
+            if (!items.some(i => i.classItem.scheduleSlot === lunchSlotValue)) {
+                const lunchSlot = userScheduleSlotOptions.find(o => o.value === lunchSlotValue);
+                const timeRange = lunchSlot ? getSlotTimeForDate(lunchSlot, date) : null;
+                if (timeRange) {
+                    items.push({ classItem: { title: 'Lunch', scheduleSlot: lunchSlotValue, synthetic: true }, timeRange, sortKey: timeRange.split(' - ')[0] });
+                }
+            }
             items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
             return items;
         }
@@ -7792,16 +8389,11 @@ body.dark-theme[data-palette="mint"] {
             });
         }
 
-        const defaultADays = userADays;
-        const defaultBDays = userBDays;
-
+        // userADaysCal/userBDaysCal/userNoSchoolDaysCal are now just aliases of the same derived
+        // caches loadScheduleCalendar() already populates -- this just re-runs that so the
+        // Calendar screen (which calls this lazily on first open) always sees current data.
         function loadScheduleDatesForCalendar() {
-            const savedADays = localStorage.getItem('userADays');
-            const savedBDays = localStorage.getItem('userBDays');
-            const savedNoSchool = localStorage.getItem('noSchoolDaysV1');
-            userADaysCal = savedADays ? JSON.parse(savedADays) : defaultADays;
-            userBDaysCal = savedBDays ? JSON.parse(savedBDays) : defaultBDays;
-            userNoSchoolDaysCal = savedNoSchool ? JSON.parse(savedNoSchool) : [];
+            loadScheduleCalendar();
         }
         function loadDayNotes() {
             const saved = localStorage.getItem('dayNotesV1');
@@ -9200,23 +9792,12 @@ body.dark-theme[data-palette="mint"] {
                 if (!note || typeof note !== 'object') return;
                 const dayType = parseImportedDayType(note.title);
                 if (!dayType) return;
-                const target = dayType === 'A' ? userADays : userBDays;
-                const other = dayType === 'A' ? userBDays : userADays;
-                if (!target.includes(key)) {
-                    target.push(key);
-                    changed = true;
-                }
-                const otherIndex = other.indexOf(key);
-                if (otherIndex !== -1) {
-                    other.splice(otherIndex, 1);
-                    changed = true;
-                }
+                setScheduleCalendarDayType(key, dayType);
+                changed = true;
                 note.title = normalizeImportedTitle(note.title);
             });
             if (changed) {
-                localStorage.setItem('userADays', JSON.stringify(userADays));
-                localStorage.setItem('userBDays', JSON.stringify(userBDays));
-                loadScheduleDatesForCalendar();
+                saveScheduleCalendar();
             }
         }
 
@@ -11547,7 +12128,7 @@ body.dark-theme[data-palette="mint"] {
             if (cd.type === 'no-school') {
                 const today = appNow();
                 today.setHours(0, 0, 0, 0);
-                const keys = new Set(userNoSchoolDaysCal);
+                const keys = new Set(getKnownNoSchoolWeekdaysInRange());
                 Object.keys(dayNotes).forEach(k => { if (dayNotes[k].title === 'No School') keys.add(k); });
                 const futureDates = [...keys].map(parseDateKey).filter(d => d >= today).sort((a, b) => a - b);
                 return futureDates[0] || null;
@@ -11567,7 +12148,7 @@ body.dark-theme[data-palette="mint"] {
             const maxDate = new Date(today);
             maxDate.setDate(maxDate.getDate() + 240);
 
-            const noSchoolKeys = new Set(userNoSchoolDaysCal);
+            const noSchoolKeys = new Set(getKnownNoSchoolWeekdaysInRange());
             Object.keys(dayNotes).forEach(k => { if (dayNotes[k].title === 'No School') noSchoolKeys.add(k); });
             const noSchoolDates = [...noSchoolKeys].map(parseDateKey)
                 .filter(d => d >= today && d <= maxDate)
@@ -12623,6 +13204,8 @@ body.dark-theme[data-palette="mint"] {
             recordAppOpen();
             loadClassData();
             loadClassNotes();
+            loadScheduleTypes();
+            loadLunchWaveSettings();
             loadUserScheduleDates();
             loadUserScheduleSlotOptions();
             loadScheduleDatesForCalendar();

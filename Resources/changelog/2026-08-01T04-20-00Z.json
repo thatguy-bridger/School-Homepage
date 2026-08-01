@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-08-01T04:20:00Z",
+  "title": "New per-date Class Schedule system: A/B rotation calendar editor, Short Day + Assembly Day schedules, lunch waves",
+  "summary": [
+    "Replaced the old comma-separated A-Day/B-Day/No-School text boxes with a per-date `scheduleCalendar` model ({ dayType, schedule }) -- a weekday with no entry is now implicitly no-school, weekends are never touched, and existing userADays/userBDays/noSchoolDaysV1 data is migrated in once (Fridays become 'Short Day' automatically, matching the old hardcoded Friday-half-day behavior).",
+    "Added a new Settings > Class Schedule > 'Class Schedule Editor' full calendar modal: click a weekday to assign the next A/B rotation type (computed in true chronological order, not click order) or clear it back to no-school; drag or shift-click a range to assign the whole range with a continuing alternating rotation; a toolbar can mark a selected range No School or tag it with a special schedule type; a note button reuses the existing day-notes feature inline.",
+    "Added the exact 60-Minute Assembly Schedule bell times as a new built-in 'Assembly Day' schedule type, alongside a generalized 'Short Day' type that replaces the old hardcoded Friday-only half-day logic -- both, plus Regular Day, are edited via a new per-schedule-type Period Times grid in Settings, and users can add further custom schedule types.",
+    "Added an independent 1st/2nd Lunch wave setting for A Days and B Days, which resolves which of the two 3rd/7th-period (and now a first-class Lunch schedule slot, visible in Day/Week views) times applies on multi-wave schedules via a new getSlotTimeForDate(slot, date) resolver.",
+    "Migrated every call site that used to read fullDayTime/halfDayTime/isHalfDay or the raw userADays/userBDays/userADaysCal/userBDaysCal/noSchoolDaysV1 lists directly (Next Class widget, scheduled-class redirect, Day/Week calendar views, CSV day-type import, no-school countdown suggestions) onto the new resolver and scheduleCalendar-backed getDayType/isNoSchoolDay, keeping the old arrays as a derived read-only cache for any code still relying on them."
+  ]
+}
