@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T08:10:00Z",
+  "title": "Dots now stay vertically centered, class card borders doubled",
+  "summary": [
+    "Colored dots next to titles (Upcoming Events, Due Soon, class hover popups, calendar search results, etc.) were nudged down with a fixed margin that only lined up correctly for items with exactly the 'usual' number of text lines -- they now use proper flex centering everywhere, so they stay lined up with the middle of the text regardless of how many lines it wraps to.",
+    "Class card borders are now 2x their previous width for more definition."
+  ]
+}
