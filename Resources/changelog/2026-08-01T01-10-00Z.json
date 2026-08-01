@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-01T01:10:00Z",
+  "title": "Month view events now look like Apple Calendar",
+  "summary": [
+    "Timed events in the Calendar's month view now show as a colored bar with the event title when there's room, instead of always being a plain dot.",
+    "All-day events get their own stack of thin colored lines at the top of the day cell, separate from timed events, so a multi-day event doesn't crowd out everything else.",
+    "Once a day has more events than comfortably fit, the extras degrade to small dots (with a '+N' count) the same way they always did -- and on a narrow cell or small screen, bars shrink straight to just their color instead of unreadable truncated text."
+  ]
+}

@@ -1677,6 +1677,68 @@ body.dark-theme[data-palette="mint"] {
             position: relative;
             display: flex;
             flex-direction: column;
+            /* Lets .month-event-bar below react to THIS cell's own width (not the viewport) --
+               a day cell in a 3-column narrow layout should already show dots even on a wide
+               screen, the same way it would on a phone. */
+            container-type: inline-size;
+            container-name: daycell;
+        }
+        /* ---- Apple-Calendar-style month event display ----
+           All-day events stack as thin full-width colored lines at the top of the cell (their own
+           row, separate from timed events, so they don't crowd out everything else on a busy
+           day). Timed events show as a colored bar with the title when there's room; once a cell
+           has more timed events than comfortably fit, the overflow drops to small dots (same as
+           before) instead of bars. Width-based shrinking (bar -> dot) is handled by the
+           container query further down, independent of that count-based cap. */
+        .month-allday-stack { display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.3rem; }
+        .month-allday-line {
+            border-radius: 0.2rem;
+            padding: 0.05rem 0.3rem;
+            font-size: 0.62rem;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.3;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+        .month-allday-more { font-size: 0.6rem; color: var(--text-muted); padding: 0 0.2rem; }
+        .month-event-bars { display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.25rem; }
+        .month-event-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            border-radius: 0.2rem;
+            padding: 0.05rem 0.3rem;
+            background: color-mix(in srgb, var(--ev-color) 16%, transparent);
+            cursor: pointer;
+            min-width: 0;
+        }
+        .month-event-dot-inner {
+            width: 0.4rem;
+            height: 0.4rem;
+            border-radius: 50%;
+            background: var(--ev-color);
+            flex-shrink: 0;
+        }
+        .month-event-bar-title {
+            font-size: 0.62rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+        .month-event-more { font-size: 0.6rem; color: var(--text-muted); align-self: center; }
+        /* Below this width there's no room to read a title anyway -- collapse every bar/line down
+           to just its color, matching how the dot-only fallback always looked, so the cell reads
+           as "busy with N things" instead of a wall of unreadable ellipsized text. */
+        @container daycell (max-width: 92px) {
+            .month-event-bar { padding: 0; background: none; justify-content: center; }
+            .month-event-bar-title { display: none; }
+            .month-allday-line { height: 0.3rem; padding: 0; font-size: 0; }
         }
         .day-cell:hover {
             transform: translateY(-2px);
@@ -8132,6 +8194,56 @@ body.dark-theme[data-palette="mint"] {
             return `${startStr} - ${endStr}`;
         }
 
+        // Apple-Calendar-style month-cell event display: all-day events get their own stack of
+        // thin colored lines (so they're visually separate from -- and don't crowd out -- timed
+        // events on a busy day); timed events show as a colored bar with the title for the first
+        // few, then degrade to small dots once there are more than comfortably fit. The bar-vs-dot
+        // WIDTH-based shrink (for a narrow cell/small screen) is pure CSS, see the
+        // @container daycell rule near .day-cell -- this only handles the COUNT-based cap.
+        const MONTH_ALLDAY_LINE_CAP = 3;
+        const MONTH_EVENT_BAR_CAP = 3;
+        const MONTH_EVENT_DOT_CAP = 4;
+        function buildMonthDayEventsHtml(cursor, today, dayEvents) {
+            if (!dayEvents.length) return '';
+            const allDayEvents = dayEvents.filter(e => e.allDay);
+            const timedEvents = dayEvents.filter(e => !e.allDay);
+
+            const allDayLinesHtml = allDayEvents.slice(0, MONTH_ALLDAY_LINE_CAP).map(e => `
+                <div class="month-allday-line" style="background:${e.color};" title="${escapeAttr(e.title)} — ${escapeAttr(categoryLabel(e.category))} — ${escapeAttr(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, true)">${escapeHtml(e.title)}</div>
+            `).join('');
+            const allDayOverflow = allDayEvents.length - MONTH_ALLDAY_LINE_CAP;
+            const allDayStackHtml = allDayEvents.length ? `
+                <div class="month-allday-stack">
+                    ${allDayLinesHtml}
+                    ${allDayOverflow > 0 ? `<div class="month-allday-more">+${allDayOverflow} more</div>` : ''}
+                </div>
+            ` : '';
+
+            const barsShown = timedEvents.slice(0, MONTH_EVENT_BAR_CAP);
+            const dotsShown = timedEvents.slice(MONTH_EVENT_BAR_CAP);
+            const barsHtml = barsShown.length ? `
+                <div class="month-event-bars">
+                    ${barsShown.map(e => `
+                        <div class="month-event-bar" style="--ev-color:${e.color};" title="${escapeAttr(e.title)} — ${escapeAttr(categoryLabel(e.category))} — ${escapeAttr(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, true)">
+                            <span class="month-event-dot-inner"></span>
+                            <span class="month-event-bar-title">${escapeHtml(e.title)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : '';
+            const dotsHtml = dotsShown.length ? `
+                <div class="flex items-end flex-wrap gap-1.5 mt-1">
+                    ${dotsShown.slice(0, MONTH_EVENT_DOT_CAP).map(e => {
+                        const size = (7 + eventUrgencyT(e.category, cursor, today) * 5).toFixed(1);
+                        return `<span class="rounded-full flex-shrink-0 flex items-center justify-center calendar-event-dot" style="width:${size}px;height:${size}px;background:${e.color};cursor:pointer;overflow:hidden;" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, true)">${categoryIconSvg(e.category, size)}</span>`;
+                    }).join('')}
+                    ${dotsShown.length > MONTH_EVENT_DOT_CAP ? `<span class="month-event-more">+${dotsShown.length - MONTH_EVENT_DOT_CAP}</span>` : ''}
+                </div>
+            ` : '';
+
+            return allDayStackHtml + barsHtml + dotsHtml;
+        }
+
         function renderMonthView() {
             const weekStart = getWeekStart();
             const year = currentDate.getFullYear();
@@ -8157,14 +8269,7 @@ body.dark-theme[data-palette="mint"] {
                 const badgeHtml = dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayType}-Day</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>` : '';
                 const titleHtml = note && note.title ? `<p class="text-xs mt-1 truncate font-medium">${escapeHtml(note.title)}</p>` : '';
                 const dotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
-                const externalDotsHtml = externalEvents.length ? `
-                    <div class="flex items-end flex-wrap gap-1.5 mt-1">
-                        ${externalEvents.slice(0, 4).map((e, idx) => {
-                            const size = (7 + eventUrgencyT(e.category, cursor, today) * 5).toFixed(1);
-                            return `<span class="rounded-full flex-shrink-0 flex items-center justify-center calendar-event-dot" style="width:${size}px;height:${size}px;background:${e.color};cursor:pointer;overflow:hidden;" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx}, true)">${categoryIconSvg(e.category, size)}</span>`;
-                        }).join('')}
-                    </div>
-                ` : '';
+                const externalDotsHtml = buildMonthDayEventsHtml(cursor, today, externalEvents);
                 const classesPreviewHtml = classesToday.length ? `<p class="day-classes-preview">${classesToday.map(c => `<span${classPopupAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>` : '';
                 const remindersToday = getRemindersForDateFiltered(cursor);
                 const remindersPreviewHtml = remindersToday.length ? `<p class="day-classes-preview">${remindersToday.map(r => `📌 <span style="color:${reminderDisplayColor(r)};">${escapeHtml(r.text)}</span>`).join(', ')}</p>` : '';
