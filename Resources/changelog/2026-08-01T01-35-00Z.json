@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T01:35:00Z",
+  "title": "Fixed the simulated-time banner staying visible after clearing it",
+  "summary": [
+    "The orange 'simulated date' banner had display:flex set as an inline style, which always wins over a plain CSS class in specificity -- so toggling the 'hidden' class off after clearing the override was working correctly in JS, it just never actually hid the banner. Moved the layout into a real CSS rule so hiding it now actually works."
+  ]
+}
