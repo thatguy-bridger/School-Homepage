@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-01T08:55:00Z",
+  "title": "Sync now explains what it's doing (and doing wrong)",
+  "summary": [
+    "Entering a GitHub token in Settings used to just save it silently -- if this device already had existing data, nothing indicated that a restore was possible, so it looked like nothing happened. Entering a token now actively checks GitHub for existing synced data and shows a confirmation modal offering to restore it, or a clear explanation if none was found.",
+    "The welcome screen's sync step now shows an explicit modal for both outcomes too -- \"no data found, starting fresh\" or a real error -- instead of a small status line that was easy to miss.",
+    "Fixed a narrow race where a fresh device could auto-push its own (still-default) data to GitHub in the few seconds between entering a token and the restore check finishing, which could have overwritten real synced data before you ever saw the restore prompt."
+  ]
+}

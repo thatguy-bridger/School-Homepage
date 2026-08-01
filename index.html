@@ -12631,6 +12631,7 @@ body.dark-theme[data-palette="mint"] {
 
         function saveGithubTokenPref(value) {
             const token = value.trim();
+            const previousToken = localStorage.getItem('githubGistToken');
             if (token) {
                 localStorage.setItem('githubGistToken', token);
             } else {
@@ -12638,6 +12639,78 @@ body.dark-theme[data-palette="mint"] {
             }
             updateGistSyncUI();
             ensureGistAutoSync();
+            // Entering a genuinely new/different token here (not the onboarding modal, which has
+            // its own auto-restore-since-the-device-is-empty flow) used to silently do nothing
+            // beyond saving the token -- if this device already had existing (even placeholder)
+            // data, that data would just sit there unrestored with no indication anything needed
+            // attention, reading as "I entered my token and nothing happened." Explicitly check for
+            // and offer to restore existing synced data now, with a modal either way so it's never
+            // silent about what it found.
+            if (token && token !== previousToken) checkForExistingAppDataOnTokenEntry(token);
+        }
+
+        // Guards the auto-push installed in installAutoSyncStorageHook() -- while we're actively
+        // checking whether this token already has synced data (and possibly restoring it), a
+        // stray local write (e.g. some unrelated UI init) auto-pushing this device's current
+        // pre-restore/placeholder data would silently clobber the real synced data on GitHub
+        // before the user ever gets a chance to see/confirm the restore prompt below.
+        let gistTokenEntryCheckInFlight = false;
+
+        async function checkForExistingAppDataOnTokenEntry(token) {
+            gistTokenEntryCheckInFlight = true;
+            const statusEl = document.getElementById('gist-sync-status');
+            if (statusEl) statusEl.textContent = 'Checking GitHub for existing synced data...';
+            let gistId;
+            try {
+                gistId = await findAppDataGistId(token);
+            } catch (err) {
+                gistTokenEntryCheckInFlight = false;
+                console.error('Token-entry gist check failed:', err);
+                if (statusEl) statusEl.textContent = `Couldn't check for existing data: ${err.message}`;
+                showConfirmationModal(
+                    `Couldn't check GitHub for existing synced data: ${err.message}. Your local data on this device hasn't been touched -- double-check the token has "gist" scope and try again, or use "Restore My Data" below once it does.`,
+                    [{ text: 'OK', action: () => {} }]
+                );
+                return;
+            }
+            if (!gistId) {
+                gistTokenEntryCheckInFlight = false;
+                if (statusEl) statusEl.textContent = 'No existing synced data found for this token.';
+                showConfirmationModal(
+                    'No existing synced data was found on GitHub for this token. This device\'s current data will be treated as the starting point instead -- it\'ll be pushed to a new private gist automatically as you make changes (or right away via "Push Now" below).',
+                    [{ text: 'OK', action: () => {} }]
+                );
+                return;
+            }
+            if (statusEl) statusEl.textContent = 'Found existing synced data.';
+            showConfirmationModal(
+                'Found existing synced data on GitHub for this token. Restore it now? This will overwrite your current classes, schedule dates, notes, reminders, calendar feeds, Home layout, and preferences on this device with the synced version.',
+                [
+                    { text: 'Restore', action: async () => {
+                        try {
+                            const result = await fetchAppDataFromGist(token, gistId);
+                            const payload = JSON.parse(result.content);
+                            const data = payload && payload.data ? payload.data : payload;
+                            if (!data || typeof data !== 'object') {
+                                gistTokenEntryCheckInFlight = false;
+                                showConfirmationModal('That gist file was found but isn\'t a valid School Dashboard backup, so nothing was restored.', [{ text: 'OK', action: () => {} }]);
+                                return;
+                            }
+                            localStorage.setItem('githubGistId', result.gistId);
+                            applyImportedDataObject(data, APP_DATA_SYNC_KEYS);
+                            window.location.reload();
+                        } catch (err) {
+                            gistTokenEntryCheckInFlight = false;
+                            console.error('Token-entry restore failed:', err);
+                            showConfirmationModal(`Restore failed: ${err.message}. Your local data on this device hasn't been changed.`, [{ text: 'OK', action: () => {} }]);
+                        }
+                    } },
+                    { text: 'Keep local data', action: () => {
+                        gistTokenEntryCheckInFlight = false;
+                        if (statusEl) statusEl.textContent = 'Kept local data. It will overwrite the synced copy as you make changes.';
+                    } }
+                ]
+            );
         }
 
         function escapeIcsText(str) {
@@ -13049,6 +13122,11 @@ body.dark-theme[data-palette="mint"] {
         let appDataAutoSyncTimer = null;
         function scheduleAppDataAutoSync() {
             if (!localStorage.getItem('githubGistToken')) return;
+            // Don't push while a token-entry restore-or-not check is in flight (see
+            // checkForExistingAppDataOnTokenEntry) -- pushing this device's pre-restore state in
+            // that window could clobber real synced data before the user's had a chance to see and
+            // answer the restore prompt.
+            if (gistTokenEntryCheckInFlight) return;
             clearTimeout(appDataAutoSyncTimer);
             // A few seconds, not instant -- most edits (typing in a note, dragging a widget) fire
             // several localStorage writes in quick succession, and this coalesces them into one
@@ -13311,26 +13389,40 @@ body.dark-theme[data-palette="mint"] {
             const token = input.value.trim();
             if (!token) { statusEl.textContent = 'Enter a token first.'; return; }
             localStorage.setItem('githubGistToken', token);
+            gistTokenEntryCheckInFlight = true;
             statusEl.textContent = 'Looking for your data...';
             try {
                 const gistId = await findAppDataGistId(token);
                 if (!gistId) {
-                    statusEl.textContent = 'No synced data found for this token. You can still use "Restore My Data" later from Settings.';
+                    gistTokenEntryCheckInFlight = false;
+                    statusEl.textContent = 'No synced data found for this token.';
+                    // A subtle status line is easy to miss on a "did this actually work?" screen --
+                    // spell it out explicitly instead of leaving the user guessing whether the sync
+                    // silently failed or there was genuinely nothing to pull.
+                    showConfirmationModal(
+                        'No existing synced data was found on GitHub for this token. That\'s expected if this token has never pushed data from another device before -- this device will start fresh with its own (currently default/placeholder) data, which gets pushed to a new private gist automatically as you make changes.',
+                        [{ text: 'OK', action: () => {} }]
+                    );
                     return;
                 }
                 const result = await fetchAppDataFromGist(token, gistId);
                 const payload = JSON.parse(result.content);
                 const data = payload && payload.data ? payload.data : payload;
                 if (!data || typeof data !== 'object') {
+                    gistTokenEntryCheckInFlight = false;
                     statusEl.textContent = 'That gist file is not a School Dashboard backup.';
+                    showConfirmationModal('Found a gist for this token, but its data file isn\'t a valid School Dashboard backup, so nothing was restored.', [{ text: 'OK', action: () => {} }]);
                     return;
                 }
                 localStorage.setItem('githubGistId', result.gistId);
                 applyImportedDataObject(data, APP_DATA_SYNC_KEYS);
+                statusEl.textContent = 'Found your data -- restoring now...';
                 window.location.reload();
             } catch (err) {
+                gistTokenEntryCheckInFlight = false;
                 console.error('Onboarding sync failed:', err);
                 statusEl.textContent = `Sync failed: ${err.message}`;
+                showConfirmationModal(`Couldn't sync: ${err.message}. Double-check the token has "gist" scope and try again -- your local data on this device hasn't been changed.`, [{ text: 'OK', action: () => {} }]);
             }
         }
 
