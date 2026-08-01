@@ -3297,6 +3297,13 @@ body.dark-theme[data-palette="mint"] {
                         <button type="button" class="modal-footer-button" onclick="addCustomScheduleType()">+ Add Schedule Type</button>
                     </div>
 
+                    <div class="mt-6">
+                        <h5 class="text-lg font-semibold mb-1">Custom Periods</h5>
+                        <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Add a period beyond the regular 1st-8th/Lunch/Advisory/Assembly set -- for a special block a particular day needs (a club period, an assembly rehearsal, a makeup exam slot, etc). Once added it shows up in every class's period picker and in each schedule type's time editor, same as any built-in period.</p>
+                        <div id="custom-periods-list" class="space-y-2 mb-3"></div>
+                        <button type="button" class="modal-footer-button" onclick="openCustomPeriodModal()">+ Add Custom Period</button>
+                    </div>
+
                     <details class="mt-6">
                         <summary class="cursor-pointer text-sm font-semibold text-gray-600 dark:text-gray-300">Advanced: raw date lists</summary>
                         <div class="mt-4">
@@ -3414,6 +3421,30 @@ body.dark-theme[data-palette="mint"] {
             <div class="flex justify-between items-center gap-3 mt-6 flex-shrink-0">
                 <button type="button" id="schedule-type-editor-delete-btn" class="modal-footer-button bg-red-600" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="removeScheduleTypeFromEditor()">Delete Schedule Type</button>
                 <button type="button" class="modal-footer-button bg-green-600" onclick="closeScheduleTypeEditor()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Custom Period -->
+    <div id="custom-period-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[60] hidden opacity-0" onclick="closeCustomPeriodModal(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-md p-6 border" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Add Custom Period</h3>
+                <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeCustomPeriodModal()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <label class="block text-sm font-semibold mb-2" for="custom-period-label-input">Name</label>
+            <input type="text" id="custom-period-label-input" class="form-input mb-4" placeholder="e.g. Club Period, Makeup Exam">
+            <label class="block text-sm font-semibold mb-2" for="custom-period-scope-select">Applies to</label>
+            <select id="custom-period-scope-select" class="form-select mb-5">
+                <option value="any">Any day (like Advisory/Assembly)</option>
+                <option value="A">A Day only</option>
+                <option value="B">B Day only</option>
+            </select>
+            <div class="flex justify-end gap-2">
+                <button type="button" class="modal-footer-button is-secondary" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="closeCustomPeriodModal()">Cancel</button>
+                <button type="button" class="modal-footer-button bg-green-600" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="saveCustomPeriodModal()">Add Period</button>
             </div>
         </div>
     </div>
@@ -3812,6 +3843,7 @@ body.dark-theme[data-palette="mint"] {
             renderSchedulingSettingsForm();
             renderLunchWaveSettingsUI();
             renderScheduleTypesEditor();
+            renderCustomPeriodsList();
             loadPreferences();
             document.getElementById('pref-default-view-select').value = localStorage.getItem('calendarView') || 'month';
             document.getElementById('pref-week-start-select').value = localStorage.getItem('weekStart') || '0';
@@ -4758,21 +4790,19 @@ body.dark-theme[data-palette="mint"] {
         // Advisory only exists on 'regular' days; Assembly only exists on 'assembly' days). For
         // 3rd/7th period and Lunch -- which have a lunch-wave-dependent time on multi-wave
         // schedules -- the value is an object keyed by wave ('1st'/'2nd') instead of a plain string.
+        // Order: None first (it's the "no selection" placeholder, not part of the sequence),
+        // then Period 1 straight through Period 8, THEN the non-numbered periods (Lunch x2,
+        // Advisory, Assembly) at the end -- matches how a student actually thinks through their
+        // day ("periods 1-8, plus lunch/advisory/assembly") rather than the old ordering that put
+        // Advisory/Assembly first and interleaved Lunch between periods 3/7 and 4/8.
         const defaultScheduleSlotOptions = [
             { label: 'None (Not Scheduled)', value: '' },
-            { label: 'Advisory',         value: 'ADVISORY', times: { regular: '09:10 - 09:40' } },
-            { label: 'Assembly',         value: 'ASSEMBLY',  times: { assembly: '09:03 - 10:03' } },
             { label: 'Period 1 - A Day', value: 'A_P1', times: { regular: '07:45 - 09:05', short: '07:45 - 08:50', assembly: '07:45 - 08:58' } },
             { label: 'Period 2 - A Day', value: 'A_P2', times: { regular: '09:45 - 11:05', short: '08:55 - 10:00', assembly: '10:08 - 11:21' } },
             { label: 'Period 3 - A Day', value: 'A_P3', times: {
                 regular:  { '1st': '11:40 - 13:00', '2nd': '11:10 - 12:30' },
                 short:    '10:05 - 11:10',
                 assembly: { '1st': '11:56 - 13:09', '2nd': '11:26 - 12:39' }
-            } },
-            { label: 'Lunch - A Day',    value: 'A_LUNCH', times: {
-                regular:  { '1st': '11:05 - 11:35', '2nd': '12:30 - 13:00' },
-                short:    '12:20 - 12:45',
-                assembly: { '1st': '11:21 - 11:51', '2nd': '12:39 - 13:09' }
             } },
             { label: 'Period 4 - A Day', value: 'A_P4', times: { regular: '13:05 - 14:25', short: '11:15 - 12:20', assembly: '13:14 - 14:25' } },
             { label: 'Period 5 - B Day', value: 'B_P5', times: { regular: '07:45 - 09:05', short: '07:45 - 08:50', assembly: '07:45 - 08:58' } },
@@ -4782,12 +4812,19 @@ body.dark-theme[data-palette="mint"] {
                 short:    '10:05 - 11:10',
                 assembly: { '1st': '11:56 - 13:09', '2nd': '11:26 - 12:39' }
             } },
+            { label: 'Period 8 - B Day', value: 'B_P8', times: { regular: '13:05 - 14:25', short: '11:15 - 12:20', assembly: '13:14 - 14:25' } },
+            { label: 'Lunch - A Day',    value: 'A_LUNCH', times: {
+                regular:  { '1st': '11:05 - 11:35', '2nd': '12:30 - 13:00' },
+                short:    '12:20 - 12:45',
+                assembly: { '1st': '11:21 - 11:51', '2nd': '12:39 - 13:09' }
+            } },
             { label: 'Lunch - B Day',    value: 'B_LUNCH', times: {
                 regular:  { '1st': '11:05 - 11:35', '2nd': '12:30 - 13:00' },
                 short:    '12:20 - 12:45',
                 assembly: { '1st': '11:21 - 11:51', '2nd': '12:39 - 13:09' }
             } },
-            { label: 'Period 8 - B Day', value: 'B_P8', times: { regular: '13:05 - 14:25', short: '11:15 - 12:20', assembly: '13:14 - 14:25' } },
+            { label: 'Advisory',         value: 'ADVISORY', times: { regular: '09:10 - 09:40' } },
+            { label: 'Assembly',         value: 'ASSEMBLY',  times: { assembly: '09:03 - 10:03' } },
         ];
         /*DEFAULTS:SCHEDULE_SLOTS_END*/
 
@@ -5691,11 +5728,20 @@ body.dark-theme[data-palette="mint"] {
         }
         function addCustomScheduleType() {
             const id = 'custom_' + Date.now().toString(36);
-            // Starts unnamed/with no times set for any period -- both get filled in inside the
-            // editor modal that opens immediately, rather than a prompt() for the name followed
-            // by hunting the big grid for its row.
             scheduleTypes.push({ id, label: 'New Schedule Type', builtin: false });
+            // Seed every period's time from Regular Day rather than starting blank -- a normal
+            // day's schedule is a far more useful starting point to tweak from than an empty grid
+            // (and any period Regular doesn't use -- e.g. Assembly -- correctly stays unused here
+            // too, since there's nothing to copy for it).
+            userScheduleSlotOptions.forEach(slot => {
+                if (!slot.times || slot.times.regular === undefined) return;
+                if (!slot.times) slot.times = {};
+                slot.times[id] = (slot.times.regular && typeof slot.times.regular === 'object')
+                    ? Object.assign({}, slot.times.regular)
+                    : slot.times.regular;
+            });
             saveScheduleTypes();
+            saveUserScheduleSlotOptions();
             renderScheduleTypesEditor();
             renderDayTypeEditorScheduleOptions();
             openScheduleTypeEditor(id);
@@ -5714,6 +5760,65 @@ body.dark-theme[data-palette="mint"] {
             saveUserScheduleSlotOptions();
             renderScheduleTypesEditor();
             renderDayTypeEditorScheduleOptions();
+        }
+
+        // ----- Custom Periods: extra period slots beyond the built-in 1st-8th/Lunch/Advisory/
+        // Assembly set, selectable in any class's period picker and given their own time cards in
+        // every schedule type's editor, same as a built-in period. -----
+        function renderCustomPeriodsList() {
+            const el = document.getElementById('custom-periods-list');
+            if (!el) return;
+            const customSlots = userScheduleSlotOptions.filter(s => s.custom);
+            el.innerHTML = customSlots.length ? customSlots.map(s => `
+                <div class="flex items-center gap-2 ui-setting-row">
+                    <span class="flex-1 font-medium">${escapeHtml(s.label)} <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(${s.scope === 'any' ? 'any day' : s.scope + ' Day only'})</span></span>
+                    <button type="button" class="modal-footer-button bg-red-600" style="padding:0.35rem 0.75rem;font-size:0.75rem;" onclick="removeCustomPeriodSlot('${escapeJsAttr(s.value)}')">Remove</button>
+                </div>
+            `).join('') : `<p class="text-sm text-gray-500 dark:text-gray-400">No custom periods yet.</p>`;
+        }
+        function openCustomPeriodModal() {
+            document.getElementById('custom-period-label-input').value = '';
+            document.getElementById('custom-period-scope-select').value = 'any';
+            const modal = document.getElementById('custom-period-modal');
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => { modal.classList.remove('opacity-0'); modal.classList.add('show'); });
+        }
+        function closeCustomPeriodModal(event) {
+            const modal = document.getElementById('custom-period-modal');
+            const content = modal.querySelector('.modal-content');
+            if (event && content.contains(event.target)) return;
+            modal.classList.add('opacity-0');
+            modal.classList.remove('show');
+            modal.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
+        }
+        function saveCustomPeriodModal() {
+            const label = document.getElementById('custom-period-label-input').value.trim();
+            if (!label) return;
+            const scope = document.getElementById('custom-period-scope-select').value; // 'any' | 'A' | 'B'
+            const slug = label.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '') || Date.now().toString(36).toUpperCase();
+            // 'any' periods behave like Advisory/Assembly (universal, not tied to a day type --
+            // see the `slot.custom && slot.scope === 'any'` checks alongside the ADVISORY/ASSEMBLY
+            // ones wherever a slot's day-type match is tested). A/B-scoped ones use the same
+            // <DAYTYPE>_ prefix convention the built-in periods already use, so all the existing
+            // day-type-matching logic (which reads that prefix) just works on them unmodified.
+            const value = (scope === 'any' ? 'CUSTOM_' : scope + '_CUSTOM_') + slug + '_' + Date.now().toString(36);
+            userScheduleSlotOptions.push({ label, value, custom: true, scope, times: {} });
+            saveUserScheduleSlotOptions();
+            renderCustomPeriodsList();
+            renderClassEditor(document.getElementById('class-links-container'));
+            renderDayTypeEditorScheduleOptions();
+            closeCustomPeriodModal();
+        }
+        function removeCustomPeriodSlot(value) {
+            const slot = userScheduleSlotOptions.find(s => s.value === value);
+            if (!slot || !slot.custom) return;
+            if (!confirm(`Remove the "${slot.label}" period? Any classes currently assigned to it will be unassigned.`)) return;
+            userScheduleSlotOptions = userScheduleSlotOptions.filter(s => s.value !== value);
+            classData.forEach(cat => cat.classes.forEach(c => { if (c.scheduleSlot === value) c.scheduleSlot = ''; }));
+            saveUserScheduleSlotOptions();
+            saveToLocalStorage();
+            renderCustomPeriodsList();
+            renderClassEditor(document.getElementById('class-links-container'));
         }
 
         // ----- Schedule Type Editor modal: create-or-edit one schedule type's name + period times -----
@@ -7688,10 +7793,11 @@ body.dark-theme[data-palette="mint"] {
             userScheduleSlotOptions.forEach(slot => {
                 if (!slot.value) return;
                 const slotDayType = slot.value.split('_')[0];
-                // ADVISORY/ASSEMBLY are schedule-specific synthetic periods (not A/B-prefixed), so
-                // they're gated purely by whether that slot has a time under today's schedule type
-                // (see getSlotTimeForDate) rather than by dayType matching.
-                if (slot.value !== 'ADVISORY' && slot.value !== 'ASSEMBLY' && slotDayType !== dayType) {
+                // ADVISORY/ASSEMBLY (and any custom period scoped to "any day") are universal,
+                // not A/B-prefixed, so they're gated purely by whether that slot has a time under
+                // today's schedule type (see getSlotTimeForDate) rather than by dayType matching.
+                const isUniversal = slot.value === 'ADVISORY' || slot.value === 'ASSEMBLY' || (slot.custom && slot.scope === 'any');
+                if (!isUniversal && slotDayType !== dayType) {
                     return;
                 }
 
@@ -7892,7 +7998,8 @@ body.dark-theme[data-palette="mint"] {
             for (const slotOption of userScheduleSlotOptions) {
                 if (!slotOption.value) continue;
                 const slotDayType = slotOption.value.split('_')[0];
-                if (slotOption.value !== 'ADVISORY' && slotOption.value !== 'ASSEMBLY' && slotDayType !== dayType) continue;
+                const isUniversal = slotOption.value === 'ADVISORY' || slotOption.value === 'ASSEMBLY' || (slotOption.custom && slotOption.scope === 'any');
+                if (!isUniversal && slotDayType !== dayType) continue;
 
                 const timeStringToUse = getSlotTimeForDate(slotOption, now);
                 if (!timeStringToUse) continue;
@@ -8133,7 +8240,8 @@ body.dark-theme[data-palette="mint"] {
                     const slot = userScheduleSlotOptions.find(o => o.value === classItem.scheduleSlot);
                     if (!slot) return;
                     const slotDayType = classItem.scheduleSlot.split('_')[0];
-                    if (slotDayType !== dayType && classItem.scheduleSlot !== 'ADVISORY' && classItem.scheduleSlot !== 'ASSEMBLY') return;
+                    const isUniversal = classItem.scheduleSlot === 'ADVISORY' || classItem.scheduleSlot === 'ASSEMBLY' || (slot.custom && slot.scope === 'any');
+                    if (!isUniversal && slotDayType !== dayType) return;
                     const timeRange = getSlotTimeForDate(slot, date);
                     if (!timeRange) return; // e.g. Advisory doesn't run under today's schedule type
                     items.push({ classItem, timeRange, sortKey: timeRange.split(' - ')[0] });

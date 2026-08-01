@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-01T05:00:00Z",
+  "title": "Custom periods, reordered period list, and pre-filled new schedule types",
+  "summary": [
+    "The period list (in the class editor, schedule type editor, etc.) is now ordered Period 1 through Period 8, then Lunch (A/B), then Advisory and Assembly at the end -- instead of the old order that put Advisory/Assembly first and interleaved Lunch mid-list.",
+    "Added Custom Periods (Settings > Class Schedule): define a new period beyond the built-in set -- scoped to A Day only, B Day only, or any day -- and it shows up in every class's period picker and every schedule type's time editor automatically, so a special day (an assembly rehearsal block, a club period, etc.) can be built entirely from the existing tools.",
+    "Creating a new schedule type now pre-fills every period's time from Regular Day as a starting point to edit from, instead of starting completely blank."
+  ]
+}
