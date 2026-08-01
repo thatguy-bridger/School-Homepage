@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T09:20:00Z",
+  "title": "Custom \"Other\" day periods now show up everywhere, not just Day view",
+  "summary": [
+    "Custom time periods you add on an \"Other\" day (Field Trip, Bus Departure, etc. from the Day view's per-day picker) used to only appear on the Day view's time grid -- everywhere else that lists a day's classes (Home's Upcoming widget, the calendar previews on Home, the Calendar page's Week/Agenda/Hybrid/Month views) silently skipped them.",
+    "getClassesForDate now folds those custom periods in alongside real classes and the Lunch/Assembly synthetics, so they show up consistently anywhere a day's schedule is listed."
+  ]
+}

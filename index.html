@@ -9129,6 +9129,20 @@ body.dark-theme[data-palette="mint"] {
                     items.push({ classItem: { title: 'Assembly', scheduleSlot: 'ASSEMBLY', synthetic: true }, timeRange, sortKey: timeRange.split(' - ')[0] });
                 }
             }
+            // "Other" day custom periods (scheduleCalendar[key].customTimes -- set from the Day
+            // view's per-day picker) live outside the normal A/B slot system, so nothing above
+            // ever produces a card for them. Fold them in here too -- not just the Day view grid --
+            // so custom periods show up everywhere a day's classes are listed (Home's Upcoming
+            // widget, calendar previews, etc), same as a regular class or the Lunch/Assembly
+            // synthetics above. getOtherDayPeriodBlocks already skips any key `items` already
+            // covers, so this can't double up with a real class card.
+            getOtherDayPeriodBlocks(date, items).forEach(block => {
+                items.push({
+                    classItem: { title: block.label, scheduleSlot: block.key, synthetic: true, isCustomPeriod: true },
+                    timeRange: block.timeRange,
+                    sortKey: block.timeRange.split(' - ')[0]
+                });
+            });
             items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
             return items;
         }
