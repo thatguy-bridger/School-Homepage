@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-08-01T07:00:00Z",
+  "title": "UX polish pass: nav bar, transitions, settings layout",
+  "summary": [
+    "Page content now fades smoothly as it scrolls up under the floating top nav bar instead of popping and clipping against it.",
+    "Page-switch transitions got a smoothing pass -- fixed a glitchy overlap flash between the outgoing and incoming screens and tuned the easing to feel more polished.",
+    "The Quick Note icon on class cards now looks like an actual note instead of an external-link icon.",
+    "Settings has been reorganized: Backup & Restore and Portal Sync are now combined into a single, clearly labeled \"Data & Sync\" tab (with the calendar's live Google Calendar sync still under the Calendar tab, called out with a pointer) instead of being scattered across three different places.",
+    "Google Calendar Sync's two checkboxes in Settings > Calendar are now the same modern toggle switches used everywhere else in the app.",
+    "Widened the period start/end time fields in the Schedule Type Editor so times like \"07:45\" no longer get clipped behind the clock icon.",
+    "\"Mark Selection No School\" in the Class Schedule Editor toolbar no longer looks permanently pressed/active -- it's neutral by default and only turns red on hover or press.",
+    "The top nav bar and its icons now shrink at narrow screen widths and grow back at very wide ones, and the pill itself grows to fit wrapped icons so they no longer spill out over the page underneath."
+  ]
+}

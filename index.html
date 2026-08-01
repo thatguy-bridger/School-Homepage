@@ -214,6 +214,20 @@ body.dark-theme[data-palette="mint"] {
         0 4px 12px rgba(0,0,0,.06);
 }
 
+        /* Smooth fade for content scrolling under the fixed .app-topbar pill (prevents hard clip/pop). */
+        .topbar-fade-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6rem;
+            z-index: 39; /* just under .app-topbar (z-index: 40) */
+            pointer-events: none;
+            background: linear-gradient(to bottom, var(--bg-solid) 0%, var(--bg-solid) 18%, transparent 100%);
+            opacity: 0.92;
+            transition: background-color 0.6s ease-in-out;
+        }
+
         /* ===================== Orbit Nav (Classes / Calendar / Theme drift along the top bar) ===================== */
         .orbit-stage {
             position: relative;
@@ -280,6 +294,42 @@ body.dark-theme[data-palette="mint"] {
             background: var(--accent-grad);
             box-shadow: 0 10px 26px var(--glow-accent);
             transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.25s ease-in-out, color 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
+        }
+
+        /* Narrow-viewport tiers for the top bar pill: setupSidebarDock() already re-measures
+           .orbit-stage's real rendered box via ResizeObserver/getBoundingClientRect() and rebuilds
+           icon positions from that every time, so shrinking these sizes in CSS alone is enough --
+           no JS changes needed. Icons are expected (and fine) to wrap onto multiple rows at these
+           widths; the pill just needs to grow tall enough to contain the wrapped rows so nothing
+           spills out over page content underneath. */
+        @media (max-width: 640px) {
+            .app-topbar {
+                height: auto;
+                min-height: 3.5rem;
+                padding: 0.4rem 0.7rem;
+                border-radius: 1.75rem;
+            }
+            .topbar-logo, .topbar-logo img { width: 2.4rem; height: 2.4rem; }
+            .orbit-stage { height: auto; min-height: 2.4rem; padding: 0.15rem 0; align-self: stretch; }
+            .sidebar-link { width: 2.3rem; height: 2.3rem; }
+            .sidebar-link svg { width: 1.1rem; height: 1.1rem; }
+        }
+        @media (max-width: 420px) {
+            .app-topbar {
+                width: 92vw;
+                padding: 0.35rem 0.55rem;
+                border-radius: 1.5rem;
+            }
+            .topbar-logo, .topbar-logo img { width: 2.1rem; height: 2.1rem; }
+            .orbit-stage { min-height: 2.05rem; }
+            .sidebar-link { width: 2rem; height: 2rem; }
+            .sidebar-link svg { width: 0.95rem; height: 0.95rem; }
+        }
+        @media (min-width: 1400px) {
+            .app-topbar { height: 4.5rem; padding: 0 1.35rem; }
+            .topbar-logo, .topbar-logo img { width: 3.3rem; height: 3.3rem; }
+            .sidebar-link { width: 3.2rem; height: 3.2rem; }
+            .sidebar-link svg { width: 1.55rem; height: 1.55rem; }
         }
 
         /* Floating label shown above an icon while it's locked (hover) -- keeps the icon itself circular */
@@ -1497,7 +1547,7 @@ body.dark-theme[data-palette="mint"] {
             color: var(--text-secondary);
             cursor: pointer;
         }
-        .ics-toggle-label input[type="checkbox"] {
+        .ics-toggle-label input[type="checkbox"]:not(.ui-switch) {
             margin-top: 0.15rem;
             flex-shrink: 0;
             width: 1rem;
@@ -1505,6 +1555,7 @@ body.dark-theme[data-palette="mint"] {
             accent-color: var(--accent-2);
             cursor: pointer;
         }
+        .ics-toggle-label input.ui-switch { margin-top: 0.1rem; flex-shrink: 0; }
         .ics-toggle-label strong { color: var(--text-primary); }
         .class-input-group .class-title-input,
         .class-input-group .class-url-input,
@@ -1536,6 +1587,15 @@ body.dark-theme[data-palette="mint"] {
             transition: all 0.3s ease, background-color 0.3s ease-in-out, border-color 0.3s ease-in-out, color 0.3s ease-in-out;
             min-width: 0;
             word-break: break-word;
+        }
+        /* Native time inputs render their hh:mm text + the browser's clock icon inside the same
+           box -- the default .form-input padding leaves too little room and the icon overlaps the
+           last digit (e.g. "07:45" reading as "07:4"). Give them more horizontal room and a floor
+           width so they never get squeezed by a flex/grid parent, regardless of column count. */
+        input[type="time"].form-input {
+            min-width: 6.5rem;
+            padding: 0.75rem 0.5rem 0.75rem 0.6rem;
+            font-variant-numeric: tabular-nums;
         }
         .form-input:focus, .form-select:focus, .form-textarea:focus {
             outline: none;
@@ -1621,6 +1681,17 @@ body.dark-theme[data-palette="mint"] {
             color: var(--text-primary);
             box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
         }
+        /* "Mark Selection No School" toolbar button -- neutral at rest (it's a one-shot action,
+           not a persistent toggle, so it shouldn't look permanently pressed/active like the real
+           tag-tool toggle buttons next to it); only leans red on hover/focus/press, as a warning
+           that it's a destructive-ish action about to fire. */
+        .no-school-toolbar-btn:hover, .no-school-toolbar-btn:focus-visible {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 10px 24px rgba(220, 38, 38, 0.35);
+        }
+        .no-school-toolbar-btn:active { background: linear-gradient(135deg, #dc2626, #b91c1c); }
         /* Used on "click anywhere confirms" prompts (e.g. open-class prompts) so both buttons
            read as equally deliberate choices, matching Cancel's size instead of looking like an
            afterthought next to it. */
@@ -2635,14 +2706,34 @@ body.dark-theme[data-palette="mint"] {
         .agenda-row:active { transform: translateX(3px) scale(0.987); }
 
         /* ===================== Screen-switch (view transition) ===================== */
-        ::view-transition-old(root), ::view-transition-new(root) {
-            animation-duration: 0.46s;
-            animation-timing-function: var(--ease-out);
+        /* The browser default cross-fades old/new snapshots with mix-blend-mode: plus-lighter,
+           which visibly overlaps/glitches (brightening flash) once real page content -- not a
+           simple color fade -- is under both layers at once. Disable that blend, stack the
+           incoming view above the outgoing one, and use fill-mode: both so each snapshot holds
+           its start/end state instead of snapping back before the other layer is gone. */
+        ::view-transition-group(root) {
+            animation-duration: 0.4s;
+            animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
         }
-        ::view-transition-old(root) { animation-name: view-fade-out; }
-        ::view-transition-new(root) { animation-name: view-fade-in; }
-        @keyframes view-fade-out { to { opacity: 0; transform: scale(0.98) translateY(8px); } }
-        @keyframes view-fade-in { from { opacity: 0; transform: scale(1.02) translateY(-10px); } }
+        ::view-transition-image-pair(root) {
+            isolation: isolate;
+        }
+        ::view-transition-old(root), ::view-transition-new(root) {
+            animation-duration: 0.4s;
+            animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+            animation-fill-mode: both;
+            mix-blend-mode: normal;
+        }
+        ::view-transition-old(root) {
+            animation-name: view-fade-out;
+            z-index: 1;
+        }
+        ::view-transition-new(root) {
+            animation-name: view-fade-in;
+            z-index: 2;
+        }
+        @keyframes view-fade-out { from { opacity: 1; transform: scale(1) translateY(0); } to { opacity: 0; transform: scale(0.98) translateY(6px); } }
+        @keyframes view-fade-in { from { opacity: 0; transform: scale(1.015) translateY(-8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
         /* Calendar prev/next and the class editor toggle animate via a manual JS clone-and-slide
            (animateContentSwap) instead of the View Transitions API -- the native API's automatic
@@ -2883,6 +2974,10 @@ body.dark-theme[data-palette="mint"] {
             </div>
         </div>
     </div>
+
+    <!-- Fixed gradient overlay: fades scrolling content smoothly as it passes under the topbar pill,
+         instead of hard-clipping/popping against it. Purely decorative, no pointer events. -->
+    <div class="topbar-fade-overlay" aria-hidden="true"></div>
 
     <!-- Top bar: app-level navigation -->
     <header class="app-topbar">
@@ -3547,11 +3642,11 @@ body.dark-theme[data-palette="mint"] {
                 </p>
                 <div class="ics-toggle-row">
                     <label class="ics-toggle-label">
-                        <input type="checkbox" id="ics-include-day-events" onchange="saveIcsEventTogglePref('icsIncludeDayEvents', this.checked)">
+                        <input type="checkbox" class="ui-switch" id="ics-include-day-events" onchange="saveIcsEventTogglePref('icsIncludeDayEvents', this.checked)">
                         <span><strong>A/B Day events</strong> — one event per school day ("A Day - School" / "B Day - School"), with your day notes as the description.</span>
                     </label>
                     <label class="ics-toggle-label">
-                        <input type="checkbox" id="ics-include-class-events" onchange="saveIcsEventTogglePref('icsIncludeClassEvents', this.checked)">
+                        <input type="checkbox" class="ui-switch" id="ics-include-class-events" onchange="saveIcsEventTogglePref('icsIncludeClassEvents', this.checked)">
                         <span><strong>Individual class events</strong> — one event per class per day ("Class - Teacher | Room"), with that class's quick note as the description.</span>
                     </label>
                 </div>
@@ -3580,7 +3675,7 @@ body.dark-theme[data-palette="mint"] {
 
                 <h4 class="text-lg font-semibold mb-2">App Data Backup &amp; Sync</h4>
                 <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
-                    Pushes everything this app stores -- classes, schedule dates, notes, reminders, calendar feeds, preferences -- into the same private gist as a second file, so you can pull it down on another device with just this same token. Manual, not live: whichever side you sync last wins, so push before you switch devices and restore right after.
+                    Pushes everything this app stores -- classes, schedule dates, notes, reminders, calendar feeds, preferences -- into the same private gist as a second file, so you can pull it down on another device with just this same token. Manual, not live: whichever side you sync last wins, so push before you switch devices and restore right after. (For a plain file export/import instead of a gist, or for Portal Sync, see the <strong>Data &amp; Sync</strong> tab.)
                 </p>
                 <div class="flex flex-wrap gap-2 items-center">
                     <button type="button" class="modal-footer-button bg-green-600" onclick="pushAppDataToGist(true)">Push My Data</button>
@@ -3641,9 +3736,14 @@ body.dark-theme[data-palette="mint"] {
                     </div>
                 </div>
 
-                <div class="settings-category" data-settings-category="backup">
-                    <div class="mb-4">
-                        <h4 class="text-2xl font-semibold mb-3">Backup &amp; Restore</h4>
+                <div class="settings-category" data-settings-category="data-sync">
+                    <h4 class="text-2xl font-semibold mb-3">Data &amp; Sync</h4>
+                    <p class="text-sm mb-4 text-gray-600 dark:text-gray-300">
+                        Everything for getting data into, out of, or between devices for this app. Google Calendar's live .ics feed sync lives under the <strong>Calendar</strong> tab, alongside the rest of the calendar settings it affects.
+                    </p>
+
+                    <div class="mb-6">
+                        <h5 class="text-lg font-semibold mb-2">Export &amp; Import</h5>
                         <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
                             Export everything in this app -- classes, schedule dates, notes, calendar feeds, and preferences -- as one file, and re-import it later on this or another device. The export includes your GitHub sync token if you've set one up, so keep the file as private as you would a password.
                         </p>
@@ -3653,11 +3753,11 @@ body.dark-theme[data-palette="mint"] {
                             <input type="file" id="all-data-import-input" accept="application/json,.json" class="hidden">
                         </div>
                     </div>
-                </div>
 
-                <div class="settings-category" data-settings-category="portal-sync">
+                    <hr class="border-0 h-px bg-gradient-to-r from-transparent via-current opacity-20 my-4">
+
                     <div class="mb-4">
-                        <h4 class="text-2xl font-semibold mb-3">Portal Sync</h4>
+                        <h5 class="text-lg font-semibold mb-2">Portal Sync (Skyward)</h5>
                         <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
                             For schools like Skyward with no API access: install the companion browser extension (in this app's <code>portal-sync-extension</code> folder), browse to your Skyward assignments page while logged in, then export the JSON from the extension's popup and import it here. Assignments with a date the app can understand are folded into Due Soon; the rest still show below so you can check them manually.
                         </p>
@@ -3836,8 +3936,7 @@ body.dark-theme[data-palette="mint"] {
             { id: 'classes', label: 'Classes & Schedule' },
             { id: 'calendar', label: 'Calendar' },
             { id: 'help', label: 'Help' },
-            { id: 'backup', label: 'Backup & Restore' },
-            { id: 'portal-sync', label: 'Portal Sync' },
+            { id: 'data-sync', label: 'Data & Sync' },
             { id: 'simulate-date', label: 'Simulate Date' }
         ];
         function renderSettingsTabs() {
@@ -5159,7 +5258,7 @@ body.dark-theme[data-palette="mint"] {
                     <div class="class-url-display" title="${escapeAttr(classItem.url)}">${escapeHtml(classItem.url)}</div>
                     <div class="class-card-footer">
                         <button class="class-note-toggle ${hasNote ? 'has-note' : ''}" data-note-id="${noteId}" onclick="event.stopPropagation(); toggleClassNote('${noteId}')" title="Quick note">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9m-9-7l9 7m-9-7v7h9M9 13h6M9 17h6"></path></svg>
                         </button>
                     </div>
                 </div>
@@ -6143,7 +6242,7 @@ body.dark-theme[data-palette="mint"] {
                     <span style="font-size:0.8rem;">Show classes</span>
                     <input type="checkbox" class="ui-switch" ${dayTypeEditorShowClasses ? 'checked' : ''} onchange="dayTypeEditorToggleShowClasses(this.checked)">
                 </label>
-                <button type="button" class="modal-footer-button bg-red-600" style="padding:0.4rem 0.75rem;font-size:0.8rem;" onclick="dayTypeEditorMarkNoSchool()">Mark Selection No School</button>
+                <button type="button" class="modal-footer-button is-secondary no-school-toolbar-btn" style="padding:0.4rem 0.75rem;font-size:0.8rem;" onclick="dayTypeEditorMarkNoSchool()">Mark Selection No School</button>
                 <span class="text-gray-500 dark:text-gray-400">Tag special schedule:</span>
                 ${scheduleTypes.filter(st => st.id !== 'regular').map(st => `
                     <button type="button" class="modal-footer-button ${dayTypeEditorPaintScheduleId === st.id ? 'bg-green-600' : ''}" style="padding:0.4rem 0.75rem;font-size:0.8rem;" onclick="dayTypeEditorToggleTagTool('${escapeJsAttr(st.id)}')">${escapeHtml(st.label)}</button>
