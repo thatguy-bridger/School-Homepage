@@ -9130,6 +9130,19 @@ body.dark-theme[data-palette="mint"] {
                     items.push({ classItem: { title: 'Lunch', scheduleSlot: lunchSlotValue, synthetic: true }, timeRange, sortKey: timeRange.split(' - ')[0] });
                 }
             }
+            // Same idea for Assembly: tagging a day with the "Assembly Day" schedule (or any
+            // schedule type that has an ASSEMBLY time configured) resolves a real time for it via
+            // getSlotTimeForDate, but with no class card assigned to the ASSEMBLY slot nothing was
+            // ever pushed into items above -- so the assembly period silently never appeared
+            // anywhere, even though the time itself was set correctly. Synthesize a plain "Assembly"
+            // block the same way Lunch gets one, so setting the schedule alone is enough to see it.
+            if (!items.some(i => i.classItem.scheduleSlot === 'ASSEMBLY')) {
+                const assemblySlot = userScheduleSlotOptions.find(o => o.value === 'ASSEMBLY');
+                const timeRange = assemblySlot ? getSlotTimeForDate(assemblySlot, date) : null;
+                if (timeRange) {
+                    items.push({ classItem: { title: 'Assembly', scheduleSlot: 'ASSEMBLY', synthetic: true }, timeRange, sortKey: timeRange.split(' - ')[0] });
+                }
+            }
             items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
             return items;
         }

@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T08:25:00Z",
+  "title": "Assembly period now shows up without needing a class card",
+  "summary": [
+    "Tagging a day with the Assembly Day schedule set a real Assembly time, but nothing ever displayed it unless you'd also created an actual class card for it -- Assembly now gets the same guaranteed-visible treatment Lunch already had, showing up as its own block whenever the day's schedule resolves a time for it."
+  ]
+}
