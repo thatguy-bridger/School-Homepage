@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T05:50:00Z",
+  "title": "Class Schedule Editor notes now pre-fill with a school-day summary",
+  "summary": [
+    "Adding a note to a day that has an A/B day type assigned now starts pre-filled -- title 'School', notes '42nd Day Of School (Monday) 7:45 AM - 2:25 PM' -- computed from that day's actual assigned school-day count and its schedule's overall time span, matching the same '(weekday) time-range' format calendar events already use. Still fully editable, just a real starting point instead of a blank form."
+  ]
+}
