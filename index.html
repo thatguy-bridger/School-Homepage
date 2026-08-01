@@ -8062,6 +8062,7 @@ body.dark-theme[data-palette="mint"] {
             currentDate = appNow();
             selectedDayKey = dateKey(currentDate);
             dayViewIsEditing = false;
+            ensureExternalFeedsCoverDate(currentDate);
             renderCalendar();
         }
 
@@ -8074,6 +8075,15 @@ body.dark-theme[data-palette="mint"] {
                 currentDate.setDate(currentDate.getDate() + direction);
                 selectedDayKey = dateKey(currentDate);
                 dayViewIsEditing = false;
+            }
+            // Month view shows up to 6 weeks that can spill into the adjacent month, so check
+            // coverage for both ends of what's actually visible, not just currentDate itself --
+            // otherwise the last few cells of a month view can stay unloaded right at the edge.
+            if (calendarView === 'month') {
+                ensureExternalFeedsCoverDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1));
+                ensureExternalFeedsCoverDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0));
+            } else {
+                ensureExternalFeedsCoverDate(currentDate);
             }
             animateContentSwap(document.getElementById('view-content'), renderCalendar, { direction: direction > 0 ? 1 : -1, distance: 60 });
         }
@@ -8509,6 +8519,7 @@ body.dark-theme[data-palette="mint"] {
             selectedDayKey = key;
             currentDate = parseDateKey(key);
             dayViewIsEditing = false;
+            ensureExternalFeedsCoverDate(currentDate);
             switchView('day');
         }
 
@@ -9451,14 +9462,35 @@ body.dark-theme[data-palette="mint"] {
             return Math.max(0, Math.min(1, 1 - daysUntil / cap));
         }
 
-        async function refreshExternalFeeds(force) {
+        // The range of dates external feeds are actually expanded/cached for -- ICS feeds are
+        // re-parsed against a bounded window (recurring events are expanded into occurrences
+        // within it, not stored as an infinite rule) so this has to track what that window
+        // currently is. Starts null; the first refreshExternalFeeds call sets it to the default
+        // window below. See ensureExternalFeedsCoverDate, which grows this on demand when you
+        // navigate the calendar outside it (e.g. into a previous month that was never fetched).
+        let externalFeedsWindow = null;
+        async function refreshExternalFeeds(force, rangeOverride) {
             const cache = getExternalFeedCache();
             const now = Date.now();
             const sixHours = 6 * 60 * 60 * 1000;
-            const windowStart = appNow();
-            windowStart.setMonth(windowStart.getMonth() - 1);
-            const windowEnd = appNow();
-            windowEnd.setMonth(windowEnd.getMonth() + 6);
+            let windowStart, windowEnd;
+            if (rangeOverride) {
+                windowStart = rangeOverride.start;
+                windowEnd = rangeOverride.end;
+            } else if (externalFeedsWindow) {
+                windowStart = externalFeedsWindow.start;
+                windowEnd = externalFeedsWindow.end;
+            } else {
+                windowStart = appNow();
+                windowStart.setMonth(windowStart.getMonth() - 1);
+                windowEnd = appNow();
+                windowEnd.setMonth(windowEnd.getMonth() + 6);
+            }
+            externalFeedsWindow = { start: new Date(windowStart), end: new Date(windowEnd) };
+            // A widened window invalidates the 6h cache for every feed -- the cached events were
+            // parsed against the OLD (narrower) window, so re-parsing is the only way to pick up
+            // occurrences that fell outside it before (a past month's events, for instance).
+            if (rangeOverride) force = true;
 
             const statusEl = document.getElementById('external-feeds-status');
             if (statusEl) statusEl.textContent = 'Refreshing external calendars...';
@@ -9483,6 +9515,18 @@ body.dark-theme[data-palette="mint"] {
             if (statusEl) statusEl.textContent = `Last refreshed ${new Date(now).toLocaleTimeString()}.`;
             renderCalendar();
             if (activeAppView === 'home') renderHomeDashboard();
+        }
+        // Called whenever the calendar navigates to a date -- if it's outside the currently
+        // loaded window (most commonly: paging back into a previous month/agenda range that was
+        // never fetched), grows the window to cover it with a month of padding on each side and
+        // re-fetches. No-ops (no network call) once the date's already covered.
+        function ensureExternalFeedsCoverDate(date) {
+            if (!externalFeedsWindow) return; // first refreshExternalFeeds hasn't run yet
+            if (date >= externalFeedsWindow.start && date <= externalFeedsWindow.end) return;
+            const padMs = 31 * 24 * 60 * 60 * 1000;
+            const newStart = new Date(Math.min(date.getTime() - padMs, externalFeedsWindow.start.getTime()));
+            const newEnd = new Date(Math.max(date.getTime() + padMs, externalFeedsWindow.end.getTime()));
+            refreshExternalFeeds(true, { start: newStart, end: newEnd });
         }
 
         function rebuildExternalEventsIndex() {

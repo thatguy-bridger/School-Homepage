@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T00:19:00Z",
+  "title": "Calendar now loads events for dates you navigate to",
+  "summary": [
+    "External calendar feeds were only ever parsed for a fixed 1-month-back to 6-months-ahead window, so opening a month further back than that showed no events even though the feed had them.",
+    "Navigating the calendar (Previous/Next, jumping to a day, Today) now checks whether the visible date is already covered and, if not, widens the loaded window and re-fetches automatically."
+  ]
+}
