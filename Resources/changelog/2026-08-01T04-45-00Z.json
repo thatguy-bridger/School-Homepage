@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-01T04:45:00Z",
+  "title": "Schedule type times moved into their own editor modal",
+  "summary": [
+    "Creating a new schedule type (or clicking Edit on an existing one, including Regular Day and Lunch's own times) now opens a dedicated modal showing just that type's period-time cards, instead of one giant grid on the main Settings screen showing every period for every schedule type at once.",
+    "The old inline Period Times section and its wall of cards are gone from Settings -- the Schedule Types list there now just has a name and an Edit button per type.",
+    "Creating a new schedule type opens straight into this editor instead of a browser prompt() for the name."
+  ]
+}

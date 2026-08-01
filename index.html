@@ -3290,19 +3290,11 @@ body.dark-theme[data-palette="mint"] {
                         <div id="lunch-wave-settings" class="space-y-1"></div>
                     </div>
 
-                    <div class="mb-6 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4">
+                    <div>
                         <h5 class="text-lg font-semibold mb-1">Schedule Types</h5>
-                        <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Short Day and Assembly Day are built in; add your own for any other bell-schedule variant your school uses.</p>
+                        <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Short Day and Assembly Day are built in; add your own for any other bell-schedule variant your school uses. Edit a type to set its period times (Lunch included).</p>
                         <div id="schedule-types-list" class="space-y-2 mb-3"></div>
                         <button type="button" class="modal-footer-button" onclick="addCustomScheduleType()">+ Add Schedule Type</button>
-                    </div>
-
-                    <div>
-                        <h5 class="text-lg font-semibold mb-2">Period Times</h5>
-                        <p class="text-gray-600 text-sm mb-4 dark:text-gray-300">
-                            Adjust the start/end time for each period, per schedule type (and per lunch wave where it applies). Use 24-hour format (e.g., 07:45 for 7:45 AM, 13:00 for 1:00 PM).
-                        </p>
-                        <div id="time-slots-display" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                     </div>
 
                     <details class="mt-6">
@@ -3397,6 +3389,31 @@ body.dark-theme[data-palette="mint"] {
                     <button type="button" class="modal-footer-button is-secondary" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="closeDayTypeEditorNoteModal()">Cancel</button>
                     <button type="button" class="modal-footer-button bg-green-600" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="saveDayTypeEditorNote()">Save</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Type Editor -- create-or-edit for one schedule type at a time (Regular, Short
+         Day, Assembly Day, or a custom one). Replaces the old single giant Period Times grid that
+         showed every slot x every schedule type at once on the main Settings screen; each type's
+         cards now only show up in here, scoped to that type (Lunch included, since Lunch is just
+         another slot in userScheduleSlotOptions). z-[60] so it can be opened from inside the
+         Settings modal OR the Class Schedule Editor and still land on top of either. -->
+    <div id="schedule-type-editor-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[60] hidden opacity-0" onclick="closeScheduleTypeEditor(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-3xl h-[85vh] flex flex-col p-6 border" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                <input type="text" id="schedule-type-editor-name-input" class="text-xl font-bold bg-transparent focus:rounded p-1 -ml-1 w-full" placeholder="Schedule type name" onchange="renameScheduleTypeFromEditor(this.value)">
+                <button class="text-gray-400 hover:text-gray-800 transition flex-shrink-0 ml-3" onclick="closeScheduleTypeEditor()">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <p class="text-gray-600 text-sm mb-4 dark:text-gray-300 flex-shrink-0">
+                Set the start/end time for each period under this schedule type (24-hour format). Leave both times on a period blank to skip it -- it simply won't run under this schedule (like Advisory not running on a Short Day).
+            </p>
+            <div id="schedule-type-editor-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto flex-grow content-start"></div>
+            <div class="flex justify-between items-center gap-3 mt-6 flex-shrink-0">
+                <button type="button" id="schedule-type-editor-delete-btn" class="modal-footer-button bg-red-600" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="removeScheduleTypeFromEditor()">Delete Schedule Type</button>
+                <button type="button" class="modal-footer-button bg-green-600" onclick="closeScheduleTypeEditor()">Done</button>
             </div>
         </div>
     </div>
@@ -5658,37 +5675,30 @@ body.dark-theme[data-palette="mint"] {
         }
 
         // ===================== SCHEDULE TYPES EDITOR (Settings) =====================
+        // The list just shows each type's name + an Edit button now -- creating/renaming/setting
+        // times all happen in the Schedule Type Editor modal (see below) instead of an inline
+        // rename input plus a separate giant "every slot x every type" grid on the main Settings
+        // screen.
         function renderScheduleTypesEditor() {
             const el = document.getElementById('schedule-types-list');
             if (!el) return;
             el.innerHTML = scheduleTypes.map(st => `
                 <div class="flex items-center gap-2 ui-setting-row">
-                    <input type="text" class="form-input flex-1" value="${escapeAttr(st.label)}" ${st.id === 'regular' ? 'disabled' : ''}
-                           onchange="renameScheduleType('${escapeJsAttr(st.id)}', this.value)">
-                    ${st.builtin ? '<span class="text-xs text-gray-500 dark:text-gray-400 px-2">built-in</span>' : `<button type="button" class="modal-footer-button bg-red-600" style="padding:0.35rem 0.75rem;font-size:0.75rem;" onclick="removeScheduleType('${escapeJsAttr(st.id)}')">Remove</button>`}
+                    <span class="flex-1 font-medium">${escapeHtml(st.label)}${st.builtin ? ' <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(built-in)</span>' : ''}</span>
+                    <button type="button" class="modal-footer-button" style="padding:0.35rem 0.75rem;font-size:0.75rem;" onclick="openScheduleTypeEditor('${escapeJsAttr(st.id)}')">Edit</button>
                 </div>
             `).join('');
         }
-        function renameScheduleType(id, newLabel) {
-            const st = scheduleTypes.find(s => s.id === id);
-            if (!st || !newLabel.trim()) return;
-            st.label = newLabel.trim();
-            saveScheduleTypes();
-            renderSchedulingSettingsForm();
-            renderDayTypeEditorScheduleOptions();
-        }
         function addCustomScheduleType() {
-            const label = (prompt('Name for the new schedule type (e.g. "Testing Day"):') || '').trim();
-            if (!label) return;
             const id = 'custom_' + Date.now().toString(36);
-            scheduleTypes.push({ id, label, builtin: false });
-            // New schedule type starts with no times set for any period -- the user fills them in
-            // via the Period Times grid below (a schedule type with an unset time for a slot means
-            // that period simply doesn't run under it, same convention as Advisory/Assembly).
+            // Starts unnamed/with no times set for any period -- both get filled in inside the
+            // editor modal that opens immediately, rather than a prompt() for the name followed
+            // by hunting the big grid for its row.
+            scheduleTypes.push({ id, label: 'New Schedule Type', builtin: false });
             saveScheduleTypes();
             renderScheduleTypesEditor();
-            renderSchedulingSettingsForm();
             renderDayTypeEditorScheduleOptions();
+            openScheduleTypeEditor(id);
         }
         function removeScheduleType(id) {
             const st = scheduleTypes.find(s => s.id === id);
@@ -5703,8 +5713,72 @@ body.dark-theme[data-palette="mint"] {
             saveScheduleCalendar();
             saveUserScheduleSlotOptions();
             renderScheduleTypesEditor();
-            renderSchedulingSettingsForm();
             renderDayTypeEditorScheduleOptions();
+        }
+
+        // ----- Schedule Type Editor modal: create-or-edit one schedule type's name + period times -----
+        let scheduleTypeEditorId = null;
+        function openScheduleTypeEditor(id) {
+            const st = scheduleTypes.find(s => s.id === id);
+            if (!st) return;
+            scheduleTypeEditorId = id;
+            const nameInput = document.getElementById('schedule-type-editor-name-input');
+            nameInput.value = st.label;
+            nameInput.disabled = (id === 'regular');
+            const deleteBtn = document.getElementById('schedule-type-editor-delete-btn');
+            deleteBtn.classList.toggle('hidden', !!st.builtin);
+            renderScheduleTypeEditorGrid();
+            const modal = document.getElementById('schedule-type-editor-modal');
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => { modal.classList.remove('opacity-0'); modal.classList.add('show'); });
+        }
+        function closeScheduleTypeEditor(event) {
+            const modal = document.getElementById('schedule-type-editor-modal');
+            const content = modal.querySelector('.modal-content');
+            if (event && content.contains(event.target)) return;
+            modal.classList.add('opacity-0');
+            modal.classList.remove('show');
+            modal.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
+            scheduleTypeEditorId = null;
+            renderScheduleTypesEditor();
+            renderDayTypeEditorScheduleOptions();
+            renderDayTypeEditor();
+        }
+        function renameScheduleTypeFromEditor(newLabel) {
+            const st = scheduleTypes.find(s => s.id === scheduleTypeEditorId);
+            if (!st || st.id === 'regular' || !newLabel.trim()) return;
+            st.label = newLabel.trim();
+            saveScheduleTypes();
+        }
+        function removeScheduleTypeFromEditor() {
+            if (!scheduleTypeEditorId) return;
+            const id = scheduleTypeEditorId;
+            closeScheduleTypeEditor();
+            removeScheduleType(id);
+        }
+        // Same per-slot time cards as the old shared grid, just scoped to ONE schedule type
+        // (scheduleTypeEditorId) instead of rendering every type's rows for every slot at once.
+        function renderScheduleTypeEditorGrid() {
+            const grid = document.getElementById('schedule-type-editor-grid');
+            if (!grid || !scheduleTypeEditorId) return;
+            const stId = scheduleTypeEditorId;
+            const periodsToDisplay = userScheduleSlotOptions.filter(option => option.value !== '');
+            grid.innerHTML = periodsToDisplay.map(slot => {
+                const t = slot.times ? slot.times[stId] : undefined;
+                let rowsHtml;
+                if (t === undefined) {
+                    rowsHtml = `<p class="text-sm text-gray-500 dark:text-gray-400 text-center">Not used by this schedule type.</p>${timeRangeInputsHtml(slot.value, stId, '', '')}`;
+                } else if (t && typeof t === 'object') {
+                    rowsHtml = `<div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">1st Lunch</label>${timeRangeInputsHtml(slot.value, stId, '1st', t['1st'])}</div>
+                                <div class="mt-2"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">2nd Lunch</label>${timeRangeInputsHtml(slot.value, stId, '2nd', t['2nd'])}</div>`;
+                } else {
+                    rowsHtml = timeRangeInputsHtml(slot.value, stId, '', t);
+                }
+                return `<div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm space-y-2">
+                    <p class="font-semibold text-lg text-center text-gray-900 dark:text-white">${escapeHtml(slot.label)}</p>
+                    ${rowsHtml}
+                </div>`;
+            }).join('');
         }
 
         // =====================================================================================
@@ -6091,34 +6165,13 @@ body.dark-theme[data-palette="mint"] {
         // Per-slot, per-schedule-type (and, for 3rd/7th/Lunch, per-lunch-wave) time editor grid --
         // same visual pattern as the old Full Day/Half Day grid, generalized across every schedule
         // type in `scheduleTypes` instead of hardcoding Mon-Thu/Fri.
+        // Period times now live in the Schedule Type Editor modal (renderScheduleTypeEditorGrid),
+        // scoped to one schedule type at a time -- this just keeps the "Advanced: raw date lists"
+        // textareas in sync with the current A/B/no-school data.
         function renderSchedulingSettingsForm() {
             document.getElementById('adays-input').value = userADays.join(', ');
             document.getElementById('bdays-input').value = userBDays.join(', ');
             document.getElementById('noschool-input').value = userNoSchoolDays.join(', ');
-
-            const timeSlotsDisplay = document.getElementById('time-slots-display');
-            if (!timeSlotsDisplay) return;
-            timeSlotsDisplay.innerHTML = '';
-
-            const periodsToDisplay = userScheduleSlotOptions.filter(option => option.value !== '');
-
-            periodsToDisplay.forEach((slot) => {
-                let rowsHtml = '';
-                scheduleTypes.forEach(st => {
-                    const t = slot.times ? slot.times[st.id] : undefined;
-                    if (t === undefined) return; // this period doesn't run under this schedule type
-                    if (t && typeof t === 'object') {
-                        rowsHtml += `<div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">${escapeHtml(st.label)} &middot; 1st Lunch</label>${timeRangeInputsHtml(slot.value, st.id, '1st', t['1st'])}</div>`;
-                        rowsHtml += `<div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">${escapeHtml(st.label)} &middot; 2nd Lunch</label>${timeRangeInputsHtml(slot.value, st.id, '2nd', t['2nd'])}</div>`;
-                    } else {
-                        rowsHtml += `<div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">${escapeHtml(st.label)}</label>${timeRangeInputsHtml(slot.value, st.id, '', t)}</div>`;
-                    }
-                });
-                const div = document.createElement('div');
-                div.className = 'bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm space-y-3';
-                div.innerHTML = `<p class="font-semibold text-lg text-center text-gray-900 dark:text-white">${escapeHtml(slot.label)}</p>${rowsHtml || '<p class="text-sm text-gray-500 dark:text-gray-400 text-center">Not used by any schedule type.</p>'}`;
-                timeSlotsDisplay.appendChild(div);
-            });
         }
 
         function updateScheduleTime(inputElement) {
