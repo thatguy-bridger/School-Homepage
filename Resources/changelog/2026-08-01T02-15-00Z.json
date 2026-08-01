@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T02:15:00Z",
+  "title": "Full-width class categories now actually fill the width",
+  "summary": [
+    "A full-width (1-per-row) category's class cards used a fixed 1/2/3-column grid, so a category with just one class only took up a third of the row on wide screens instead of the whole thing. Switched to an auto-fit grid that stretches however many cards there are to fill the available width."
+  ]
+}

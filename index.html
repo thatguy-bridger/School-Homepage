@@ -4739,7 +4739,10 @@ body.dark-theme[data-palette="mint"] {
             return `
                 <div class="main-category-item full-width">
                     <h2 class="text-3xl sm:text-4xl font-bold mb-6 text-center">${escapeHtml(category.categoryName)}</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- auto-fit (not a fixed 1/2/3-column breakpoint scale) so a category with
+                         just one or two classes actually fills the row's width instead of sitting
+                         in a column of a grid sized for three, leaving dead space beside it. -->
+                    <div class="grid gap-6" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
                         ${classCardsHTML}
                     </div>
                 </div>
