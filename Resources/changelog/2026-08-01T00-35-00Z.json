@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T00:35:00Z",
+  "title": "External calendar fetch failures are now visible",
+  "summary": [
+    "A feed that fails to load (blocked by CORS, not actually public, bad URL, etc.) used to fail completely silently outside the browser console -- Settings > External Calendars now shows a 'Couldn't load: ...' line under any feed that's never successfully returned events.",
+    "The direct-fetch and CORS-proxy fallback failures are both reported together instead of only whichever happened last, so it's clearer whether the problem is the feed itself or the proxy."
+  ]
+}

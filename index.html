@@ -564,6 +564,14 @@ body.dark-theme[data-palette="mint"] {
             border-color: var(--accent-2);
             background: var(--glass-bg-strong);
         }
+        .feed-error-line {
+            font-size: 0.7rem;
+            color: #ef4444;
+            margin-top: 0.15rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
         .calendar-search-wrap { position: relative; max-width: 450px; width: 100%; }
         .calendar-search-input { padding: 0.9rem 1.35rem; border-radius: 0.75rem; font-size: 1.05rem; }
@@ -9167,7 +9175,18 @@ body.dark-theme[data-palette="mint"] {
                 container.innerHTML = `<p class="text-xs text-gray-500 dark:text-gray-400">No external calendars added yet.</p>`;
                 return;
             }
-            container.innerHTML = externalFeeds.map((feed, i) => `
+            const cache = getExternalFeedCache();
+            container.innerHTML = externalFeeds.map((feed, i) => {
+                const cached = cache[feed.id];
+                // Only surface the error if this feed has never successfully returned events --
+                // once it's cached real events, a transient failure on a later refresh shouldn't
+                // read as "this feed is broken" when it's actually still showing yesterday's data.
+                const errorHtml = (cached && cached.error && !(cached.events && cached.events.length)) ? `
+                    <p class="feed-error-line" title="${escapeAttr(cached.error)}">
+                        Couldn't load: ${escapeHtml(cached.error)}
+                    </p>
+                ` : '';
+                return `
                 <div class="grid grid-cols-[22px_40px_1fr_auto] items-center gap-3 text-sm py-2">
                     <div class="flex flex-col gap-0.5">
                         <button type="button" class="feed-reorder-btn" onclick="moveExternalFeed('${feed.id}', -1)" title="Move up" ${i === 0 ? 'disabled' : ''}>
@@ -9184,6 +9203,7 @@ body.dark-theme[data-palette="mint"] {
                     <div class="min-w-0">
                         <input type="text" class="feed-edit-input font-semibold" value="${escapeAttr(feed.label)}" onchange="updateExternalFeedLabel('${feed.id}', this.value)" title="Rename this calendar">
                         <input type="url" class="feed-edit-input feed-edit-url" value="${escapeAttr(feed.url)}" onchange="updateExternalFeedUrl('${feed.id}', this.value)" title="Update this calendar's feed link">
+                        ${errorHtml}
                     </div>
 
                     <div class="flex items-center gap-2 justify-end">
@@ -9195,7 +9215,8 @@ body.dark-theme[data-palette="mint"] {
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function updateExternalFeedLabel(id, value) {
@@ -9255,11 +9276,22 @@ body.dark-theme[data-palette="mint"] {
                 const res = await fetch(url, { cache: 'no-store' });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 return await res.text();
-            } catch (err) {
-                const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(url);
-                const res2 = await fetch(proxyUrl);
-                if (!res2.ok) throw new Error('Proxy HTTP ' + res2.status);
-                return await res2.text();
+            } catch (directErr) {
+                try {
+                    const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(url);
+                    const res2 = await fetch(proxyUrl);
+                    if (!res2.ok) throw new Error('proxy HTTP ' + res2.status);
+                    return await res2.text();
+                } catch (proxyErr) {
+                    // Surface both failures, not just whichever happened last -- "direct fetch
+                    // blocked by CORS" and "the CORS proxy itself is down/blocked" are different
+                    // problems with different fixes, and only reporting the proxy's error hides
+                    // that the direct request likely failed for an unrelated reason (a private
+                    // calendar returning 403, a typo'd URL, etc).
+                    const directMsg = directErr && directErr.message ? directErr.message : String(directErr);
+                    const proxyMsg = proxyErr && proxyErr.message ? proxyErr.message : String(proxyErr);
+                    throw new Error(`direct: ${directMsg}; via proxy: ${proxyMsg}`);
+                }
             }
         }
 
@@ -9507,7 +9539,17 @@ body.dark-theme[data-palette="mint"] {
                     };
                 } catch (err) {
                     console.error('Failed to fetch external feed', feed.label, err);
-                    if (!cache[feed.id]) cache[feed.id] = { fetchedAt: now, events: [], error: err.message };
+                    // Keep whatever events were already cached from a previous successful fetch
+                    // (a transient failure shouldn't blank out a feed that was working) but always
+                    // record the error so it's visible in Settings -- previously this was silently
+                    // dropped on every retry after the first, so there was no way to tell a feed
+                    // was failing without opening devtools.
+                    if (cache[feed.id]) {
+                        cache[feed.id].error = err.message;
+                        cache[feed.id].errorAt = now;
+                    } else {
+                        cache[feed.id] = { fetchedAt: now, events: [], error: err.message, errorAt: now };
+                    }
                 }
             }
             saveExternalFeedCache(cache);
@@ -9515,6 +9557,7 @@ body.dark-theme[data-palette="mint"] {
             if (statusEl) statusEl.textContent = `Last refreshed ${new Date(now).toLocaleTimeString()}.`;
             renderCalendar();
             if (activeAppView === 'home') renderHomeDashboard();
+            renderExternalFeedsList();
         }
         // Called whenever the calendar navigates to a date -- if it's outside the currently
         // loaded window (most commonly: paging back into a previous month/agenda range that was
