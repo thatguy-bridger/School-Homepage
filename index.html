@@ -3030,14 +3030,13 @@ body.dark-theme[data-palette="mint"] {
 
                     <!-- Category Filter + Search -->
                     <div class="flex flex-wrap items-center justify-between gap-3 mb-4" id="calendar-category-filters">
+                        <div class="flex flex-wrap items-center gap-2" id="calendar-dynamic-category-chips"></div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <button type="button" class="category-filter-chip active" data-group="assignment" style="--chip-color:#ef4444;" onclick="toggleCalendarCategoryFilter('assignment')"><span class="filter-chip-dot" style="background:#ef4444;"></span>Assignments</button>
-                            <button type="button" class="category-filter-chip active" data-group="school-event" style="--chip-color:#38bdf8;" onclick="toggleCalendarCategoryFilter('school-event')"><span class="filter-chip-dot" style="background:#38bdf8;"></span>School Events</button>
-                            <button type="button" class="category-filter-chip active" data-group="club" style="--chip-color:#f97316;" onclick="toggleCalendarCategoryFilter('club')"><span class="filter-chip-dot" style="background:#f97316;"></span>Clubs</button>
-                            <button type="button" class="category-filter-chip active" data-group="sports" style="--chip-color:#a855f7;" onclick="toggleCalendarCategoryFilter('sports')"><span class="filter-chip-dot" style="background:#a855f7;"></span>Sports</button>
-                            <button type="button" class="category-filter-chip active" data-group="event" style="--chip-color:#a3e635;" onclick="toggleCalendarCategoryFilter('event')"><span class="filter-chip-dot" style="background:#a3e635;"></span>Events</button>
                             <button type="button" class="category-filter-chip active" data-group="classes" style="--chip-color:#6366f1;" onclick="toggleCalendarClassesFilter()"><span class="filter-chip-dot" style="background:#6366f1;"></span>Classes</button>
                             <button type="button" class="category-filter-chip active" data-group="reminders" style="--chip-color:#eab308;" onclick="toggleCalendarRemindersFilter()"><span class="filter-chip-dot" style="background:#eab308;"></span>Reminders</button>
+                            <button type="button" class="icon-btn p-2 rounded-full" onclick="openAllSettingsModal('calendar')" title="Edit categories &amp; rules">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            </button>
                         </div>
                         <div class="calendar-search-wrap">
                             <input type="text" id="calendar-search-input" class="form-input calendar-search-input" placeholder="Search assignments &amp; events..." oninput="handleCalendarSearchInput(this.value)" onfocus="handleCalendarSearchInput(this.value)">
@@ -3287,6 +3286,24 @@ body.dark-theme[data-palette="mint"] {
                         </select>
                     </div>
                 </div>
+            </div>
+
+            <div class="mb-6">
+                <h4 class="text-lg font-semibold mb-3">Categories</h4>
+                <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                    The categories used for calendar dots, filter chips, the legend, and reminder/countdown tags. Assignment can't be deleted (it's tied to Canvas/CVA), but its color, icon, and label are still yours to change.
+                </p>
+                <div id="calendar-categories-list" class="mb-3"></div>
+                <button type="button" class="modal-footer-button is-secondary" onclick="addCalendarCategory()">+ Add Category</button>
+            </div>
+
+            <div class="mb-6">
+                <h4 class="text-lg font-semibold mb-3">Auto-Categorization Rules</h4>
+                <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                    Decides which category a calendar event (not an assignment) gets. Checked top to bottom -- the first matching rule wins. An event that matches nothing falls back to that feed's default category, set below in External Calendars.
+                </p>
+                <div id="calendar-category-rules-list" class="mb-3"></div>
+                <button type="button" class="modal-footer-button is-secondary" onclick="addCalendarCategoryRule()">+ Add Rule</button>
             </div>
 
             <div class="mb-6">
@@ -3633,6 +3650,8 @@ body.dark-theme[data-palette="mint"] {
             document.getElementById('pref-week-start-select').value = localStorage.getItem('weekStart') || '0';
             document.getElementById('ics-include-day-events').checked = localStorage.getItem('icsIncludeDayEvents') !== 'false';
             document.getElementById('ics-include-class-events').checked = localStorage.getItem('icsIncludeClassEvents') === 'true';
+            renderCalendarCategoriesEditor();
+            renderCalendarCategoryRulesEditor();
             renderExternalFeedsList();
             updateGistSyncUI();
             renderPortalSyncUnmatchedList();
@@ -3701,7 +3720,7 @@ body.dark-theme[data-palette="mint"] {
             'dismissedDailyDigestDate', 'dismissedWeeklyDigestKey', 'dismissedAssignmentKeys', 'remindersV1', 'countdownsV1',
             'showGoogleCalendar', 'googleCalendarEmbedUrl',
             'icsIncludeDayEvents', 'icsIncludeClassEvents',
-            'externalIcsFeeds', 'externalIcsCache',
+            'externalIcsFeeds', 'externalIcsCache', 'calendarCategories', 'calendarCategoryRules',
             'githubGistToken', 'githubGistId', 'githubGistRawUrl'
         ];
 
@@ -7168,7 +7187,7 @@ body.dark-theme[data-palette="mint"] {
             localStorage.setItem('calendarCategoryFilter', JSON.stringify(calendarCategoryFilter));
         }
         function toggleCalendarCategoryFilter(group) {
-            calendarCategoryFilter[group] = !calendarCategoryFilter[group];
+            calendarCategoryFilter[group] = !(calendarCategoryFilter[group] !== false);
             saveCalendarCategoryFilter();
             renderCalendarCategoryFilterChips();
             renderCalendar();
@@ -7201,14 +7220,23 @@ body.dark-theme[data-palette="mint"] {
         function renderCalendarCategoryFilterChips() {
             const container = document.getElementById('calendar-category-filters');
             if (!container) return;
+            const dynamicWrap = document.getElementById('calendar-dynamic-category-chips');
+            if (dynamicWrap) {
+                dynamicWrap.innerHTML = calendarCategories.map(c => {
+                    const isActive = calendarCategoryFilter[c.id] !== false;
+                    return `<button type="button" class="category-filter-chip ${isActive ? 'active' : ''}" data-group="${escapeAttr(c.id)}" style="--chip-color:${escapeAttr(c.color)};" onclick="toggleCalendarCategoryFilter('${escapeJsAttr(c.id)}')"><span class="filter-chip-dot" style="background:${escapeAttr(c.color)};"></span>${escapeHtml(c.label)}</button>`;
+                }).join('');
+            }
             container.querySelectorAll('.category-filter-chip').forEach(chip => {
                 const group = chip.dataset.group;
-                const isActive = group === 'classes' ? calendarShowClasses : group === 'reminders' ? calendarShowReminders : !!calendarCategoryFilter[group];
-                chip.classList.toggle('active', isActive);
+                if (group === 'classes' || group === 'reminders') {
+                    const isActive = group === 'classes' ? calendarShowClasses : calendarShowReminders;
+                    chip.classList.toggle('active', isActive);
+                }
             });
         }
         function getFilteredExternalEventsForDate(date) {
-            return getExternalEventsForDate(date).filter(e => calendarCategoryFilter[categoryGroup(e.category)]);
+            return getExternalEventsForDate(date).filter(e => calendarCategoryFilter[categoryGroup(e.category)] !== false);
         }
         let userADaysCal = [];
         let userBDaysCal = [];
@@ -7738,7 +7766,9 @@ body.dark-theme[data-palette="mint"] {
         // attachValue = that class's noteId) or an event category (attachType 'category',
         // attachValue = one of the calendar's own category keys) -- purely for display: a
         // colored/labeled tag, and for classes a click-through to that class's URL.
-        const REMINDER_CATEGORY_OPTIONS = ['assignment', 'school-event', 'club', 'sports', 'event'];
+        function reminderCategoryOptions() {
+            return calendarCategories.map(c => c.id);
+        }
         /*DEFAULTS:REMINDERS_START*/
         const DEFAULT_REMINDERS = [];
         /*DEFAULTS:REMINDERS_END*/
@@ -7774,7 +7804,7 @@ body.dark-theme[data-palette="mint"] {
                 return { label: classItem.title, color: classItem.color || null, url: classItem.url && classItem.url !== '#' ? classItem.url : null };
             }
             if (reminder.attachType === 'category') {
-                return { label: categoryLabel(reminder.attachValue), color: CATEGORY_COLORS[reminder.attachValue] || null, url: null };
+                return { label: categoryLabel(reminder.attachValue), color: categoryColorOf(reminder.attachValue) || null, url: null, category: reminder.attachValue };
             }
             return null;
         }
@@ -7836,7 +7866,7 @@ body.dark-theme[data-palette="mint"] {
                 }));
                 wrap.innerHTML = `<select id="reminder-attach-value" class="form-select">${options.join('')}</select>`;
             } else if (type === 'category') {
-                wrap.innerHTML = `<select id="reminder-attach-value" class="form-select">${REMINDER_CATEGORY_OPTIONS.map(c => `<option value="${c}" ${selectedValue === c ? 'selected' : ''}>${categoryLabel(c)}</option>`).join('')}</select>`;
+                wrap.innerHTML = `<select id="reminder-attach-value" class="form-select">${reminderCategoryOptions().map(c => `<option value="${c}" ${selectedValue === c ? 'selected' : ''}>${categoryLabel(c)}</option>`).join('')}</select>`;
             } else {
                 wrap.innerHTML = '';
             }
@@ -7884,7 +7914,7 @@ body.dark-theme[data-palette="mint"] {
                 const info = reminderAttachmentInfo(r);
                 return `
                     <div class="home-list-item" style="${info && info.color ? `border-color:${escapeAttr(info.color)};` : ''}">
-                        <span class="home-dot" style="background:${info && info.color ? escapeAttr(info.color) : 'var(--accent-2)'};"></span>
+                        <span class="home-dot" style="background:${info && info.color ? escapeAttr(info.color) : 'var(--accent-2)'};">${info && info.category ? categoryIconSvg(info.category, 14) : ''}</span>
                         <div class="min-w-0" style="flex-grow:1;">
                             <p class="home-item-title">${escapeHtml(r.text)}</p>
                             <p class="home-item-sub">${reminderWeekdaysLabel(r.weekdays)}${info ? ` · ${escapeHtml(info.label)}` : ''}</p>
@@ -8134,11 +8164,7 @@ body.dark-theme[data-palette="mint"] {
                     ${viewTypeSelectHtml}
                     <p class="mini-cal-config-panel-label">Shown in every calendar preview (Home &amp; Classes)</p>
                     <div class="mini-cal-config-grid">
-                        ${catToggle('assignment', 'Assignments')}
-                        ${catToggle('school-event', 'School Events')}
-                        ${catToggle('club', 'Clubs')}
-                        ${catToggle('sports', 'Sports')}
-                        ${catToggle('event', 'Events')}
+                        ${calendarCategories.map(c => catToggle(c.id, c.label)).join('')}
                         ${optToggle('showClasses', 'Classes', 'Show which classes meet that day')}
                         ${optToggle('showReminders', 'Reminders', 'Show reminders due that day')}
                         ${optToggle('showDayBadges', 'A/B Day badges', 'Show the A/B day-type badge and No School badge')}
@@ -9246,11 +9272,27 @@ body.dark-theme[data-palette="mint"] {
                 isCanvas: typeof feed.isCanvas === 'boolean' ? feed.isCanvas : isCanvasFeedUrl(feed.url),
                 isBuzz: typeof feed.isBuzz === 'boolean' ? feed.isBuzz : isBuzzFeedUrl(feed.url),
                 isHoliday: typeof feed.isHoliday === 'boolean' ? feed.isHoliday : isHolidayFeedUrl(feed.url),
-                // No URL pattern to detect this one generically (unlike Canvas/Buzz/holiday
-                // feeds) -- it's just whichever feed the user has flagged as their club calendar,
-                // which for the built-in default is the Club Events feed below.
-                isClub: typeof feed.isClub === 'boolean' ? feed.isClub : false
+                // Deprecated in favor of defaultCategoryId below -- kept around (unused by the
+                // categorization logic) only so an old backup/gist restore that still has this
+                // field doesn't error out; normalizeExternalFeedDefaultCategory is what migrates
+                // it into defaultCategoryId the first time a feed is loaded.
+                isClub: typeof feed.isClub === 'boolean' ? feed.isClub : false,
+                // The category assigned to this feed's events when no rule in
+                // calendarCategoryRules matches them. Defaults to 'school-event' for a plain
+                // non-LMS feed -- see normalizeExternalFeedDefaultCategory for the one-time
+                // migration of old isClub/isHoliday flags into this field.
+                defaultCategoryId: feed.defaultCategoryId || normalizeExternalFeedDefaultCategory(feed)
             };
+        }
+        // Old installs distinguished "club" and "holiday" feeds with standalone boolean flags
+        // instead of a category id -- this reproduces the exact same default categorization those
+        // flags used to produce (isHoliday -> 'event', isClub -> 'club', otherwise -> the plain
+        // non-LMS default of 'school-event') so a feed's behavior doesn't silently change when its
+        // defaultCategoryId gets backfilled on first load after the update.
+        function normalizeExternalFeedDefaultCategory(feed) {
+            if (feed.isHoliday === true || isHolidayFeedUrl(feed.url)) return 'event';
+            if (feed.isClub === true) return 'club';
+            return 'school-event';
         }
 
         // The default feed set every install starts with. Google's "Canvas Assignments" mirror
@@ -9433,9 +9475,27 @@ body.dark-theme[data-palette="mint"] {
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                         </button>
                     </div>
+
+                    <div class="col-span-4" style="margin-top:-0.35rem;">
+                        <label class="text-xs flex items-center gap-2" style="color:var(--text-muted);" title="The category assigned to this feed's events when no rule below matches them">
+                            Default category:
+                            <select class="ui-select" style="font-size:0.75rem; padding:0.15rem 0.5rem;" onchange="updateExternalFeedDefaultCategory('${feed.id}', this.value)">
+                                ${calendarCategories.filter(c => c.id !== 'assignment').map(c => `<option value="${escapeAttr(c.id)}" ${feed.defaultCategoryId === c.id ? 'selected' : ''}>${escapeHtml(c.label)}</option>`).join('')}
+                            </select>
+                        </label>
+                    </div>
                 </div>
             `;
             }).join('');
+        }
+        function updateExternalFeedDefaultCategory(id, categoryId) {
+            const feed = externalFeeds.find(f => f.id === id);
+            if (!feed) return;
+            feed.defaultCategoryId = categoryId;
+            saveExternalFeeds();
+            rebuildExternalEventsIndex();
+            renderCalendar();
+            if (activeAppView === 'home') renderHomeDashboard();
         }
 
         function updateExternalFeedLabel(id, value) {
@@ -9673,47 +9733,442 @@ body.dark-theme[data-palette="mint"] {
         // uses it, everything it publishes is coursework -- so it's always "assignment".
         // Non-LMS feeds (athletics schedules, district calendars, etc.) don't tag a type at all,
         // so those get split on a game-vs-not keyword heuristic into "sports" / "school-event".
-        const SPORTS_TITLE_PATTERN = /\b(vs\.?|@|game|match|tournament|meet|scrimmage|playoff|championship|invitational|jv|varsity)\b/i;
+        // ===================== CALENDAR CATEGORIES (user-editable) =====================
+        // Categories used to be a hardcoded 5-entry set (assignment/school-event/club/sports/
+        // event) with fixed colors and one of 4 hand-picked icons. They're now a user-editable
+        // list backed by localStorage, with a full icon library to pick from and a Gmail-filter-
+        // style rules engine (calendarCategoryRules, below) replacing the old hardcoded
+        // sports-keyword regex. "assignment" is the one category that can't be deleted -- it's
+        // structurally tied to the Canvas/Buzz assignment pipeline -- but its label/color/icon
+        // are still editable like any other.
+        const ICON_LIBRARY = [
+            { key: 'calendar', svg: '<rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="white" stroke-width="2"/><path d="M8 3v4M16 3v4M4 10h16" stroke="white" stroke-width="2" stroke-linecap="round"/>' },
+            { key: 'calendar-check', svg: '<rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="white" stroke-width="2"/><path d="M8 3v4M16 3v4M4 10h16" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M8.5 15l2 2 4-4.5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' },
+            { key: 'check', svg: '<path d="M5 13l4 4L19 7" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' },
+            { key: 'x', svg: '<path d="M6 6l12 12M18 6L6 18" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>' },
+            { key: 'star', svg: '<path d="M12 2l2.6 6.2 6.7.6-5.1 4.4 1.6 6.6L12 16.6 6.2 19.8l1.6-6.6L2.7 8.8l6.7-.6L12 2z" fill="white"/>' },
+            { key: 'flag', svg: '<path d="M6 3v18" stroke="white" stroke-width="2.6" stroke-linecap="round"/><path d="M6 4.5h12l-2.3 3.5L18 11.5H6" fill="none" stroke="white" stroke-width="2.1" stroke-linejoin="round"/>' },
+            { key: 'people', svg: '<circle cx="8" cy="8" r="3" fill="white"/><circle cx="16" cy="8" r="3" fill="white"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6" fill="none" stroke="white" stroke-width="2.1" stroke-linecap="round"/><path d="M12 14.2c.9-.6 2-1 3-1 3.3 0 6 2.7 6 6" fill="none" stroke="white" stroke-width="2.1" stroke-linecap="round"/>' },
+            { key: 'ball', svg: '<circle cx="12" cy="12" r="9" fill="none" stroke="white" stroke-width="2"/><path d="M12 3v18M3 12h18M5.5 5.5l13 13M18.5 5.5l-13 13" stroke="white" stroke-width="1.5" fill="none"/>' },
+            { key: 'trophy', svg: '<path d="M7 4h10v4a5 5 0 01-10 0V4z" fill="none" stroke="white" stroke-width="2"/><path d="M7 5H4a3 3 0 003 5M17 5h3a3 3 0 01-3 5" fill="none" stroke="white" stroke-width="2"/><path d="M12 13v3M9 20h6M8 20c0-1.7 1.8-2 4-2s4 .3 4 2" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>' },
+            { key: 'book', svg: '<path d="M4 5.5C4 4.7 4.7 4 5.5 4H12v16H5.5C4.7 20 4 19.3 4 18.5v-13z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H12v16h6.5c.8 0 1.5-.7 1.5-1.5v-13z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/>' },
+            { key: 'pencil', svg: '<path d="M4 20l1-4.5L15.5 5 19 8.5 8.5 19 4 20z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M13 7l4 4" stroke="white" stroke-width="2"/>' },
+            { key: 'clock', svg: '<circle cx="12" cy="12" r="9" fill="none" stroke="white" stroke-width="2"/><path d="M12 7v5l3.5 2" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' },
+            { key: 'bell', svg: '<path d="M6 10a6 6 0 0112 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M10 18.5a2 2 0 004 0" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>' },
+            { key: 'pin', svg: '<path d="M12 21s7-6.6 7-11.5A7 7 0 105 9.5C5 14.4 12 21 12 21z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="9.5" r="2.4" fill="white"/>' },
+            { key: 'home', svg: '<path d="M4 11l8-7 8 7" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10v9h12v-9" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/>' },
+            { key: 'school', svg: '<path d="M3 10l9-5 9 5-9 5-9-5z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M7 12.5V17c0 1.1 2.2 2 5 2s5-.9 5-2v-4.5" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M20 10v5" stroke="white" stroke-width="2" stroke-linecap="round"/>' },
+            { key: 'music', svg: '<circle cx="7" cy="18" r="2.3" fill="white"/><circle cx="17" cy="16" r="2.3" fill="white"/><path d="M9.3 18V5.5L19.3 4v11.5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' },
+            { key: 'palette', svg: '<path d="M12 3a9 8 0 100 16c1.2 0 2-1 2-2 0-.6-.3-1-.5-1.4-.2-.4 0-1 .6-1H16a4 4 0 004-4c0-4-3.6-7.6-8-7.6z" fill="none" stroke="white" stroke-width="2"/><circle cx="8" cy="10.5" r="1.2" fill="white"/><circle cx="12" cy="8" r="1.2" fill="white"/><circle cx="16" cy="10.5" r="1.2" fill="white"/>' },
+            { key: 'flask', svg: '<path d="M10 3h4M10 3v6l-5 9a2 2 0 001.7 3h10.6a2 2 0 001.7-3l-5-9V3" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M8 15h8" stroke="white" stroke-width="2"/>' },
+            { key: 'laptop', svg: '<rect x="4" y="5" width="16" height="10" rx="1" fill="none" stroke="white" stroke-width="2"/><path d="M2 19h20" stroke="white" stroke-width="2" stroke-linecap="round"/>' },
+            { key: 'medal', svg: '<circle cx="12" cy="15" r="5" fill="none" stroke="white" stroke-width="2"/><path d="M9 4l3 7 3-7M9 4H6l3 8M15 4h3l-3 8" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 12.5l1 2.6 2.7.2-2.1 1.7.7 2.6-2.3-1.5-2.3 1.5.7-2.6-2.1-1.7 2.7-.2z" fill="white"/>' },
+            { key: 'target', svg: '<circle cx="12" cy="12" r="8.5" fill="none" stroke="white" stroke-width="2"/><circle cx="12" cy="12" r="4.7" fill="none" stroke="white" stroke-width="2"/><circle cx="12" cy="12" r="1.3" fill="white"/>' },
+            { key: 'heart', svg: '<path d="M12 20s-7.5-4.7-9.5-9.5C1.2 6.8 3.5 4 6.7 4c2 0 3.5 1.1 4.3 2.5.8-1.4 2.3-2.5 4.3-2.5 3.2 0 5.5 2.8 4.2 6.5C19.5 15.3 12 20 12 20z" fill="white"/>' },
+            { key: 'gift', svg: '<rect x="4" y="9" width="16" height="12" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M4 13h16M12 9v12" stroke="white" stroke-width="2"/><path d="M12 9c-2 0-6-1-6-3.5S9 3 12 9c3-6 6-6.5 6-3.5S14 9 12 9z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>' },
+            { key: 'map', svg: '<path d="M9 4L4 6v14l5-2 6 2 5-2V4l-5 2-6-2z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 4v14M15 6v14" stroke="white" stroke-width="1.8"/>' },
+            { key: 'camera', svg: '<rect x="3" y="7" width="18" height="13" rx="2" fill="none" stroke="white" stroke-width="2"/><path d="M8 7l1.5-2.5h5L16 7" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13.5" r="3.5" fill="none" stroke="white" stroke-width="2"/>' },
+            { key: 'video', svg: '<rect x="3" y="6" width="12" height="12" rx="1.5" fill="none" stroke="white" stroke-width="2"/><path d="M15 10l6-3v10l-6-3" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/>' },
+            { key: 'mic', svg: '<rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="white" stroke-width="2"/><path d="M6 11a6 6 0 0012 0M12 17v4M9 21h6" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>' },
+            { key: 'utensils', svg: '<path d="M7 3v7a2 2 0 002 2v9M7 3v7M9 3v7M11 3v18M15 3c-1.5 0-2.5 2-2.5 5s1 5 2.5 5v9" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' },
+            { key: 'car', svg: '<path d="M4 16V12l2.5-5h11L20 12v4" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M2 16h20v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-1H6v1a1 1 0 01-1 1H3a1 1 0 01-1-1v-2z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><circle cx="7" cy="16" r="1.4" fill="white"/><circle cx="17" cy="16" r="1.4" fill="white"/>' },
+            { key: 'plane', svg: '<path d="M2 13l20-8-8 20-2.5-8.5L2 13z" fill="white"/>' },
+            { key: 'globe', svg: '<circle cx="12" cy="12" r="9" fill="none" stroke="white" stroke-width="2"/><path d="M3 12h18M12 3a14 14 0 010 18 14 14 0 010-18z" fill="none" stroke="white" stroke-width="2"/>' },
+            { key: 'lightbulb', svg: '<path d="M9 18h6M10 21h4M8 14a4.5 4.5 0 118 0c-1 1.3-1.5 2-1.5 3.5h-5c0-1.5-.5-2.2-1.5-3.5z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M12 3v2M4.5 6.5l1.4 1.4M19.5 6.5l-1.4 1.4" stroke="white" stroke-width="2" stroke-linecap="round"/>' },
+            { key: 'gear', svg: '<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" fill="none" stroke="white" stroke-width="1.8"/><circle cx="12" cy="12" r="2.8" fill="none" stroke="white" stroke-width="1.8"/>' },
+            { key: 'chart', svg: '<path d="M4 20V10M10 20V4M16 20v-7M4 20h16" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' },
+            { key: 'warning', svg: '<path d="M12 4l9 16H3z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="white"/>' },
+            { key: 'info', svg: '<circle cx="12" cy="12" r="9" fill="none" stroke="white" stroke-width="2"/><path d="M12 11v5" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="white"/>' },
+            { key: 'folder', svg: '<path d="M4 6.5C4 5.7 4.7 5 5.5 5H10l2 2.5h6.5c.8 0 1.5.7 1.5 1.5v9c0 .8-.7 1.5-1.5 1.5h-13A1.5 1.5 0 014 18V6.5z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>' },
+            { key: 'tag', svg: '<path d="M11.5 3H5a2 2 0 00-2 2v6.5a2 2 0 00.6 1.4l8.5 8.5a2 2 0 002.8 0l6-6a2 2 0 000-2.8l-8.5-8.5A2 2 0 0011.5 3z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.5" fill="white"/>' },
+            { key: 'link', svg: '<path d="M9 15l6-6M8 12l-2.5 2.5a3.5 3.5 0 005 5L13 17M16 12l2.5-2.5a3.5 3.5 0 00-5-5L11 7" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>' },
+            { key: 'phone', svg: '<path d="M6.5 3.5l3 5-2 1.5a10 10 0 006.5 6.5l1.5-2 5 3-1 2.5a2 2 0 01-2.2 1.2A16 16 0 014.3 5.7a2 2 0 011.2-2.2z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>' },
+            { key: 'chat', svg: '<path d="M4 5.5A1.5 1.5 0 015.5 4h13A1.5 1.5 0 0120 5.5v9a1.5 1.5 0 01-1.5 1.5H9l-4 4v-4H5.5A1.5 1.5 0 014 14.5v-9z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>' },
+            { key: 'alarm', svg: '<circle cx="12" cy="13" r="7.5" fill="none" stroke="white" stroke-width="2"/><path d="M12 9.5v4l2.5 1.5M5 5l-2 2M19 5l2 2M9 2.5h6" stroke="white" stroke-width="2" stroke-linecap="round"/>' },
+            { key: 'party', svg: '<path d="M4 20l3-12 12 3-12 9zM10 6l1-3M15 3l1.5 2M18 8l3-.5" fill="none" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="12" r="1" fill="white"/><circle cx="12" cy="15" r="1" fill="white"/>' },
+            { key: 'flame', svg: '<path d="M12 2c1 3-3 4-3 8a3 3 0 006 0c0-1.5-1-2-1-3.5 2 1 4 4 4 7.5a6 6 0 01-12 0c0-5 3-8 6-12z" fill="white"/>' },
+            { key: 'leaf', svg: '<path d="M20 4C10 4 4 10 4 18c8 0 14-6 14-14z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M4 20L14 10" stroke="white" stroke-width="2" stroke-linecap="round"/>' },
+            { key: 'paw', svg: '<circle cx="7" cy="8" r="2" fill="white"/><circle cx="12" cy="6" r="2" fill="white"/><circle cx="17" cy="8" r="2" fill="white"/><path d="M12 12c-3.5 0-6 2.3-6 5a2.5 2.5 0 004 2c.7-.5 1.2-1 2-1s1.3.5 2 1a2.5 2.5 0 004-2c0-2.7-2.5-5-6-5z" fill="white"/>' },
+            { key: 'umbrella', svg: '<path d="M4 12a8 8 0 0116 0z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M12 12v7a2 2 0 01-4 0M12 4v1M12 12V4" stroke="white" stroke-width="2" stroke-linecap="round"/>' },
+            { key: 'moon', svg: '<path d="M20 14.5A8.5 8.5 0 119.5 4 7 7 0 0020 14.5z" fill="white"/>' },
+            { key: 'sun', svg: '<circle cx="12" cy="12" r="4.5" fill="white"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="white" stroke-width="2" stroke-linecap="round"/>' },
+            { key: 'cloud', svg: '<path d="M7 18a4.5 4.5 0 01-.5-9A5.5 5.5 0 0117 8.2 4 4 0 0117 18H7z" fill="white"/>' },
+            { key: 'snowflake', svg: '<path d="M12 2v20M4 7l16 10M20 7L4 17" stroke="white" stroke-width="2" stroke-linecap="round"/>' },
+            { key: 'briefcase', svg: '<rect x="3" y="8" width="18" height="11" rx="1.5" fill="none" stroke="white" stroke-width="2"/><path d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2M3 13h18" fill="none" stroke="white" stroke-width="2"/>' },
+            { key: 'money', svg: '<rect x="2.5" y="6" width="19" height="12" rx="1.5" fill="none" stroke="white" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="white" stroke-width="1.8"/><circle cx="6" cy="9" r="0.9" fill="white"/><circle cx="18" cy="15" r="0.9" fill="white"/>' }
+        ];
+        const ICON_LIBRARY_MAP = ICON_LIBRARY.reduce((acc, i) => { acc[i.key] = i.svg; return acc; }, {});
+        const CATEGORY_ICON_DEFAULT = ICON_LIBRARY_MAP.calendar;
+
+        // The seed set every install starts with -- same 5 ids/colors/labels the old hardcoded
+        // system used, just now stored as editable data. "deletable: false" on assignment is the
+        // only structural constraint; every other field on every category (including assignment's
+        // own label/color/icon) is user-editable.
+        const DEFAULT_CALENDAR_CATEGORIES = [
+            { id: 'assignment', label: 'Assignment', color: '#ef4444', icon: 'check', deletable: false },
+            { id: 'school-event', label: 'School Event', color: '#38bdf8', icon: 'flag', deletable: true },
+            { id: 'club', label: 'Club', color: '#f97316', icon: 'people', deletable: true },
+            { id: 'sports', label: 'Sports', color: '#a855f7', icon: 'star', deletable: true },
+            { id: 'event', label: 'Event', color: '#a3e635', icon: 'calendar', deletable: true }
+        ];
+        // The fallback bucket every category filter/preview toggle/legend historically folded
+        // "canvas-event" and anything unrecognized into. Kept as its own constant since a few
+        // spots (categoryGroup, categorizeFeedEvent's own fallback) need to reference it by name.
+        const GENERIC_CATEGORY_ID = 'event';
+
+        let calendarCategories = [];
+        function loadCalendarCategories() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('calendarCategories') || 'null');
+                calendarCategories = Array.isArray(saved) && saved.length ? saved : JSON.parse(JSON.stringify(DEFAULT_CALENDAR_CATEGORIES));
+            } catch (e) {
+                calendarCategories = JSON.parse(JSON.stringify(DEFAULT_CALENDAR_CATEGORIES));
+            }
+            // Guard every field so a category saved by an older build (or hand-edited storage)
+            // can't end up with a missing color/icon/label and break every place that renders it.
+            calendarCategories.forEach(c => {
+                if (!c.label) c.label = 'Category';
+                if (!c.color) c.color = '#a3e635';
+                if (!c.icon || !ICON_LIBRARY_MAP[c.icon]) c.icon = 'calendar';
+                c.deletable = c.id !== 'assignment';
+            });
+            saveCalendarCategories();
+        }
+        function saveCalendarCategories() {
+            localStorage.setItem('calendarCategories', JSON.stringify(calendarCategories));
+        }
+        function findCategory(id) {
+            return calendarCategories.find(c => c.id === id) || calendarCategories.find(c => c.id === GENERIC_CATEGORY_ID) || calendarCategories[0] || null;
+        }
+
+        // ===================== CALENDAR CATEGORY RULES (Gmail-filter-style auto-categorization) ==
+        // Ordered list of { id, categoryId, feedId: 'any' | <feed id>, titleContains: comma-
+        // separated, OR'd, case-insensitive substrings }. Evaluated top-to-bottom for every
+        // non-assignment external event; first rule whose feed scope AND title keywords (if any)
+        // match wins. A rule with no keywords matches every event from its scoped feed(s) --
+        // useful for a plain "everything from this feed is a Club event" rule.
+        let calendarCategoryRules = [];
+        function loadCalendarCategoryRules() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('calendarCategoryRules') || 'null');
+                calendarCategoryRules = Array.isArray(saved) ? saved : null;
+            } catch (e) {
+                calendarCategoryRules = null;
+            }
+            if (calendarCategoryRules === null) {
+                // First run (or pre-migration install): seed the built-in Sports rule so existing
+                // users see IDENTICAL categorization to the old hardcoded SPORTS_TITLE_PATTERN
+                // regex immediately after the update -- same keyword list, applies to any feed.
+                calendarCategoryRules = [{
+                    id: 'rule-sports-default',
+                    categoryId: 'sports',
+                    feedId: 'any',
+                    titleContains: 'vs, vs., @, game, match, tournament, meet, scrimmage, playoff, championship, invitational, jv, varsity'
+                }];
+                saveCalendarCategoryRules();
+            }
+        }
+        function saveCalendarCategoryRules() {
+            localStorage.setItem('calendarCategoryRules', JSON.stringify(calendarCategoryRules));
+        }
+        function ruleKeywordList(rule) {
+            return (rule.titleContains || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        }
+        function ruleMatchesEvent(rule, feed, title) {
+            if (rule.feedId && rule.feedId !== 'any' && rule.feedId !== feed.id) return false;
+            const keywords = ruleKeywordList(rule);
+            if (!keywords.length) return true; // feed-only rule -- matches everything from that scope
+            const t = (title || '').toLowerCase();
+            return keywords.some(k => t.includes(k));
+        }
+        // Runs the ordered rule list against one event; falls back to the feed's own
+        // defaultCategoryId, then to the generic "Event" bucket if even that's unset.
+        function applyCalendarCategoryRules(feed, title) {
+            for (const rule of calendarCategoryRules) {
+                if (ruleMatchesEvent(rule, feed, title)) return rule.categoryId;
+            }
+            return feed.defaultCategoryId || GENERIC_CATEGORY_ID;
+        }
+
+        // Canvas's ICS UIDs give away what kind of item an entry is: assignments/quizzes read
+        // like "event-assignment-<id>@instructure.com" or "event-quiz-<id>@...", while a real
+        // calendar event (office hours, a class the teacher scheduled by hand, etc.) reads like
+        // "event-calendar-event-<id>@...". Buzz doesn't expose that distinction and, per how CVA
+        // uses it, everything it publishes is coursework -- so it's always "assignment". Every
+        // other (non-LMS) feed's events run through the user-editable rules engine above instead
+        // of a hardcoded heuristic.
         function categorizeFeedEvent(feed, uid, title) {
             if (feed.isBuzz) return 'assignment';
             if (feed.isCanvas) return /calendar-event/i.test(uid || '') ? 'canvas-event' : 'assignment';
-            if (feed.isHoliday) return 'event';
-            if (feed.isClub) return 'club';
-            return SPORTS_TITLE_PATTERN.test(title || '') ? 'sports' : 'school-event';
+            return applyCalendarCategoryRules(feed, title);
         }
 
-        // Maps a raw event category to one of the calendar's filter chips. "canvas-event" folds
-        // into "event" since both just read as "Event" to the user (see CATEGORY_LABELS) --
-        // everything else (assignment, sports, school-event, club) already has its own chip.
+        // Maps a raw event category to one of the calendar's filter chips. "canvas-event" always
+        // folds into the generic "Event" bucket (both just read as "Event" to the user). Any
+        // category id that still exists keeps its own chip; a deleted/unknown id falls back to
+        // the generic bucket too, so old saved data (filters, reminder attachments) never points
+        // at nothing.
         function categoryGroup(category) {
-            if (category === 'assignment' || category === 'sports' || category === 'school-event' || category === 'club') return category;
-            return 'event';
+            if (category === 'canvas-event') return GENERIC_CATEGORY_ID;
+            if (calendarCategories.some(c => c.id === category)) return category;
+            return GENERIC_CATEGORY_ID;
         }
 
-        const CATEGORY_LABELS = { assignment: 'Assignment', 'canvas-event': 'Event', event: 'Event', sports: 'Sports', 'school-event': 'School Event', club: 'Club' };
-        // Matches the calendar's own filter-chip/legend colors (see the category-filter-chip
-        // buttons and renderCalendarLegend) so a reminder tagged with a category reads
-        // consistently with how that category looks everywhere else.
-        const CATEGORY_COLORS = { assignment: '#ef4444', 'school-event': '#38bdf8', club: '#f97316', sports: '#a855f7', event: '#a3e635' };
         function categoryLabel(category) {
-            return CATEGORY_LABELS[category] || 'Event';
+            if (category === 'canvas-event') category = GENERIC_CATEGORY_ID;
+            const c = findCategory(category);
+            return c ? c.label : 'Event';
+        }
+        function categoryColorOf(category) {
+            if (category === 'canvas-event') category = GENERIC_CATEGORY_ID;
+            const c = findCategory(category);
+            return c ? c.color : '#a3e635';
         }
 
         // Small glyph shown centered inside each dot (and in the legend) so the category reads
-        // at a glance even before checking the color: a checkmark for assignments, a star for
-        // sports, a flag for school events, a people glyph for clubs, and a calendar for
-        // everything else (real Canvas events, holidays).
-        const CATEGORY_ICON_PATHS = {
-            assignment: '<path d="M5 13l4 4L19 7" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
-            sports: '<path d="M12 2l2.6 6.2 6.7.6-5.1 4.4 1.6 6.6L12 16.6 6.2 19.8l1.6-6.6L2.7 8.8l6.7-.6L12 2z" fill="white"/>',
-            'school-event': '<path d="M6 3v18" stroke="white" stroke-width="2.6" stroke-linecap="round"/><path d="M6 4.5h12l-2.3 3.5L18 11.5H6" fill="none" stroke="white" stroke-width="2.1" stroke-linejoin="round"/>',
-            club: '<circle cx="8" cy="8" r="3" fill="white"/><circle cx="16" cy="8" r="3" fill="white"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6" fill="none" stroke="white" stroke-width="2.1" stroke-linecap="round"/><path d="M12 14.2c.9-.6 2-1 3-1 3.3 0 6 2.7 6 6" fill="none" stroke="white" stroke-width="2.1" stroke-linecap="round"/>'
-        };
-        const CATEGORY_ICON_DEFAULT = '<rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="white" stroke-width="2"/><path d="M8 3v4M16 3v4M4 10h16" stroke="white" stroke-width="2" stroke-linecap="round"/>';
+        // at a glance even before checking the color -- now the user's own icon pick per category
+        // instead of 4 hardcoded ones.
         function categoryIconSvg(category, dotSizePx) {
+            if (category === 'canvas-event') category = GENERIC_CATEGORY_ID;
             const s = Math.max(5, Math.round((dotSizePx || 16) * 0.62));
-            const inner = CATEGORY_ICON_PATHS[category] || CATEGORY_ICON_DEFAULT;
+            const c = findCategory(category);
+            const inner = (c && ICON_LIBRARY_MAP[c.icon]) || CATEGORY_ICON_DEFAULT;
             return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="pointer-events:none; flex-shrink:0;" aria-hidden="true">${inner}</svg>`;
+        }
+
+        // ===================== CATEGORY EDITOR UI (add/rename/recolor/re-icon/reorder/delete) ====
+        function renderCalendarCategoriesEditor() {
+            const container = document.getElementById('calendar-categories-list');
+            if (!container) return;
+            container.innerHTML = calendarCategories.map((c, i) => `
+                <div class="grid grid-cols-[22px_36px_36px_1fr_auto] items-center gap-3 text-sm py-2">
+                    <div class="flex flex-col gap-0.5">
+                        <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategory('${escapeJsAttr(c.id)}', -1)" title="Move up" ${i === 0 ? 'disabled' : ''}>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7"></path></svg>
+                        </button>
+                        <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategory('${escapeJsAttr(c.id)}', 1)" title="Move down" ${i === calendarCategories.length - 1 ? 'disabled' : ''}>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                    </div>
+                    <button type="button" class="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" style="background:${escapeAttr(c.color)};" onclick="document.getElementById('cat-color-${escapeAttr(c.id)}').click()" title="Change color"></button>
+                    <input id="cat-color-${escapeAttr(c.id)}" type="color" class="hidden" value="${escapeAttr(c.color)}" onchange="updateCalendarCategoryColor('${escapeJsAttr(c.id)}', this.value)">
+                    <button type="button" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:${escapeAttr(c.color)};" onclick="openIconPicker('${escapeJsAttr(c.id)}')" title="Change icon">${categoryIconSvg(c.id, 26)}</button>
+                    <input type="text" class="feed-edit-input font-semibold" value="${escapeAttr(c.label)}" onchange="updateCalendarCategoryLabel('${escapeJsAttr(c.id)}', this.value)" title="Rename this category">
+                    <button type="button" class="remove-class-btn p-1" onclick="removeCalendarCategory('${escapeJsAttr(c.id)}')" title="${c.deletable ? 'Remove' : 'Assignment cannot be deleted'}" ${c.deletable ? '' : 'disabled style="opacity:0.3;cursor:default;"'}>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+        function addCalendarCategory() {
+            const id = 'cat-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+            calendarCategories.push({ id, label: 'New Category', color: '#38bdf8', icon: 'calendar', deletable: true });
+            saveCalendarCategories();
+            renderCalendarCategoriesEditor();
+            renderCalendarCategoryRulesEditor();
+            renderCalendarCategoryFilterChips();
+            renderCalendar();
+        }
+        function updateCalendarCategoryLabel(id, value) {
+            const c = calendarCategories.find(x => x.id === id);
+            if (!c) return;
+            const label = value.trim();
+            if (!label) { renderCalendarCategoriesEditor(); return; }
+            c.label = label;
+            saveCalendarCategories();
+            renderCalendarCategoriesEditor();
+            renderCalendarCategoryRulesEditor();
+            renderCalendarCategoryFilterChips();
+            renderCalendar();
+            if (activeAppView === 'home') renderHomeDashboard();
+            if (activeAppView === 'reminders') { renderPlannerCountdownsList(); renderRemindersView(); }
+        }
+        function updateCalendarCategoryColor(id, value) {
+            const c = calendarCategories.find(x => x.id === id);
+            if (!c) return;
+            c.color = value;
+            saveCalendarCategories();
+            renderCalendarCategoriesEditor();
+            renderCalendarCategoryFilterChips();
+            renderCalendarLegend();
+            renderCalendar();
+            if (activeAppView === 'home') renderHomeDashboard();
+            if (activeAppView === 'reminders') { renderPlannerCountdownsList(); renderRemindersView(); }
+        }
+        function moveCalendarCategory(id, direction) {
+            const idx = calendarCategories.findIndex(c => c.id === id);
+            if (idx === -1) return;
+            const newIdx = idx + direction;
+            if (newIdx < 0 || newIdx >= calendarCategories.length) return;
+            const [c] = calendarCategories.splice(idx, 1);
+            calendarCategories.splice(newIdx, 0, c);
+            saveCalendarCategories();
+            renderCalendarCategoriesEditor();
+            renderCalendarCategoryFilterChips();
+        }
+        function removeCalendarCategory(id) {
+            const c = calendarCategories.find(x => x.id === id);
+            if (!c || !c.deletable) return;
+            calendarCategories = calendarCategories.filter(x => x.id !== id);
+            saveCalendarCategories();
+            // Any rule that pointed at the deleted category now falls back to the generic bucket
+            // rather than silently vanishing from the rules list.
+            calendarCategoryRules.forEach(r => { if (r.categoryId === id) r.categoryId = GENERIC_CATEGORY_ID; });
+            saveCalendarCategoryRules();
+            // Feeds whose default pointed at the deleted category fall back the same way.
+            externalFeeds.forEach(f => { if (f.defaultCategoryId === id) f.defaultCategoryId = GENERIC_CATEGORY_ID; });
+            saveExternalFeeds();
+            renderCalendarCategoriesEditor();
+            renderCalendarCategoryRulesEditor();
+            renderExternalFeedsList();
+            renderCalendarCategoryFilterChips();
+            rebuildExternalEventsIndex();
+            renderCalendar();
+            if (activeAppView === 'home') renderHomeDashboard();
+        }
+
+        // ----- Icon picker (shared popover, ~50 icons, reused by the category editor) -----
+        function openIconPicker(categoryId) {
+            closeIconPicker();
+            const popover = document.createElement('div');
+            popover.id = 'icon-picker-popover';
+            popover.className = 'modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50';
+            popover.onclick = (e) => { if (e.target === popover) closeIconPicker(); };
+            popover.innerHTML = `
+                <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-md p-6 border" onclick="event.stopPropagation()">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold">Choose an icon</h3>
+                        <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeIconPicker()">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(2.6rem, 1fr)); gap:0.5rem; max-height:60vh; overflow-y:auto;">
+                        ${ICON_LIBRARY.map(i => `
+                            <button type="button" title="${escapeAttr(i.key)}" onclick="pickCategoryIcon('${escapeJsAttr(categoryId)}', '${escapeJsAttr(i.key)}')" style="width:2.6rem; height:2.6rem; border-radius:0.6rem; background:var(--glass-bg-strong); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                                <svg width="18" height="18" viewBox="0 0 24 24"><g style="color:var(--text-primary);" fill="currentColor" stroke="currentColor">${i.svg.replace(/white/g, 'currentColor')}</g></svg>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popover);
+            document.body.style.overflow = 'hidden';
+        }
+        function closeIconPicker() {
+            const popover = document.getElementById('icon-picker-popover');
+            if (popover) popover.remove();
+            document.body.style.overflow = '';
+        }
+        function pickCategoryIcon(categoryId, iconKey) {
+            const c = calendarCategories.find(x => x.id === categoryId);
+            if (c) {
+                c.icon = iconKey;
+                saveCalendarCategories();
+                renderCalendarCategoriesEditor();
+                renderCalendarCategoryFilterChips();
+                renderCalendarLegend();
+                renderCalendar();
+                if (activeAppView === 'home') renderHomeDashboard();
+                if (activeAppView === 'reminders') { renderPlannerCountdownsList(); renderRemindersView(); }
+            }
+            closeIconPicker();
+        }
+
+        // ===================== CATEGORY RULES EDITOR UI (Gmail-filter-style, add/edit/delete/reorder) ====
+        function renderCalendarCategoryRulesEditor() {
+            const container = document.getElementById('calendar-category-rules-list');
+            if (!container) return;
+            if (!calendarCategoryRules.length) {
+                container.innerHTML = `<p class="text-xs text-gray-500 dark:text-gray-400">No rules yet -- every non-assignment event will use its feed's default category.</p>`;
+                return;
+            }
+            const feedOptions = (selected) => `
+                <option value="any" ${selected === 'any' || !selected ? 'selected' : ''}>Any calendar</option>
+                ${externalFeeds.map(f => `<option value="${escapeAttr(f.id)}" ${selected === f.id ? 'selected' : ''}>${escapeHtml(f.label)}</option>`).join('')}
+            `;
+            const categoryOptions = (selected) => calendarCategories.map(c => `<option value="${escapeAttr(c.id)}" ${selected === c.id ? 'selected' : ''}>${escapeHtml(c.label)}</option>`).join('');
+            container.innerHTML = calendarCategoryRules.map((r, i) => `
+                <div class="rule-row-wrap" style="border:1px solid var(--glass-border); border-radius:0.7rem; padding:0.6rem 0.75rem; margin-bottom:0.5rem;">
+                    <div class="flex items-start gap-2">
+                        <div class="flex flex-col gap-0.5 flex-shrink-0" style="margin-top:0.15rem;">
+                            <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategoryRule('${escapeJsAttr(r.id)}', -1)" title="Move up" ${i === 0 ? 'disabled' : ''}>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7"></path></svg>
+                            </button>
+                            <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategoryRule('${escapeJsAttr(r.id)}', 1)" title="Move down" ${i === calendarCategoryRules.length - 1 ? 'disabled' : ''}>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                        </div>
+                        <div class="min-w-0 flex-grow" style="display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem; font-size:0.75rem;">
+                            <span style="color:var(--text-muted);">If from</span>
+                            <select class="ui-select" style="font-size:0.75rem; padding:0.15rem 0.4rem;" onchange="updateCalendarCategoryRuleFeed('${escapeJsAttr(r.id)}', this.value)">${feedOptions(r.feedId)}</select>
+                            <span style="color:var(--text-muted);">and title contains</span>
+                            <input type="text" class="form-input" style="font-size:0.75rem; padding:0.2rem 0.5rem; flex:1 1 10rem; min-width:8rem;" placeholder="any (matches all)" value="${escapeAttr(r.titleContains || '')}" onchange="updateCalendarCategoryRuleKeywords('${escapeJsAttr(r.id)}', this.value)" title="Comma-separated keywords, case-insensitive, OR'd together">
+                            <span style="color:var(--text-muted);">→ label as</span>
+                            <select class="ui-select" style="font-size:0.75rem; padding:0.15rem 0.4rem;" onchange="updateCalendarCategoryRuleCategory('${escapeJsAttr(r.id)}', this.value)">${categoryOptions(r.categoryId)}</select>
+                        </div>
+                        <button type="button" class="remove-class-btn p-1 flex-shrink-0" onclick="removeCalendarCategoryRule('${escapeJsAttr(r.id)}')" title="Remove rule">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        function addCalendarCategoryRule() {
+            const id = 'rule-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+            const fallbackCategoryId = (calendarCategories.find(c => c.id === GENERIC_CATEGORY_ID) || calendarCategories[0] || {}).id || GENERIC_CATEGORY_ID;
+            calendarCategoryRules.push({ id, categoryId: fallbackCategoryId, feedId: 'any', titleContains: '' });
+            saveCalendarCategoryRules();
+            renderCalendarCategoryRulesEditor();
+            rebuildExternalEventsIndex();
+            renderCalendar();
+        }
+        function updateCalendarCategoryRuleFeed(id, feedId) {
+            const r = calendarCategoryRules.find(x => x.id === id);
+            if (!r) return;
+            r.feedId = feedId;
+            saveCalendarCategoryRules();
+            rebuildExternalEventsIndex();
+            renderCalendar();
+            if (activeAppView === 'home') renderHomeDashboard();
+        }
+        function updateCalendarCategoryRuleKeywords(id, value) {
+            const r = calendarCategoryRules.find(x => x.id === id);
+            if (!r) return;
+            r.titleContains = value.trim();
+            saveCalendarCategoryRules();
+            rebuildExternalEventsIndex();
+            renderCalendar();
+            if (activeAppView === 'home') renderHomeDashboard();
+        }
+        function updateCalendarCategoryRuleCategory(id, categoryId) {
+            const r = calendarCategoryRules.find(x => x.id === id);
+            if (!r) return;
+            r.categoryId = categoryId;
+            saveCalendarCategoryRules();
+            rebuildExternalEventsIndex();
+            renderCalendar();
+            if (activeAppView === 'home') renderHomeDashboard();
+        }
+        function moveCalendarCategoryRule(id, direction) {
+            const idx = calendarCategoryRules.findIndex(r => r.id === id);
+            if (idx === -1) return;
+            const newIdx = idx + direction;
+            if (newIdx < 0 || newIdx >= calendarCategoryRules.length) return;
+            const [r] = calendarCategoryRules.splice(idx, 1);
+            calendarCategoryRules.splice(newIdx, 0, r);
+            saveCalendarCategoryRules();
+            renderCalendarCategoryRulesEditor();
+            rebuildExternalEventsIndex();
+            renderCalendar();
+            if (activeAppView === 'home') renderHomeDashboard();
+        }
+        function removeCalendarCategoryRule(id) {
+            calendarCategoryRules = calendarCategoryRules.filter(r => r.id !== id);
+            saveCalendarCategoryRules();
+            renderCalendarCategoryRulesEditor();
+            rebuildExternalEventsIndex();
+            renderCalendar();
+            if (activeAppView === 'home') renderHomeDashboard();
         }
 
         // Normalized 0-1 "urgency" for a dot on a given calendar cell: assignments ramp up over a
@@ -11178,7 +11633,7 @@ body.dark-theme[data-palette="mint"] {
                 const color = reminderDisplayColor(r);
                 return `
                     <div class="home-list-item">
-                        <span class="home-dot" style="background:${color};"></span>
+                        <span class="home-dot" style="background:${color};">${info && info.category ? categoryIconSvg(info.category, 14) : ''}</span>
                         <div class="min-w-0" style="flex-grow:1;">
                             <p class="home-item-title">📌 ${escapeHtml(r.text)}</p>
                             <p class="home-item-sub">${reminderWeekdaysLabel(r.weekdays)}${info ? ' · ' + escapeHtml(info.label) : ''}</p>
@@ -11312,6 +11767,8 @@ body.dark-theme[data-palette="mint"] {
         function initCalendar() {
             loadScheduleDatesForCalendar();
             loadDayNotes();
+            loadCalendarCategories();
+            loadCalendarCategoryRules();
             loadExternalFeeds();
             loadCalendarCategoryFilter();
             loadRecentCalendarSearches();
@@ -11636,19 +12093,15 @@ body.dark-theme[data-palette="mint"] {
         function renderCalendarLegend() {
             const panel = document.getElementById('calendar-legend-panel');
             if (!panel) return;
-            const row = (category, color, label, desc) => `
+            const row = (category, color, label) => `
                 <div class="calendar-legend-row">
-                    <span class="home-dot" style="width:1.15rem; height:1.15rem; background:${color};">${categoryIconSvg(category, 18)}</span>
-                    <strong>${label}</strong> &nbsp;— ${desc}
+                    <span class="home-dot" style="width:1.15rem; height:1.15rem; background:${escapeAttr(color)};">${categoryIconSvg(category, 18)}</span>
+                    <strong>${escapeHtml(label)}</strong>
                 </div>
             `;
             panel.innerHTML = `
-                ${row('assignment', '#ef4444', 'Assignment', 'from Canvas or CVA/Buzz')}
-                ${row('sports', '#a855f7', 'Sports', 'games/matches from an athletics feed')}
-                ${row('club', '#f97316', 'Club', 'from the Club Events feed')}
-                ${row('school-event', '#38bdf8', 'School Event', 'service, non-game athletics items, etc.')}
-                ${row('event', '#a3e635', 'Event', 'not school-specific: a real Canvas calendar event, a holiday, etc.')}
-                <p class="calendar-legend-note">Dot size and color intensity ramp up as the date gets closer. Click a dot for full details; hover a day for everything on it.</p>
+                ${calendarCategories.map(c => row(c.id, c.color, c.label)).join('')}
+                <p class="calendar-legend-note">Dot size and color intensity ramp up as the date gets closer. Click a dot for full details; hover a day for everything on it. Edit categories and auto-categorization rules from Calendar Settings.</p>
             `;
         }
 
@@ -12096,6 +12549,8 @@ body.dark-theme[data-palette="mint"] {
             loadReminders();
             loadCountdowns();
             loadDismissedAssignments();
+            loadCalendarCategories();
+            loadCalendarCategoryRules();
             loadExternalFeeds();
             rebuildExternalEventsIndex();
             refreshExternalFeeds(false);

@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-08-01T02:30:00Z",
+  "title": "Editable calendar categories, a 50-icon picker, and Gmail-style auto-categorization rules",
+  "summary": [
+    "Calendar categories (Assignment, School Event, Club, Sports, Event) are no longer hardcoded -- add, rename, recolor, re-icon, reorder, and delete categories from Calendar Settings. Assignment can't be deleted since it's tied to the Canvas/CVA pipeline, but its color/icon/label are still editable.",
+    "New 50-icon library and picker (calendar, star, trophy, book, flask, music, paw print, and dozens more) replaces the old 4 hardcoded glyphs -- pick any icon for any category, shown in every dot, the legend, and reminder/countdown tags.",
+    "New ordered auto-categorization rules ('if from [calendar] and title contains [keywords] -> label as [category]') replace the old hardcoded sports-keyword regex. A built-in Sports rule is seeded automatically so existing users see identical categorization after the update.",
+    "Each external calendar feed now has its own default category, used when no rule matches its events -- set from a new dropdown in External Calendars settings, migrated automatically from the old Club/Holiday feed flags.",
+    "Reminders and countdowns attached to a category now show that category's real icon (not just a color dot), and the category picker for reminders lists your actual categories instead of the old fixed 5."
+  ]
+}
