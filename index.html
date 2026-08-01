@@ -6386,12 +6386,21 @@ body.dark-theme[data-palette="mint"] {
         // Count of assigned school days (any date with a dayType set) up through and including
         // this one -- "the Nth day of school", counting only real school days, not weekends or
         // blank/no-school weekdays.
+        // A school year is treated as starting August 1st -- a date in Jan-Jul belongs to the
+        // school year that started the previous August, so the count resets there instead of
+        // running continuously across every year this app has ever had schedule data for.
+        function schoolYearStart(date) {
+            const augFirstThisYear = new Date(date.getFullYear(), 7, 1);
+            return date >= augFirstThisYear ? augFirstThisYear : new Date(date.getFullYear() - 1, 7, 1);
+        }
         function schoolDayOrdinal(date) {
             const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const yearStart = schoolYearStart(target);
             let count = 0;
             Object.entries(scheduleCalendar).forEach(([k, entry]) => {
                 if (!entry || !entry.dayType) return;
-                if (parseDateKey(k) <= target) count++;
+                const d = parseDateKey(k);
+                if (d >= yearStart && d <= target) count++;
             });
             return count;
         }

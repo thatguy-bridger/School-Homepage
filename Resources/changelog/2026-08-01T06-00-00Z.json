@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T06:00:00Z",
+  "title": "School-day count now resets each school year",
+  "summary": [
+    "The 'Nth Day Of School' count in the Class Schedule Editor's auto-generated notes was counting every assigned school day ever, across all years -- it now resets on August 1st, so each school year starts back at Day 1."
+  ]
+}
