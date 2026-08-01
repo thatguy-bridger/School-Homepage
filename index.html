@@ -3417,7 +3417,7 @@ body.dark-theme[data-palette="mint"] {
             <p class="text-gray-600 text-sm mb-2 dark:text-gray-300 flex-shrink-0">
                 Pick which periods run under this schedule type -- only checked ones get a time card below. Set each one's start/end time in 24-hour format.
             </p>
-            <div id="schedule-type-editor-period-picker" class="flex flex-wrap gap-x-4 gap-y-1 mb-4 flex-shrink-0 pb-3 border-b border-gray-200 dark:border-gray-700"></div>
+            <div id="schedule-type-editor-period-picker" class="mb-4 flex-shrink-0 pb-3 border-b border-gray-200 dark:border-gray-700 overflow-y-auto" style="max-height:40vh;"></div>
             <div id="schedule-type-editor-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto flex-grow content-start"></div>
             <div class="flex justify-between items-center gap-3 mt-6 flex-shrink-0">
                 <button type="button" id="schedule-type-editor-delete-btn" class="modal-footer-button bg-red-600" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="removeScheduleTypeFromEditor()">Delete Schedule Type</button>
@@ -5951,18 +5951,43 @@ body.dark-theme[data-palette="mint"] {
         // idea as a brand-new schedule type), unchecking removes it, and only checked periods get
         // a card below. No separate "which periods are enabled" field needed since this is
         // exactly what "does this period run under this schedule" already meant.
+        // Split into two collapsible groups instead of one long flat list of 12+ checkboxes --
+        // "Classes" (the 8 numbered periods + Advisory, i.e. what an actual class gets scheduled
+        // into) and "Custom" (Lunch, Assembly, and anything genuinely custom), each using the
+        // app's own styled toggle switch, not a native checkbox, and a custom collapse trigger
+        // (not a native <details>) matching the rest of the app's UI.
+        const SCHEDULE_PICKER_CLASS_VALUES = new Set(['A_P1', 'A_P2', 'A_P3', 'A_P4', 'B_P5', 'B_P6', 'B_P7', 'B_P8', 'ADVISORY']);
+        let scheduleTypeEditorGroupsOpen = { classes: true, custom: true };
+        function toggleScheduleTypeEditorGroup(group) {
+            scheduleTypeEditorGroupsOpen[group] = !scheduleTypeEditorGroupsOpen[group];
+            renderScheduleTypeEditorPicker();
+        }
         function renderScheduleTypeEditorPicker() {
             const picker = document.getElementById('schedule-type-editor-period-picker');
             if (!picker || !scheduleTypeEditorId) return;
             const stId = scheduleTypeEditorId;
             const allSlots = userScheduleSlotOptions.filter(option => option.value !== '');
-            picker.innerHTML = allSlots.map(slot => {
+            const classSlots = allSlots.filter(s => SCHEDULE_PICKER_CLASS_VALUES.has(s.value));
+            const customSlots = allSlots.filter(s => !SCHEDULE_PICKER_CLASS_VALUES.has(s.value));
+            const rowHtml = (slot) => {
                 const checked = slot.times && slot.times[stId] !== undefined;
-                return `<label class="flex items-center gap-1.5 text-xs cursor-pointer">
-                    <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleScheduleTypeEditorPeriod('${escapeJsAttr(slot.value)}', this.checked)">
-                    ${escapeHtml(slot.label)}
+                return `<label class="ui-setting-row mini-cal-config-row" title="Include ${escapeAttr(slot.label)} in this schedule type">
+                    <span>${escapeHtml(slot.label)}</span>
+                    <input type="checkbox" class="ui-switch" ${checked ? 'checked' : ''} onchange="toggleScheduleTypeEditorPeriod('${escapeJsAttr(slot.value)}', this.checked)">
                 </label>`;
-            }).join('');
+            };
+            const groupHtml = (key, label, slots) => `
+                <div class="rounded-lg border border-gray-200 dark:border-gray-700 mb-2 overflow-hidden">
+                    <button type="button" class="w-full flex items-center justify-between px-3 py-2 text-sm font-semibold bg-gray-50 dark:bg-gray-800/60" onclick="toggleScheduleTypeEditorGroup('${key}')">
+                        <span>${label} <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(${slots.length})</span></span>
+                        <svg class="w-4 h-4 transition-transform ${scheduleTypeEditorGroupsOpen[key] ? '' : '-rotate-90'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="mini-cal-config-grid p-3 ${scheduleTypeEditorGroupsOpen[key] ? '' : 'hidden'}">
+                        ${slots.map(rowHtml).join('')}
+                    </div>
+                </div>
+            `;
+            picker.innerHTML = groupHtml('classes', 'Classes', classSlots) + groupHtml('custom', 'Custom', customSlots);
         }
         function toggleScheduleTypeEditorPeriod(slotValue, checked) {
             const slot = userScheduleSlotOptions.find(s => s.value === slotValue);

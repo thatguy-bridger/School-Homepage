@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T05:40:00Z",
+  "title": "Schedule Type Editor period picker reworked: grouped and using styled toggles",
+  "summary": [
+    "The period picker is now split into two collapsible groups -- Classes (Period 1-8 plus Advisory) and Custom (Lunch, Assembly, and anything genuinely custom) -- instead of one long flat list that was easy to get lost in.",
+    "Checkboxes replaced with the app's own styled sliding toggle switches, matching every other setting in the app instead of a native browser checkbox."
+  ]
+}
