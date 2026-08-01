@@ -9521,6 +9521,7 @@ body.dark-theme[data-palette="mint"] {
             const cache = getExternalFeedCache();
             const now = Date.now();
             const sixHours = 6 * 60 * 60 * 1000;
+            const fiveMinutes = 5 * 60 * 1000;
             let windowStart, windowEnd;
             if (rangeOverride) {
                 windowStart = rangeOverride.start;
@@ -9545,7 +9546,12 @@ body.dark-theme[data-palette="mint"] {
 
             for (const feed of externalFeeds) {
                 const cached = cache[feed.id];
-                if (!force && cached && (now - cached.fetchedAt) < sixHours) continue;
+                // A feed that errored out last time gets retried after 5 minutes, not the full 6h
+                // -- otherwise a transient failure (or, as happened here, a bug in the fetch logic
+                // itself that got fixed) stays stuck showing the same stale error for hours since
+                // nothing ever attempts it again in the meantime.
+                const staleWindow = (cached && cached.error && !(cached.events && cached.events.length)) ? fiveMinutes : sixHours;
+                if (!force && cached && (now - cached.fetchedAt) < staleWindow) continue;
                 try {
                     const icsText = await fetchIcsWithFallback(feed.url);
                     const events = parseIcsToEvents(icsText, windowStart, windowEnd);

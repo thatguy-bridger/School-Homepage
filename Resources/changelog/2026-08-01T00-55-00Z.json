@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T00:55:00Z",
+  "title": "Failed calendar feeds retry sooner instead of getting stuck",
+  "summary": [
+    "A feed that failed to load was being treated as 'freshly checked' for a full 6 hours, so it wouldn't retry (or pick up a code fix) until that expired -- it now retries after 5 minutes instead, as long as it's never successfully returned events."
+  ]
+}
