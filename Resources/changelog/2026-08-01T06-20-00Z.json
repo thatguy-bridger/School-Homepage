@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T06:20:00Z",
+  "title": "Preset dropdown now always visible on Home",
+  "summary": [
+    "The layout preset dropdown used to only appear while actively editing the Home layout -- it now shows all the time, so it's always clear which preset (or Custom) is currently loaded, and you can switch presets without entering edit mode first. Save/Delete/Rename/Reset still only show up in edit mode, since those are edit actions."
+  ]
+}
