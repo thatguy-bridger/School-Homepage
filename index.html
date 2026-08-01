@@ -2130,7 +2130,11 @@ body.dark-theme[data-palette="mint"] {
            child, so ".home-widget > .mini-calendar-panel" never matched anything and none of
            this ever applied. That's why the preview kept its own solid background/padding and
            just overflowed past the widget's box instead of filling/shrinking with it. */
-        .home-widget .mini-calendar-panel { background: transparent; border: none; box-shadow: none; padding: 0; backdrop-filter: none; height: 100%; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
+        /* A little breathing room so day cells/event cards don't butt right up against the
+           widget's edge (and, on the right, the scrollbar this panel's own overflow-y:auto can
+           show) -- the widget's own 1.5rem padding wraps the whole panel, but this panel fills
+           that box edge-to-edge with padding:0, so its own content had nothing separating it. */
+        .home-widget .mini-calendar-panel { background: transparent; border: none; box-shadow: none; padding: 0 0.4rem 0 0.1rem; backdrop-filter: none; height: 100%; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
         #home-calendar-preview { flex: 1; min-height: 0; display: flex; flex-direction: column; }
         /* Grid-cell outline shown live while dragging/resizing -- solid = a valid (non-colliding)
            cell target, dashed red = occupied by another widget, so the position is rejected. */

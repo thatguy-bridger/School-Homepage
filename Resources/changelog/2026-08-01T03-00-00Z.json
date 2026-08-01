@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T03:00:00Z",
+  "title": "Small padding gap added to the Home calendar preview",
+  "summary": [
+    "Day cells and event cards in the Home widget's calendar preview were touching the widget's edge (and the scrollbar) since the panel filled its box with padding:0 -- added a small inset so there's breathing room again."
+  ]
+}
