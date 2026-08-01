@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T01:50:00Z",
+  "title": "Calendar preview clipping fix + event tooltips in the digest",
+  "summary": [
+    "The Calendar Preview widget's header row (title, gear, 'Open full calendar' button) and other non-grid content could get squeezed/clipped whenever the day-grid's flex:1 growth left too little room -- those now keep their natural size, and only the day-grid itself flexes.",
+    "Calendar events in the Today and This Week digest banners now show a rich hover tooltip (category, time, description) the same way class references already do elsewhere in the app, instead of only a plain browser title tooltip."
+  ]
+}

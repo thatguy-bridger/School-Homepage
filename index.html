@@ -2347,6 +2347,15 @@ body.dark-theme[data-palette="mint"] {
            cells instead of just adding blank/scrollable space below a grid that refused to
            change size. min-height below is only the FLOOR for when the widget is small/short. */
         .mini-month-days-grid { flex: 1; grid-auto-rows: 1fr; }
+        /* Everything else in the panel (the title/gear/"Open full calendar" header row, the
+           weekday-letter row, the config panel, the agenda list) has to keep its natural size --
+           without this, flexbox's default flex-shrink:1 let them get squeezed by the day-grid
+           whenever the widget was too short for everything to fit at full size, which read as
+           the header and its button getting clipped/cut off instead of the day-grid being the
+           one that shrinks. The day-grid is the only thing meant to flex; .mini-calendar-panel's
+           own overflow-y:auto (see the descendant rule above) handles the rest via scrolling if
+           the widget is genuinely too short for even the shrunk-to-floor content to fit. */
+        .mini-calendar-panel > *:not(.mini-month-days-grid) { flex-shrink: 0; }
         .mini-day-cell {
             position: relative;
             display: flex;
@@ -3105,6 +3114,11 @@ body.dark-theme[data-palette="mint"] {
          data-class-note-id attribute, so hovering always surfaces the same info the Classes
          page card shows instead of a plain browser title tooltip. -->
     <div id="class-info-popup" class="day-hover-tooltip" aria-hidden="true"></div>
+    <!-- Same idea as class-info-popup, for calendar events shown outside the calendar itself
+         (currently: the Today/This Week digest banners) -- hovering an event row surfaces the
+         same category/time/description info the calendar's own event-detail modal shows, via a
+         data-event-popup-key attribute keyed into eventPopupRegistry. -->
+    <div id="event-info-popup" class="day-hover-tooltip" aria-hidden="true"></div>
 
     <div id="class-color-popover" class="class-color-popover hidden" onclick="event.stopPropagation()">
         <div class="class-color-swatch-grid" id="class-color-swatch-grid"></div>
@@ -7371,8 +7385,10 @@ body.dark-theme[data-palette="mint"] {
         function hideAllHoverPopups() {
             const dayTooltip = document.getElementById('day-hover-tooltip');
             const classPopup = document.getElementById('class-info-popup');
+            const eventPopup = document.getElementById('event-info-popup');
             if (dayTooltip) dayTooltip.classList.remove('visible');
             if (classPopup) classPopup.classList.remove('visible');
+            if (eventPopup) eventPopup.classList.remove('visible');
         }
 
         function buildClassPopupHtml(classItem) {
@@ -7442,6 +7458,89 @@ body.dark-theme[data-palette="mint"] {
             // Blanket safety net (see hideAllHoverPopups): a click anywhere -- not just the ones
             // that trigger a view change -- is a reasonable sign the user is done hovering, and
             // catches any navigation path that swaps out the hovered element without a mouseout.
+            document.addEventListener('click', hideAllHoverPopups, true);
+        }
+
+        // Registry of calendar-event objects keyed by a throwaway id, so an event row rendered
+        // outside the calendar itself (currently: the digest banners) can carry a lightweight
+        // data-event-popup-key attribute instead of re-deriving the event from a date+index pair
+        // into whatever array happened to produce it -- the Today banner's events, for instance,
+        // aren't the same filtered/ordered list openEventDetailModal's date+index scheme expects.
+        // Rebuilt every render (see registerEventPopup), so stale keys just fail the lookup and
+        // the hover silently does nothing rather than showing the wrong event.
+        let eventPopupRegistry = new Map();
+        let eventPopupKeyCounter = 0;
+        function registerEventPopup(ev) {
+            const key = 'ep' + (eventPopupKeyCounter++);
+            eventPopupRegistry.set(key, ev);
+            return key;
+        }
+        function eventPopupAttr(ev) {
+            return ` data-event-popup-key="${registerEventPopup(ev)}"`;
+        }
+        function buildEventPopupHtml(ev) {
+            const timeLabel = ev.allDay ? 'All day' : (typeof ev.timestamp === 'number' ? formatEventTimestamp(ev.timestamp) : '');
+            return `
+                <p class="day-hover-tooltip-date">
+                    <span class="home-dot" style="background:${ev.color}; width:0.9rem; height:0.9rem;">${categoryIconSvg(ev.category, 9)}</span>
+                    ${escapeHtml(ev.title)}
+                </p>
+                <div class="class-meta-row" style="margin:0 0 0.5rem;">
+                    <span class="class-meta-chip">${escapeHtml(categoryLabel(ev.category))}</span>
+                    ${timeLabel ? `<span class="class-meta-chip">${escapeHtml(timeLabel)}</span>` : ''}
+                    ${ev.feedLabel ? `<span class="class-meta-chip">${escapeHtml(ev.feedLabel)}</span>` : ''}
+                </div>
+                ${ev.description ? `<p class="day-hover-tooltip-item" style="color:var(--text-muted); white-space:pre-wrap;">${escapeHtml(ev.description)}</p>` : `<p class="day-hover-tooltip-empty">No description.</p>`}
+            `;
+        }
+        function setupEventHoverPopup() {
+            const popup = document.getElementById('event-info-popup');
+            if (!popup || document.body.dataset.eventPopupBound) return;
+            document.body.dataset.eventPopupBound = 'true';
+
+            let hoveredKey = null;
+
+            function position(x, y) {
+                const rect = popup.getBoundingClientRect();
+                const margin = 16;
+                let left = x + margin;
+                let top = y + margin;
+                if (left + rect.width > window.innerWidth - 8) left = x - rect.width - margin;
+                if (top + rect.height > window.innerHeight - 8) top = y - rect.height - margin;
+                popup.style.left = Math.max(8, left) + 'px';
+                popup.style.top = Math.max(8, top) + 'px';
+            }
+
+            document.addEventListener('mouseover', (e) => {
+                const el = e.target.closest('[data-event-popup-key]');
+                if (!el) return;
+                const key = el.dataset.eventPopupKey;
+                if (!key) return;
+                if (key !== hoveredKey) {
+                    const ev = eventPopupRegistry.get(key);
+                    if (!ev) return;
+                    hoveredKey = key;
+                    popup.innerHTML = buildEventPopupHtml(ev);
+                    popup.style.setProperty('--class-color', ev.color || 'var(--accent-2)');
+                }
+                popup.classList.add('visible');
+                position(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!popup.classList.contains('visible')) return;
+                if (!e.target.closest('[data-event-popup-key]')) return;
+                position(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mouseout', (e) => {
+                const el = e.target.closest('[data-event-popup-key]');
+                if (!el) return;
+                if (el.contains(e.relatedTarget)) return;
+                popup.classList.remove('visible');
+                hoveredKey = null;
+            });
+
             document.addEventListener('click', hideAllHoverPopups, true);
         }
 
@@ -11809,7 +11908,7 @@ body.dark-theme[data-palette="mint"] {
             if (digestCfg.showWeekly && isMonday && !weeklyDismissed) {
                 const { dueCount, eventCount, items, countdownsThisWeek } = buildWeeklyDigestData();
                 const preview = items.slice(0, 4).map(({ date, event }) => `
-                    <div class="digest-item">
+                    <div class="digest-item"${eventPopupAttr(event)}>
                         <span class="home-dot" style="background:${event.color};"></span>
                         <span>${escapeHtml(event.title)} <span style="color:var(--text-muted);">— ${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span></span>
                     </div>
@@ -11890,7 +11989,7 @@ body.dark-theme[data-palette="mint"] {
                 const eventsHtml = eventsToday.map(ev => {
                     const timeStr = ev.allDay ? 'All day' : formatEventTimestamp(ev.timestamp);
                     return `
-                        <div class="digest-item">
+                        <div class="digest-item"${eventPopupAttr(ev)}>
                             <span class="home-dot" style="background:${ev.color};"></span>
                             <span class="min-w-0">
                                 <span>${escapeHtml(ev.title)} <span style="color:var(--text-muted);">— ${timeStr}</span></span>
@@ -12015,6 +12114,7 @@ body.dark-theme[data-palette="mint"] {
             setupClickEffects();
             setupCalendarSearchDismiss();
             setupClassHoverPopup();
+            setupEventHoverPopup();
             setupKeyboardShortcuts();
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
                 if (currentThemeState === 'system') applyTheme('system');
