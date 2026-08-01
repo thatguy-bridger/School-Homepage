@@ -10053,6 +10053,11 @@ body.dark-theme[data-palette="mint"] {
             `;
             document.body.appendChild(popover);
             document.body.style.overflow = 'hidden';
+            // .modal-content starts at opacity:0/translated-down by default and only becomes
+            // visible once its ancestor .modal gets the "show" class (see every other modal in
+            // the app, e.g. openAllSettingsModal) -- this was never added here, so the picker was
+            // being appended to the DOM correctly but staying invisible.
+            requestAnimationFrame(() => popover.classList.add('show'));
         }
         function closeIconPicker() {
             const popover = document.getElementById('icon-picker-popover');

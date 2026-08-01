@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T02:35:00Z",
+  "title": "Fixed the category icon picker not appearing",
+  "summary": [
+    "The icon picker popover was being added to the page correctly but stayed invisible -- every modal in the app needs its 'show' class added a frame after being inserted for the fade/scale-in transition to reveal it, and that step was missing here."
+  ]
+}
