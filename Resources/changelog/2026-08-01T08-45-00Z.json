@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-01T08:45:00Z",
+  "title": "Gist sync is now automatic and covers everything",
+  "summary": [
+    "App data sync used to be a manual 'Push My Data' button that had to be clicked by hand -- if you never clicked it, restoring on another device correctly (if confusingly) said 'No synced data found for this token', since nothing had actually been pushed yet. Every change now auto-syncs to your gist a few seconds after it happens, once a token is set.",
+    "The Home dashboard's entire layout, widget settings, saved presets, and digest config -- plus Portal Sync's cached data -- were missing from both the gist sync and the plain file export/import. They're now included in both.",
+    "Fixed a bug where restoring on a fresh device could wrongly report 'No synced data found' if your GitHub account has more than 30 gists, since the search only ever checked the first page of results."
+  ]
+}

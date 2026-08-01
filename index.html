@@ -3788,10 +3788,10 @@ body.dark-theme[data-palette="mint"] {
 
                 <h4 class="text-lg font-semibold mb-2">App Data Backup &amp; Sync</h4>
                 <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
-                    Pushes everything this app stores -- classes, schedule dates, notes, reminders, calendar feeds, preferences -- into the same private gist as a second file, so you can pull it down on another device with just this same token. Manual, not live: whichever side you sync last wins, so push before you switch devices and restore right after. (For a plain file export/import instead of a gist, or for Portal Sync, see the <strong>Data &amp; Sync</strong> tab.)
+                    Pushes everything this app stores -- classes, schedule dates, notes, reminders, calendar feeds, Home layout/widgets/presets, preferences -- into the same private gist as a second file, so you can pull it down on another device with just this same token. Auto-syncs a few seconds after any change once a token is set, so you don't need to click Push yourself -- it's still not live/two-way, though: on a second device, whichever side synced most recently wins, so restore right after switching devices instead of editing both at once.
                 </p>
                 <div class="flex flex-wrap gap-2 items-center">
-                    <button type="button" class="modal-footer-button bg-green-600" onclick="pushAppDataToGist(true)">Push My Data</button>
+                    <button type="button" class="modal-footer-button bg-green-600" onclick="pushAppDataToGist(true)">Push Now</button>
                     <button type="button" class="modal-footer-button bg-indigo-600" onclick="restoreAppDataFromGist()">Restore My Data</button>
                 </div>
 
@@ -4209,6 +4209,14 @@ body.dark-theme[data-palette="mint"] {
             'showGoogleCalendar', 'googleCalendarEmbedUrl',
             'icsIncludeDayEvents', 'icsIncludeClassEvents',
             'externalIcsFeeds', 'externalIcsCache', 'calendarCategories', 'calendarCategoryRules',
+            // Home dashboard customization -- previously missing entirely from both the manual
+            // export/import AND the gist sync, so a whole device's Home layout, widget settings,
+            // and saved presets never made it into a backup or synced to another device.
+            'homeWidgetLayoutV1', 'homeWidgetSettingsV1', 'homeLayoutPresetV1', 'homeUserPresetsV1',
+            'homePresetLabelOverridesV1', 'homeDeletedBuiltinPresetsV1', 'homeDigestConfigV1', 'calendarPreviewConfigV1',
+            // Portal Sync (Skyward) cached assignment data, and the "seen updates" watermark for
+            // the Recent App Updates banner -- also previously missing.
+            'portalSyncParsedV1', 'portalSyncUnparsedV1', 'lastSeenAppUpdateTs',
             'githubGistToken', 'githubGistId', 'githubGistRawUrl'
         ];
 
@@ -13027,6 +13035,40 @@ body.dark-theme[data-palette="mint"] {
             }
         }
 
+        // ===================== AUTO-PUSH ON EVERY CHANGE =====================
+        // pushAppDataToGist() above only ever ran when the user manually clicked "Push My Data" --
+        // every other edit (classes, schedule, notes, reminders, Home layout/widgets/presets, category
+        // rules, etc.) only ever landed in this device's own localStorage, never the gist, so a
+        // second device restoring from the same token would either find nothing at all ("No synced
+        // data found for this token") or a stale snapshot from whenever "Push My Data" was last
+        // clicked by hand. Instead of hunting down and instrumenting every individual save*()
+        // function that writes one of APP_DATA_SYNC_KEYS, wrap localStorage.setItem itself once --
+        // any write to a synced key (from anywhere in the app, present or future) now schedules a
+        // debounced push automatically, so "every single edit and setting" really does make it to
+        // the gist without relying on the user to remember to sync.
+        let appDataAutoSyncTimer = null;
+        function scheduleAppDataAutoSync() {
+            if (!localStorage.getItem('githubGistToken')) return;
+            clearTimeout(appDataAutoSyncTimer);
+            // A few seconds, not instant -- most edits (typing in a note, dragging a widget) fire
+            // several localStorage writes in quick succession, and this coalesces them into one
+            // push instead of hammering the GitHub API on every keystroke/drag frame.
+            appDataAutoSyncTimer = setTimeout(() => pushAppDataToGist(false), 4000);
+        }
+        (function installAutoSyncStorageHook() {
+            const originalSetItem = localStorage.setItem.bind(localStorage);
+            localStorage.setItem = function (key, value) {
+                originalSetItem(key, value);
+                // Credential keys themselves obviously shouldn't re-trigger a push loop, and
+                // githubGistId/githubGistRawUrl get written BY pushAppDataToGist's own response
+                // handling -- reacting to those would just schedule another push right after every
+                // push completes.
+                if (key !== 'githubGistToken' && key !== 'githubGistId' && key !== 'githubGistRawUrl' && APP_DATA_SYNC_KEYS.includes(key)) {
+                    scheduleAppDataAutoSync();
+                }
+            };
+        })();
+
         // The app logo doubles as a "push my data" button (see .topbar-logo) -- it's reachable
         // from any screen, unlike the Settings modal's own status line, so this surfaces the same
         // result as a toast instead of silently updating text the user probably can't see.
@@ -13152,13 +13194,22 @@ body.dark-theme[data-palette="mint"] {
 
         // A fresh device won't have githubGistId saved locally yet, so restoring there has to
         // find the right gist by searching this token's own gists for our data filename instead.
+        // GitHub's list-gists endpoint is paginated (100/page max, defaults to 30) -- an account
+        // with more gists than that would silently never find the sync gist if it wasn't on the
+        // first page, surfacing as a false "No synced data found for this token" even though the
+        // data was pushed successfully. Walk every page until one comes back short.
         async function findAppDataGistId(token) {
             const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' };
-            const res = await fetch('https://api.github.com/gists', { headers });
-            if (!res.ok) throw new Error(`GitHub API ${res.status}`);
-            const gists = await res.json();
-            const match = gists.find(g => g.files && g.files[APP_DATA_GIST_FILENAME]);
-            return match ? match.id : null;
+            let page = 1;
+            while (true) {
+                const res = await fetch(`https://api.github.com/gists?per_page=100&page=${page}`, { headers });
+                if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+                const gists = await res.json();
+                const match = gists.find(g => g.files && g.files[APP_DATA_GIST_FILENAME]);
+                if (match) return match.id;
+                if (gists.length < 100) return null;
+                page++;
+            }
         }
 
         async function fetchAppDataFromGist(token, gistId) {
