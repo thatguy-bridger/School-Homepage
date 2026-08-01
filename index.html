@@ -1729,6 +1729,11 @@ body.dark-theme[data-palette="mint"] {
             justify-content: center;
             overflow: hidden;
         }
+        /* This dot's own background is always a near-white overlay regardless of the category
+           color behind it (see above), so its icon needs to always be dark for contrast --
+           independent of whatever categoryIconSvg decided based on the category's color, which
+           is answering a different question (is the COLORED BAR itself light or dark). */
+        .month-allday-dot svg { filter: invert(1) !important; }
         .month-allday-title {
             overflow: hidden;
             white-space: nowrap;
@@ -11056,12 +11061,31 @@ body.dark-theme[data-palette="mint"] {
         // Small glyph shown centered inside each dot (and in the legend) so the category reads
         // at a glance even before checking the color -- now the user's own icon pick per category
         // instead of 4 hardcoded ones.
+        // Every icon path in ICON_LIBRARY/CATEGORY_ICON_PATHS is drawn in plain white, on the
+        // assumption it always sits on top of its category's own (usually saturated/dark-ish)
+        // color -- true most of the time, but a light category color (pale yellow, light gray,
+        // etc.) makes a white icon nearly invisible. Rather than rewriting every hand-authored
+        // path to use currentColor, a light background just gets the icon inverted (white -> near
+        // -black) via CSS filter, which is exact for a pure-white source and needs no changes to
+        // the path data itself.
+        function isLightColor(hex) {
+            if (!hex) return false;
+            const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+            if (!m) return false;
+            const num = parseInt(m[1], 16);
+            const r = (num >> 16) & 255, g = (num >> 8) & 255, b = num & 255;
+            // Standard perceptual luminance weighting -- matches the formula already used
+            // elsewhere in the app (e.g. text-contrast decisions), not an arbitrary choice.
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance > 0.72;
+        }
         function categoryIconSvg(category, dotSizePx) {
             if (category === 'canvas-event') category = GENERIC_CATEGORY_ID;
             const s = Math.max(5, Math.round((dotSizePx || 16) * 0.62));
             const c = findCategory(category);
             const inner = (c && ICON_LIBRARY_MAP[c.icon]) || CATEGORY_ICON_DEFAULT;
-            return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="pointer-events:none; flex-shrink:0;" aria-hidden="true">${inner}</svg>`;
+            const invert = c && isLightColor(c.color);
+            return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="pointer-events:none; flex-shrink:0;${invert ? ' filter:invert(1);' : ''}" aria-hidden="true">${inner}</svg>`;
         }
 
         // ===================== CATEGORY EDITOR UI (add/rename/recolor/re-icon/reorder/delete) ====

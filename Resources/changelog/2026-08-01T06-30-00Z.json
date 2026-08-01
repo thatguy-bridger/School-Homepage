@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T06:30:00Z",
+  "title": "Category icons flip to black on light colors",
+  "summary": [
+    "Every category icon is drawn in white, which disappears on a light category color -- icons now check the category's own color and invert to black automatically when it's light enough that white wouldn't be visible.",
+    "The all-day event dot (used in the month view and previews) always sits on a near-white badge regardless of category color, so its icon is now always forced dark instead of only sometimes."
+  ]
+}
