@@ -2378,6 +2378,15 @@ body.dark-theme[data-palette="mint"] {
                overflowing, thanks to that minmax(0, ...) and the overflow:hidden just above. */
             min-height: clamp(1.5rem, 5cqmin, 3.2rem);
             transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+            /* Reuses the exact same event-bar/all-day-line markup and JS (buildMonthDayEventsHtml)
+               as the full Calendar page's month view, so this preview scales content the same
+               way -- bars-with-titles that collapse to icon dots as the cell fills/narrows, and
+               all-day events as their own stacked lines. This is its OWN container (name
+               minidaycell, not daycell) since these cells are dramatically smaller than the main
+               calendar's, so the "collapse to dots" width threshold needs to be much lower --
+               see the @container rules below instead of reusing the full-page ones. */
+            container-type: inline-size;
+            container-name: minidaycell;
         }
         .mini-day-cell.is-outside { opacity: 0.35; }
         .mini-day-cell.is-today {
@@ -2388,8 +2397,22 @@ body.dark-theme[data-palette="mint"] {
         .mini-day-cell.is-today .mini-day-number { color: var(--accent-3); }
         .mini-day-cell .day-badge { font-size: 0.55rem; padding: 0.05rem 0.3rem; }
         .mini-day-cell .note-dot { position: static; width: 0.3rem; height: 0.3rem; box-shadow: none; }
-        .mini-external-dots { display: flex; gap: 0.3rem; margin-top: 0.15rem; }
-        .mini-external-dot { width: 0.3rem; height: 0.3rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        /* Scaled-down versions of the main calendar's .month-event-bar/.month-allday-line for
+           this much smaller cell -- same components, smaller type/gaps/caps. */
+        .mini-day-cell .month-allday-stack { gap: 0.1rem; margin-top: 0.15rem; }
+        .mini-day-cell .month-allday-line { font-size: 0.5rem; padding: 0 0.15rem; line-height: 1.2; }
+        .mini-day-cell .month-allday-more { font-size: 0.48rem; }
+        .mini-day-cell .month-event-bars { gap: 0.1rem; margin-top: 0.15rem; }
+        .mini-day-cell .month-event-bar { gap: 0.2rem; padding: 0 0.15rem; }
+        .mini-day-cell .month-event-dot-inner { width: 0.55rem; height: 0.55rem; }
+        .mini-day-cell .month-event-bar-title { font-size: 0.5rem; }
+        .mini-day-cell .month-event-more { font-size: 0.48rem; }
+        @container minidaycell (max-width: 58px) {
+            .mini-day-cell .month-event-bar { padding: 0; background: none; }
+            .mini-day-cell .month-event-bar-title { display: none; }
+            .mini-day-cell .month-event-bars { flex-direction: row; flex-wrap: wrap; }
+            .mini-day-cell .month-allday-line { height: 0.22rem; padding: 0; font-size: 0; }
+        }
         .calendar-event-dot { transition: transform 0.12s var(--ease-out, ease-out); }
         .calendar-event-dot:hover { transform: scale(1.4); }
         .mini-upcoming-card {
@@ -8011,10 +8034,12 @@ body.dark-theme[data-palette="mint"] {
                     const externalEvents = filterPreviewEvents(getExternalEventsForDate(cursor));
                     const badgeHtml = !previewConfig.showDayBadges ? '' : dayType ? `<span class="day-badge ${dayType === 'A' ? 'badge-a' : 'badge-b'}">${dayType}</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none" title="No School">${NO_SCHOOL_ICON}</span>` : '';
                     const noteDotHtml = previewConfig.showNotes && note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
-                    const externalDotsHtml = externalEvents.length ? `<div class="mini-external-dots">${externalEvents.slice(0, 2).map((event, idx) => {
-                        const size = (7 + eventUrgencyT(event.category, cursor, today) * 6).toFixed(1);
-                        return `<span class="mini-external-dot calendar-event-dot" style="width:${size}px;height:${size}px;background:${event.color};cursor:pointer;" title="${escapeHtml(event.title)} — ${escapeHtml(categoryLabel(event.category))}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${idx})">${categoryIconSvg(event.category, size)}</span>`;
-                    }).join('')}</div>` : '';
+                    // Same event-bar/all-day-line rendering as the full Calendar page's month
+                    // view (see buildMonthDayEventsHtml) so this preview scales the same way --
+                    // titles shown as space allows, collapsing to icon dots as the (much smaller)
+                    // mini cell fills up or narrows. useFilter=false since this preview filters by
+                    // its own previewConfig, not the main calendar's filter chips.
+                    const externalDotsHtml = buildMonthDayEventsHtml(cursor, today, externalEvents, false);
 
                     cells += `
                         <div class="mini-day-cell ${isOutside ? 'is-outside' : ''} ${isToday ? 'is-today' : ''}">
@@ -8349,13 +8374,20 @@ body.dark-theme[data-palette="mint"] {
         const MONTH_ALLDAY_LINE_CAP = 3;
         const MONTH_EVENT_BAR_CAP = 3;
         const MONTH_EVENT_DOT_CAP = 4;
-        function buildMonthDayEventsHtml(cursor, today, dayEvents) {
+        // useFilter mirrors openEventDetailModal's own param: the main Calendar page's day cells
+        // pass true (looks the clicked event up via getFilteredExternalEventsForDate, matching
+        // what dayEvents actually is there); the Home widget's mini preview has its OWN separate
+        // filter (previewConfig.categories, not calendarCategoryFilter) so it passes false to
+        // resolve against the plain unfiltered getExternalEventsForDate instead -- matches the
+        // same lookup convention the mini preview's dots already used before this was shared.
+        function buildMonthDayEventsHtml(cursor, today, dayEvents, useFilter) {
+            if (dayEvents === undefined || useFilter === undefined) useFilter = true;
             if (!dayEvents.length) return '';
             const allDayEvents = dayEvents.filter(e => e.allDay);
             const timedEvents = dayEvents.filter(e => !e.allDay);
 
             const allDayLinesHtml = allDayEvents.slice(0, MONTH_ALLDAY_LINE_CAP).map(e => `
-                <div class="month-allday-line" style="background:${e.color};" title="${escapeAttr(e.title)} — ${escapeAttr(categoryLabel(e.category))} — ${escapeAttr(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, true)">${escapeHtml(e.title)}</div>
+                <div class="month-allday-line" style="background:${e.color};" title="${escapeAttr(e.title)} — ${escapeAttr(categoryLabel(e.category))} — ${escapeAttr(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, ${useFilter})">${escapeHtml(e.title)}</div>
             `).join('');
             const allDayOverflow = allDayEvents.length - MONTH_ALLDAY_LINE_CAP;
             const allDayStackHtml = allDayEvents.length ? `
@@ -8370,7 +8402,7 @@ body.dark-theme[data-palette="mint"] {
             const barsHtml = barsShown.length ? `
                 <div class="month-event-bars">
                     ${barsShown.map(e => `
-                        <div class="month-event-bar" style="--ev-color:${e.color};" title="${escapeAttr(e.title)} — ${escapeAttr(categoryLabel(e.category))} — ${escapeAttr(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, true)">
+                        <div class="month-event-bar" style="--ev-color:${e.color};" title="${escapeAttr(e.title)} — ${escapeAttr(categoryLabel(e.category))} — ${escapeAttr(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, ${useFilter})">
                             <span class="month-event-dot-inner" style="background:${e.color};">${categoryIconSvg(e.category, 9)}</span>
                             <span class="month-event-bar-title">${escapeHtml(e.title)}</span>
                         </div>
@@ -8381,7 +8413,7 @@ body.dark-theme[data-palette="mint"] {
                 <div class="flex items-end flex-wrap gap-1.5 mt-1">
                     ${dotsShown.slice(0, MONTH_EVENT_DOT_CAP).map(e => {
                         const size = (7 + eventUrgencyT(e.category, cursor, today) * 5).toFixed(1);
-                        return `<span class="rounded-full flex-shrink-0 flex items-center justify-center calendar-event-dot" style="width:${size}px;height:${size}px;background:${e.color};cursor:pointer;overflow:hidden;" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, true)">${categoryIconSvg(e.category, size)}</span>`;
+                        return `<span class="rounded-full flex-shrink-0 flex items-center justify-center calendar-event-dot" style="width:${size}px;height:${size}px;background:${e.color};cursor:pointer;overflow:hidden;" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, ${useFilter})">${categoryIconSvg(e.category, size)}</span>`;
                     }).join('')}
                     ${dotsShown.length > MONTH_EVENT_DOT_CAP ? `<span class="month-event-more">+${dotsShown.length - MONTH_EVENT_DOT_CAP}</span>` : ''}
                 </div>

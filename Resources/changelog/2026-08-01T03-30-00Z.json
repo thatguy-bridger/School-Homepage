@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T03:30:00Z",
+  "title": "Home calendar preview now scales events the same way as the full calendar",
+  "summary": [
+    "The Home widget's mini calendar preview now reuses the same event display as the full Calendar page's month view -- event titles show as bars when there's room and collapse to icon dots as a day cell fills up or narrows, instead of always just being plain dots.",
+    "All-day events get their own stacked thin colored lines too, scaled down to fit the much smaller preview cells, with their own (lower) width threshold for collapsing since these cells are far smaller than the full calendar's."
+  ]
+}
