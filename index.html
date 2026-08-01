@@ -2258,6 +2258,12 @@ body.dark-theme[data-palette="mint"] {
             color: var(--text-muted);
             text-align: center;
         }
+        /* The actual 7-column day-cell grid (as opposed to the weekday-header row above it) gets
+           the widget's leftover vertical space -- grid-auto-rows:1fr makes its rows share
+           whatever height flex:1 hands it, so dragging the widget taller genuinely grows the
+           cells instead of just adding blank/scrollable space below a grid that refused to
+           change size. min-height below is only the FLOOR for when the widget is small/short. */
+        .mini-month-days-grid { flex: 1; grid-auto-rows: 1fr; }
         .mini-day-cell {
             position: relative;
             display: flex;
@@ -2271,7 +2277,8 @@ body.dark-theme[data-palette="mint"] {
             /* Fluid instead of a flat 3.4rem -- a 6-row month grid at a fixed per-cell height
                can't shrink below ~20rem tall no matter how small the widget is dragged, which is
                exactly what was overflowing past the widget's box and getting clipped. cqmin ties
-               it to the widget's own size so the grid actually shrinks (and grows) with it. */
+               the FLOOR to the widget's own size; grid-auto-rows:1fr above (not this) is what
+               makes the cells actually grow taller when there's more room. */
             min-height: clamp(1.5rem, 8cqmin, 5.5rem);
             transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
         }
@@ -2806,6 +2813,7 @@ body.dark-theme[data-palette="mint"] {
                         </div>
                     </div>
 
+                    <div id="app-updates-banner-container"></div>
                     <div id="digest-banner-container"></div>
 
                     <div class="home-widget-grid">
@@ -5602,6 +5610,7 @@ body.dark-theme[data-palette="mint"] {
         }
 
         // --- HOME DASHBOARD ---
+        let appUpdatesBannerFetched = false;
         function renderHomeDashboard() {
             updateClockDisplays();
             renderHomeNextClass();
@@ -5611,6 +5620,13 @@ body.dark-theme[data-palette="mint"] {
             renderHomeReminders();
             renderMiniCalendarPreviewInto('home-calendar-preview');
             renderDigestBanner();
+            // Only fetched once per visit -- it's a network call, and nothing about it changes
+            // between the Home screen's other frequent re-renders (widget edits, the 1s clock
+            // tick, etc.) the way the rest of this function's content does.
+            if (!appUpdatesBannerFetched) {
+                appUpdatesBannerFetched = true;
+                renderAppUpdatesBanner();
+            }
             applyHomeWidgetLayout();
         }
 
@@ -7793,7 +7809,7 @@ body.dark-theme[data-palette="mint"] {
             }
             const monthGridHtml = cells ? `
                 <div class="grid grid-cols-7 gap-1 mb-3">${weekdayHeaders}</div>
-                <div class="grid grid-cols-7 gap-1">${cells}</div>
+                <div class="grid grid-cols-7 gap-1 mini-month-days-grid">${cells}</div>
             ` : '';
 
             // Builds one day's agenda card -- shared by the Hybrid, Agenda, Week and Day views so
@@ -11385,6 +11401,75 @@ body.dark-theme[data-palette="mint"] {
                 d.setDate(d.getDate() - 1);
             }
             return { assignmentsCompleted, classesOpened, daysActive };
+        }
+
+        // --- "RECENT APP UPDATES" BANNER -- reads a changelog this app's own developer maintains
+        // in Resources/changelog/ (an index.json listing timestamped entry files, one per update).
+        // Static hosting can't list a directory, hence the index file. Only entries newer than the
+        // last time this banner was dismissed are shown/fetched. =====================
+        const APP_UPDATES_INDEX_URL = 'Resources/changelog/index.json';
+        function loadLastSeenAppUpdateTs() {
+            return localStorage.getItem('lastSeenAppUpdateTs') || '';
+        }
+        function saveLastSeenAppUpdateTs(ts) {
+            localStorage.setItem('lastSeenAppUpdateTs', ts);
+        }
+        function dismissAppUpdatesBanner(latestTs) {
+            saveLastSeenAppUpdateTs(latestTs);
+            const container = document.getElementById('app-updates-banner-container');
+            if (container) container.innerHTML = '';
+        }
+        async function renderAppUpdatesBanner() {
+            const container = document.getElementById('app-updates-banner-container');
+            if (!container) return;
+            let entries;
+            try {
+                const res = await fetch(APP_UPDATES_INDEX_URL, { cache: 'no-cache' });
+                if (!res.ok) return;
+                entries = await res.json();
+            } catch (e) {
+                return; // no changelog published yet, or offline -- fail quiet, this is a nicety
+            }
+            if (!Array.isArray(entries) || !entries.length) return;
+
+            const lastSeen = loadLastSeenAppUpdateTs();
+            const newEntries = entries
+                .filter(e => e.timestamp > lastSeen)
+                .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+            if (!newEntries.length) return;
+
+            const loaded = await Promise.all(newEntries.map(async e => {
+                try {
+                    const res = await fetch('Resources/changelog/' + e.file, { cache: 'no-cache' });
+                    if (!res.ok) return null;
+                    return await res.json();
+                } catch (err) {
+                    return null;
+                }
+            }));
+            const updates = loaded.filter(Boolean);
+            if (!updates.length) return;
+
+            const latestTs = newEntries[0].timestamp;
+            const sectionsHtml = updates.map(u => `
+                <div class="digest-section">
+                    <p class="digest-section-title">${escapeHtml(u.title)} <span style="font-weight:400;color:var(--text-muted);">— ${new Date(u.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></p>
+                    <div class="digest-items">
+                        ${(u.summary || []).map(line => `<div class="digest-item"><span class="home-dot" style="background:var(--accent-3);"></span><span>${escapeHtml(line)}</span></div>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="digest-banner">
+                    <div class="digest-banner-header">
+                        <p class="digest-banner-title">Recent App Updates</p>
+                        <button type="button" class="digest-dismiss-btn" onclick="dismissAppUpdatesBanner('${escapeJsAttr(latestTs)}')" title="Dismiss">&times;</button>
+                    </div>
+                    <p class="digest-banner-summary">${updates.length} update${updates.length === 1 ? '' : 's'} since you last checked.</p>
+                    ${sectionsHtml}
+                </div>
+            `;
         }
 
         // --- DAILY / WEEKLY DIGEST BANNER (Home page) ---

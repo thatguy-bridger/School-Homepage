@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-08-01T00:02:00Z",
+  "title": "Home layout, widget settings, and digest overhaul",
+  "summary": [
+    "Reset Layout is now a smaller button and asks for confirmation before actually resetting.",
+    "Layout presets can be renamed, and the preset list is now always sorted alphabetically.",
+    "The Calendar Preview widget is resizable/draggable like every other widget, and can switch between Week, Day, Month, Agenda, and Hybrid views.",
+    "Widget content (text, numbers, icons) now scales fluidly and without an upper limit as you resize a widget, instead of stopping at a fixed size and leaving empty space.",
+    "Every Home widget has its own settings gear (edit mode) with settings tailored to that widget, using modern toggle/select controls with tooltips instead of plain checkboxes.",
+    "Widgets require a brief press-and-hold before dragging, so clicking into a widget's settings no longer triggers the drag state.",
+    "Bigger widgets now show extra detail when there's room: exact class time and notes on Next/Current Class, assignment/event descriptions, countdown weekdays, and reminder links.",
+    "Class links now always open in a new tab and correctly treat links without 'https://' as absolute instead of resolving them inside the app's own URL.",
+    "Classes page categories can be set to 1, 2, or 3 per row; a stranded single category in a row now goes full width automatically.",
+    "The Today and This Week digest banners gained new sections: countdowns landing today/this week, and a local usage-analytics summary (open streak, assignments completed, classes opened) -- both independently toggleable in the digest settings panel.",
+    "Fixed the Calendar Preview widget clipping/not shrinking with its box -- a CSS selector that was supposed to make it fill and scroll never actually matched.",
+    "Small colored text throughout the app now uses the lighter end of the current theme instead of a shade that was unreadable in several color palettes."
+  ]
+}
