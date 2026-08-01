@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-01T06:10:00Z",
+  "title": "Time cards only show the active lunch wave",
+  "summary": [
+    "The Schedule Type Editor's period time cards for 3rd/7th period and Lunch were always showing both a 1st Lunch and 2nd Lunch time row, even though a slot like A_LUNCH only ever applies to whichever lunch wave A Day is actually set to -- now only that one row shows. The other wave's time is still saved underneath, so switching the lunch-wave setting later reveals it again instead of losing it."
+  ]
+}

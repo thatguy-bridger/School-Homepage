@@ -6025,8 +6025,14 @@ body.dark-theme[data-palette="mint"] {
                 const t = slot.times[stId];
                 let rowsHtml;
                 if (t && typeof t === 'object') {
-                    rowsHtml = `<div><label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">1st Lunch</label>${timeRangeInputsHtml(slot.value, stId, '1st', t['1st'])}</div>
-                                <div class="mt-1"><label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">2nd Lunch</label>${timeRangeInputsHtml(slot.value, stId, '2nd', t['2nd'])}</div>`;
+                    // This slot is A_/B_-prefixed (3rd/7th period, Lunch), so it only ever
+                    // applies to one specific day type -- only that day type's own lunch-wave
+                    // setting is actually relevant here, so show just that one time row instead
+                    // of both 1st and 2nd Lunch (the other one never applies to this slot at all).
+                    const slotDayType = slot.value.split('_')[0];
+                    const wave = lunchWaveByDayType[slotDayType] || '1st';
+                    const waveLabel = wave === '2nd' ? '2nd Lunch' : '1st Lunch';
+                    rowsHtml = `<div><label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">${waveLabel}</label>${timeRangeInputsHtml(slot.value, stId, wave, t[wave])}</div>`;
                 } else {
                     rowsHtml = timeRangeInputsHtml(slot.value, stId, '', t);
                 }
