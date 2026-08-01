@@ -5206,94 +5206,21 @@ body.dark-theme[data-palette="mint"] {
         // The registry of schedule "types" a day can use -- regular/short/assembly are the seeded
         // built-ins (short=the old hardcoded Friday half-day, assembly=new 60-min assembly bell
         // schedule); users can add their own via the Settings > Class Schedule editor.
-        const defaultScheduleTypes = [
-            { id: 'regular',  label: 'Regular Day',  builtin: true },
-            { id: 'short',    label: 'Short Day',    builtin: true },
-            { id: 'assembly', label: 'Assembly Day', builtin: true }
-        ];
+        // No built-in schedule types or period slots -- a fresh install starts completely empty.
+        // Real data only ever comes in through a data pull/restore/import.
+        const defaultScheduleTypes = [];
         let scheduleTypes = [];
 
         /*DEFAULTS:SCHEDULE_SLOTS_START*/
-        // Each slot's `times` gives its time string per schedule-type id. A schedule type that's
-        // simply absent from `times` means that period doesn't run under that schedule type (e.g.
-        // Advisory only exists on 'regular' days; Assembly only exists on 'assembly' days). For
-        // 3rd/7th period and Lunch -- which have a lunch-wave-dependent time on multi-wave
-        // schedules -- the value is an object keyed by wave ('1st'/'2nd') instead of a plain string.
-        // Order: None first (it's the "no selection" placeholder, not part of the sequence),
-        // then Period 1 straight through Period 8, THEN the non-numbered periods (Lunch x2,
-        // Advisory, Assembly) at the end -- matches how a student actually thinks through their
-        // day ("periods 1-8, plus lunch/advisory/assembly") rather than the old ordering that put
-        // Advisory/Assembly first and interleaved Lunch between periods 3/7 and 4/8.
-        const defaultScheduleSlotOptions = [
-            { label: 'None (Not Scheduled)', value: '' },
-            { label: 'Period 1 - A Day', value: 'A_P1', times: { regular: '07:45 - 09:05', short: '07:45 - 08:50', assembly: '07:45 - 08:58' } },
-            { label: 'Period 2 - A Day', value: 'A_P2', times: { regular: '09:45 - 11:05', short: '08:55 - 10:00', assembly: '10:08 - 11:21' } },
-            { label: 'Period 3 - A Day', value: 'A_P3', times: {
-                regular:  { '1st': '11:40 - 13:00', '2nd': '11:10 - 12:30' },
-                short:    '10:05 - 11:10',
-                assembly: { '1st': '11:56 - 13:09', '2nd': '11:26 - 12:39' }
-            } },
-            { label: 'Period 4 - A Day', value: 'A_P4', times: { regular: '13:05 - 14:25', short: '11:15 - 12:20', assembly: '13:14 - 14:25' } },
-            { label: 'Period 5 - B Day', value: 'B_P5', times: { regular: '07:45 - 09:05', short: '07:45 - 08:50', assembly: '07:45 - 08:58' } },
-            { label: 'Period 6 - B Day', value: 'B_P6', times: { regular: '09:45 - 11:05', short: '08:55 - 10:00', assembly: '10:08 - 11:21' } },
-            { label: 'Period 7 - B Day', value: 'B_P7', times: {
-                regular:  { '1st': '11:40 - 13:00', '2nd': '11:10 - 12:30' },
-                short:    '10:05 - 11:10',
-                assembly: { '1st': '11:56 - 13:09', '2nd': '11:26 - 12:39' }
-            } },
-            { label: 'Period 8 - B Day', value: 'B_P8', times: { regular: '13:05 - 14:25', short: '11:15 - 12:20', assembly: '13:14 - 14:25' } },
-            { label: 'Lunch - A Day',    value: 'A_LUNCH', times: {
-                regular:  { '1st': '11:05 - 11:35', '2nd': '12:30 - 13:00' },
-                short:    '12:20 - 12:45',
-                assembly: { '1st': '11:21 - 11:51', '2nd': '12:39 - 13:09' }
-            } },
-            { label: 'Lunch - B Day',    value: 'B_LUNCH', times: {
-                regular:  { '1st': '11:05 - 11:35', '2nd': '12:30 - 13:00' },
-                short:    '12:20 - 12:45',
-                assembly: { '1st': '11:21 - 11:51', '2nd': '12:39 - 13:09' }
-            } },
-            { label: 'Advisory',         value: 'ADVISORY', times: { regular: '09:10 - 09:40' } },
-            { label: 'Assembly',         value: 'ASSEMBLY',  times: { assembly: '09:03 - 10:03' } },
-        ];
+        const defaultScheduleSlotOptions = [];
         /*DEFAULTS:SCHEDULE_SLOTS_END*/
 
         let userScheduleSlotOptions = [];
 
-        // Mock data (not blank fields) so a fresh install shows what a filled-in schedule
-        // actually looks like instead of a wall of empty "Period N" cards. All obviously
-        // placeholder -- meant to be edited/replaced with the user's real schedule.
+        // No placeholder/mock classes -- a fresh install starts completely empty. Real data only
+        // ever comes in through a data pull/restore/import.
         /*DEFAULTS:CLASS_DATA_START*/
-        const defaultClassData = [
-            {
-                categoryName: 'A Day',
-                classes: [
-                    { title: 'Algebra II', url: '', scheduleSlot: 'A_P1', room: '204', teacher: 'Mrs. Johnson' },
-                    { title: 'English Literature', url: '', scheduleSlot: 'A_P2', room: '118', teacher: 'Mr. Davis' },
-                    { title: 'Biology', url: '', scheduleSlot: 'A_P3', room: '302', teacher: 'Ms. Chen' },
-                    { title: 'World History', url: '', scheduleSlot: 'A_P4', room: '210', teacher: 'Mr. Patel' }
-                ],
-                isSideStacked: true
-            },
-            {
-                categoryName: 'B Day',
-                classes: [
-                    { title: 'Spanish II', url: '', scheduleSlot: 'B_P5', room: '115', teacher: 'Sra. Lopez' },
-                    { title: 'Physical Education', url: '', scheduleSlot: 'B_P6', room: 'Gymnasium', teacher: 'Coach Williams' },
-                    { title: 'Chemistry', url: '', scheduleSlot: 'B_P7', room: '305', teacher: 'Dr. Martinez' },
-                    { title: 'Art Studio', url: '', scheduleSlot: 'B_P8', room: '402', teacher: 'Ms. Rivera' }
-                ],
-                isSideStacked: true
-            },
-            {
-                categoryName: 'Other',
-                classes: [
-                    { title: 'Advisory', url: '', scheduleSlot: 'ADVISORY', room: '118', teacher: 'Mr. Davis' },
-                    { title: 'Online Courses', url: '', scheduleSlot: '' },
-                    { title: 'Dashboard', url: '', scheduleSlot: '' }
-                ],
-                isSideStacked: false
-            }
-        ];
+        const defaultClassData = [];
         /*DEFAULTS:CLASS_DATA_END*/
 
         let classData = [];
@@ -7325,7 +7252,8 @@ body.dark-theme[data-palette="mint"] {
         }
 
         // --- PREFERENCES ---
-        const DEFAULT_GCAL_URL = "https://calendar.google.com/calendar/embed?height=1500&wkst=1&ctz=America%2FDenver&showPrint=0&showTitle=0&showCalendars=0&showTz=0&mode=AGENDA&title&src=NTczNGZhZTc4NGVmYzgxOTU5MzgxN2U3ZjYyNDQ3MDE0NGZlZWM0MzQzZTMyOWMwZjQ0ODhjYzZkMDg4YzUwZEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=ODgyM2YyNGQ0MTFiZjU5ZDlhY2U5Mzg5ZGVjYTEyZDIyYTM5MWQ1NWUwZGM4MWI4NzVkMWQ0YjFjNmE1Yjg3ZkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=YmIzNzU5MmExNDkyNGUxOTMzNzM0MGI1NGI5OGNhNTljZjM2OGY5Y2YzYWY5NjEzMTY4ZmM0YjVkYTYzNjM3YUBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=Z212YmptZTY1bGlnNXZpdXY5bnNodGFmMWt2MG9rN2VAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&src=N3N0a2hzNmh0N201ZTRtdDJkM2IwbWkxa2Fya3NzNGNAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&src=MHFjbmE4dGF0Zjlxam9vZjRhY2k1N3RkNm1qb2Q4MTdAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&src=c3JhZWdsY2xhbjhxNm01NTFqYzFnbjZubHQ2MWZrM2FAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&color=%2333b679&color=%23ad1457&color=%23f4511e&color=%23039be5&color=%23d50000&color=%23d50000&color=%23795548";
+        // No built-in Google Calendar embed URL -- a fresh install starts completely empty.
+        const DEFAULT_GCAL_URL = "";
 
         function loadPreferences() {
             const timeFormat = localStorage.getItem('timeFormat') || '12';
@@ -8076,92 +8004,13 @@ body.dark-theme[data-palette="mint"] {
         // colSpan/rowSpan out of the 12-column grid -- placement (col/row) is computed by
         // autoPackHomeLayout in the order listed, so presets only need to describe *how big*
         // each widget is, not where exactly it lands (see applyHomePreset).
+        // No built-in Home layout presets -- a fresh install starts completely empty (just
+        // "Custom", built from whatever the user arranges themselves). Every lookup below already
+        // handles a preset id not being found (falls back to Custom), so this is safe to leave
+        // empty; real presets only ever come in through a data pull/restore/import, or get saved
+        // by the user via the Home layout editor.
         function w(id, visible, colSpan, rowSpan) { return { id, visible, colSpan, rowSpan, col: 1, row: 1 }; }
-        const HOME_LAYOUT_PRESETS = [
-            {
-                id: 'default', label: 'Default',
-                layout: null, // null = defaultHomeWidgetLayout()
-                digest: null, calPreview: null
-            },
-            {
-                id: 'compact', label: 'Compact List',
-                layout: [
-                    w('next-class', true, 4, 3), w('due-soon', true, 4, 3), w('countdowns', true, 4, 3),
-                    w('reminders', true, 4, 3), w('upcoming', true, 4, 3), w('calendar-preview', false, 12, 8)
-                ],
-                digest: { showWeekly: false, showDaily: true, sections: { reminders: true, due: true, events: false, classes: false } },
-                calPreview: null
-            },
-            {
-                id: 'focus-next-class', label: 'Focus: Next Class',
-                layout: [
-                    w('next-class', true, 12, 6), w('due-soon', true, 6, 3), w('countdowns', true, 3, 3),
-                    w('reminders', true, 3, 3), w('upcoming', false, 12, 5), w('calendar-preview', true, 12, 8)
-                ],
-                digest: null, calPreview: null
-            },
-            {
-                id: 'assignments-first', label: 'Assignments First',
-                layout: [
-                    w('due-soon', true, 12, 5), w('next-class', true, 6, 3), w('upcoming', true, 6, 5),
-                    w('countdowns', true, 4, 3), w('reminders', true, 4, 3), w('calendar-preview', false, 12, 8)
-                ],
-                digest: { showWeekly: true, showDaily: true, sections: { reminders: false, due: true, events: true, classes: false } },
-                calPreview: { categories: { assignment: true, 'school-event': true, club: false, sports: false, event: true }, showClasses: false, showReminders: false, showDayBadges: true, showNotes: true }
-            },
-            {
-                id: 'countdown-enthusiast', label: 'Countdown Enthusiast',
-                layout: [
-                    w('countdowns', true, 8, 5), w('reminders', true, 8, 5), w('next-class', true, 4, 3),
-                    w('due-soon', true, 4, 3), w('upcoming', false, 12, 5), w('calendar-preview', true, 12, 8)
-                ],
-                digest: null, calPreview: null
-            },
-            {
-                id: 'minimal-today', label: 'Minimal (Today Only)',
-                layout: [
-                    w('next-class', true, 6, 4), w('due-soon', true, 6, 4), w('countdowns', false, 4, 3),
-                    w('reminders', false, 4, 3), w('upcoming', false, 12, 5), w('calendar-preview', false, 12, 8)
-                ],
-                digest: { showWeekly: false, showDaily: true, sections: { reminders: false, due: true, events: true, classes: true } },
-                calPreview: { categories: { assignment: true, 'school-event': true, club: false, sports: false, event: true }, showClasses: true, showReminders: false, showDayBadges: true, showNotes: true }
-            },
-            {
-                id: 'everything-big', label: 'Everything Big',
-                layout: [
-                    w('next-class', true, 6, 5), w('due-soon', true, 6, 5), w('countdowns', true, 6, 5),
-                    w('reminders', true, 6, 5), w('upcoming', true, 12, 6), w('calendar-preview', true, 12, 9)
-                ],
-                digest: null, calPreview: null
-            },
-            {
-                id: 'calendar-heavy', label: 'Calendar-Heavy',
-                layout: [
-                    w('calendar-preview', true, 12, 10), w('countdowns', true, 6, 4), w('reminders', true, 6, 4),
-                    w('next-class', false, 6, 4), w('due-soon', false, 6, 4), w('upcoming', false, 12, 5)
-                ],
-                digest: { showWeekly: true, showDaily: true, sections: { reminders: true, due: true, events: true, classes: true } },
-                calPreview: { categories: { assignment: true, 'school-event': true, club: true, sports: true, event: true }, showClasses: true, showReminders: true, showDayBadges: true, showNotes: true }
-            },
-            {
-                id: 'reminders-countdowns', label: 'Reminders & Countdowns Focus',
-                layout: [
-                    w('reminders', true, 12, 6), w('countdowns', true, 12, 6), w('next-class', false, 6, 4),
-                    w('due-soon', false, 6, 4), w('upcoming', false, 12, 5), w('calendar-preview', false, 12, 8)
-                ],
-                digest: { showWeekly: false, showDaily: true, sections: { reminders: true, due: false, events: false, classes: false } },
-                calPreview: null
-            },
-            {
-                id: 'weekly-planner', label: 'Weekly Planner',
-                layout: [
-                    w('upcoming', true, 12, 7), w('due-soon', true, 6, 4), w('next-class', true, 6, 4),
-                    w('countdowns', true, 4, 3), w('reminders', true, 4, 3), w('calendar-preview', true, 12, 8)
-                ],
-                digest: { showWeekly: true, showDaily: false, sections: { reminders: true, due: true, events: true, classes: true } },
-                calPreview: null
-            }
-        ];
+        const HOME_LAYOUT_PRESETS = [];
         function loadHomePresetSelection() {
             return localStorage.getItem('homeLayoutPresetV1') || 'custom';
         }
@@ -11270,18 +11119,10 @@ body.dark-theme[data-palette="mint"] {
             return 'school-event';
         }
 
-        // The default feed set every install starts with. Google's "Canvas Assignments" mirror
-        // lives on calendar.google.com rather than *.instructure.com, so it can't be auto-detected
-        // as Canvas by domain -- isCanvas is forced true here instead of left to isCanvasFeedUrl.
+        // No built-in calendar feeds -- a fresh install starts completely empty. Real feeds only
+        // ever come in through a data pull/restore/import, or the user adding their own.
         /*DEFAULTS:EXTERNAL_FEEDS_START*/
-        const DEFAULT_EXTERNAL_FEEDS = [
-            { id: 'altahawks', label: 'Alta Events', url: 'https://www.calendarwiz.com/CalendarWiz_iCal.php?crd=altahawks', color: '#a855f7' },
-            { id: 'agilixbuzz', label: 'CVA Assignments', url: 'https://api.agilixbuzz.com/ical/~0~prObHCX.wEg28NaXxE2J3.VuXpEWjdZzfVNB4mDxpG8!/calendar.ics' },
-            { id: 'google-club-events', label: 'Club Events', url: 'https://calendar.google.com/calendar/ical/bb37592a14924e19337340b54b98ca59cf368f9cf3af9613168fc4b5da63637a%40group.calendar.google.com/public/basic.ics', isClub: true, color: '#f97316' },
-            { id: 'google-service-events', label: 'Service Events', url: 'https://calendar.google.com/calendar/ical/5734fae784efc819593817e7f624470144feec4343e329c0f4488cc6d088c50d%40group.calendar.google.com/public/basic.ics' },
-            { id: 'google-canvas-assignments', label: 'Canvas Assignments', url: 'https://calendar.google.com/calendar/ical/7stkhs6ht7m5e4mt2d3b0mi1karkss4c%40import.calendar.google.com/public/basic.ics', isCanvas: true },
-            { id: 'google-holidays', label: 'Holiday Events', url: 'https://calendar.google.com/calendar/ical/en.usa%23holiday%40group.v.calendar.google.com/public/basic.ics' }
-        ];
+        const DEFAULT_EXTERNAL_FEEDS = [];
         /*DEFAULTS:EXTERNAL_FEEDS_END*/
 
         // Old installs may already have these two feeds saved under their previous labels; keep
@@ -11783,17 +11624,11 @@ body.dark-theme[data-palette="mint"] {
         const ICON_LIBRARY_MAP = ICON_LIBRARY.reduce((acc, i) => { acc[i.key] = i.svg; return acc; }, {});
         const CATEGORY_ICON_DEFAULT = ICON_LIBRARY_MAP.calendar;
 
-        // The seed set every install starts with -- same 5 ids/colors/labels the old hardcoded
-        // system used, just now stored as editable data. "deletable: false" on assignment is the
-        // only structural constraint; every other field on every category (including assignment's
-        // own label/color/icon) is user-editable.
-        const DEFAULT_CALENDAR_CATEGORIES = [
-            { id: 'assignment', label: 'Assignment', color: '#ef4444', icon: 'check', deletable: false },
-            { id: 'school-event', label: 'School Event', color: '#38bdf8', icon: 'flag', deletable: true },
-            { id: 'club', label: 'Club', color: '#f97316', icon: 'people', deletable: true },
-            { id: 'sports', label: 'Sports', color: '#a855f7', icon: 'star', deletable: true },
-            { id: 'event', label: 'Event', color: '#a3e635', icon: 'calendar', deletable: true }
-        ];
+        // No built-in categories -- a fresh install starts completely empty. Real categories only
+        // ever come in through a data pull/restore/import, or the user adding their own (every
+        // lookup below already falls back gracefully -- categoryLabel/categoryColorOf/
+        // categoryIconSvg -- when a category isn't found, so this is safe to leave empty).
+        const DEFAULT_CALENDAR_CATEGORIES = [];
         // The fallback bucket every category filter/preview toggle/legend historically folded
         // "canvas-event" and anything unrecognized into. Kept as its own constant since a few
         // spots (categoryGroup, categorizeFeedEvent's own fallback) need to reference it by name.

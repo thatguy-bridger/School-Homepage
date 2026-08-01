@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T09:10:00Z",
+  "title": "Removed all built-in sample/default data",
+  "summary": [
+    "The app used to ship with a bunch of hardcoded starting content: placeholder demo classes, a full bell schedule with real times, several real calendar feed URLs, a personal Google Calendar embed link, default calendar categories, and a set of built-in Home layout presets.",
+    "All of that is gone now -- a fresh install starts completely empty across the board (no classes, no schedule, no calendar feeds, no categories, no presets). Everything only ever comes from a data pull/restore/import, or from what you build yourself from scratch."
+  ]
+}
