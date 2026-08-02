@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T09:50:00Z",
+  "title": "Merged related Settings tabs back together, added custom theme creation",
+  "summary": [
+    "Calendar Display and External Calendars merged back into one \"Calendar\" tab, and Google Calendar Sync merged into Backup & Sync (both ride the same GitHub Gist token, so splitting them apart was more confusing than helpful) -- down from 12 Settings tabs to 10, each one now sized closer to how related its contents actually are.",
+    "Appearance now lets you create your own color theme -- pick a name and 3 colors for a gradient, hit Create, and it's applied immediately alongside the built-in palettes. Custom themes show up as swatches in both the Appearance tab and the quick theme popover, and can be deleted by hovering their swatch in the Appearance tab."
+  ]
+}

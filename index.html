@@ -525,6 +525,50 @@ body.dark-theme[data-palette="mint"] {
             border-color: var(--text-primary);
             box-shadow: 0 0 0 3px var(--glass-bg-strong);
         }
+        .theme-palette-swatch.is-deletable { position: relative; }
+        .theme-swatch-delete {
+            position: absolute;
+            top: -0.35rem; right: -0.35rem;
+            width: 1.1rem; height: 1.1rem;
+            border-radius: 9999px;
+            background: #dc2626;
+            color: #fff;
+            font-size: 0.7rem;
+            line-height: 1.1rem;
+            text-align: center;
+            display: none;
+        }
+        .theme-palette-swatch.is-deletable:hover .theme-swatch-delete { display: block; }
+
+        /* ---- Custom theme creator (Settings > Appearance) ---- */
+        .custom-theme-swatch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+            gap: 0.65rem;
+            justify-items: center;
+            margin-bottom: 0.75rem;
+        }
+        .custom-theme-form {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .custom-theme-form input[type="text"] { flex: 1 1 12rem; min-width: 10rem; }
+        .custom-theme-color-input {
+            width: 2.4rem; height: 2.4rem;
+            padding: 0.15rem;
+            border-radius: 0.6rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-strong);
+            cursor: pointer;
+        }
+        .custom-theme-preview {
+            width: 2.4rem; height: 2.4rem;
+            border-radius: 9999px;
+            flex-shrink: 0;
+            border: 2px solid var(--glass-border);
+        }
 
         .app-main {
             flex-grow: 1;
@@ -3519,6 +3563,7 @@ body.dark-theme[data-palette="mint"] {
             <button type="button" class="theme-palette-swatch" data-palette="rose" style="--sw1:#f43f5e;--sw2:#ec4899;--sw3:#fb7185" onclick="applyPalette('rose')" title="Rose"><span class="sr-only">Rose</span></button>
             <button type="button" class="theme-palette-swatch" data-palette="slate" style="--sw1:#64748b;--sw2:#475569;--sw3:#94a3b8" onclick="applyPalette('slate')" title="Slate"><span class="sr-only">Slate</span></button>
             <button type="button" class="theme-palette-swatch" data-palette="monochrome" style="--sw1:#404040;--sw2:#737373;--sw3:#a3a3a3" onclick="applyPalette('monochrome')" title="Monochrome"><span class="sr-only">Monochrome</span></button>
+            <span id="theme-popover-custom-swatches" style="display:contents"></span>
         </div>
         <p class="theme-popover-label" style="margin-top: 1rem;">Motion</p>
         <div class="motion-mode-row">
@@ -3569,7 +3614,45 @@ body.dark-theme[data-palette="mint"] {
                             </div>
                         </div>
                         <div class="mt-4 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4 text-sm text-gray-600 dark:text-gray-300">
-                            Color palette and motion (animation) preferences live in the theme popover -- click the theme icon in the top bar.
+                            Motion (animation) preferences live in the theme popover -- click the theme icon in the top bar.
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <h5 class="text-lg font-semibold mb-2">Color Palette</h5>
+                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">Pick a built-in palette here, or create your own below -- every palette is a 3-color gradient used across accents, glows, and highlights throughout the app.</p>
+                        <div class="custom-theme-swatch-grid">
+                            <button type="button" class="theme-palette-swatch" data-palette="crimson" style="--sw1:#dc2626;--sw2:#ef4444;--sw3:#f87171" onclick="applyPalette('crimson')" title="Crimson"><span class="sr-only">Crimson</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="coral" style="--sw1:#f97316;--sw2:#fb7185;--sw3:#ec4899" onclick="applyPalette('coral')" title="Coral"><span class="sr-only">Coral</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="amber" style="--sw1:#d97706;--sw2:#fbbf24;--sw3:#fde047" onclick="applyPalette('amber')" title="Amber"><span class="sr-only">Amber</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="sunset" style="--sw1:#f59e0b;--sw2:#f97316;--sw3:#ef4444" onclick="applyPalette('sunset')" title="Sunset"><span class="sr-only">Sunset</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="lime" style="--sw1:#65a30d;--sw2:#a3e635;--sw3:#bef264" onclick="applyPalette('lime')" title="Lime"><span class="sr-only">Lime</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="mint" style="--sw1:#22c55e;--sw2:#14b8a6;--sw3:#06b6d4" onclick="applyPalette('mint')" title="Mint"><span class="sr-only">Mint</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="emerald" style="--sw1:#10b981;--sw2:#14b8a6;--sw3:#84cc16" onclick="applyPalette('emerald')" title="Emerald"><span class="sr-only">Emerald</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="teal" style="--sw1:#0d9488;--sw2:#2dd4bf;--sw3:#5eead4" onclick="applyPalette('teal')" title="Teal"><span class="sr-only">Teal</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="sky" style="--sw1:#0284c7;--sw2:#38bdf8;--sw3:#7dd3fc" onclick="applyPalette('sky')" title="Sky"><span class="sr-only">Sky</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="midnight" style="--sw1:#1d4ed8;--sw2:#4338ca;--sw3:#7c3aed" onclick="applyPalette('midnight')" title="Midnight"><span class="sr-only">Midnight</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="indigo" style="--sw1:#6366f1;--sw2:#a855f7;--sw3:#ec4899" onclick="applyPalette('indigo')" title="Indigo"><span class="sr-only">Indigo</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="violet" style="--sw1:#7c3aed;--sw2:#a78bfa;--sw3:#c026d3" onclick="applyPalette('violet')" title="Violet"><span class="sr-only">Violet</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="fuchsia" style="--sw1:#c026d3;--sw2:#e879f9;--sw3:#f0abfc" onclick="applyPalette('fuchsia')" title="Fuchsia"><span class="sr-only">Fuchsia</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="rose" style="--sw1:#f43f5e;--sw2:#ec4899;--sw3:#fb7185" onclick="applyPalette('rose')" title="Rose"><span class="sr-only">Rose</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="slate" style="--sw1:#64748b;--sw2:#475569;--sw3:#94a3b8" onclick="applyPalette('slate')" title="Slate"><span class="sr-only">Slate</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="monochrome" style="--sw1:#404040;--sw2:#737373;--sw3:#a3a3a3" onclick="applyPalette('monochrome')" title="Monochrome"><span class="sr-only">Monochrome</span></button>
+                        </div>
+
+                        <h5 class="text-lg font-semibold mb-2 mt-6">Your Custom Themes</h5>
+                        <div class="custom-theme-swatch-grid" id="settings-custom-theme-swatches"></div>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 mb-2">Hover a custom theme's swatch to delete it.</p>
+
+                        <h5 class="text-lg font-semibold mb-2 mt-4">Create a Theme</h5>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">Name it, pick 3 colors for its gradient, then create -- it's applied immediately and saved to Your Custom Themes above.</p>
+                        <div class="custom-theme-form">
+                            <div class="custom-theme-preview" id="custom-theme-preview" style="background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);"></div>
+                            <input type="text" id="custom-theme-name-input" class="form-input" placeholder="Theme name (e.g. Sunset Beach)">
+                            <input type="color" id="custom-theme-color-1" class="custom-theme-color-input" value="#6366f1" oninput="updateCustomThemePreview()" title="Color 1">
+                            <input type="color" id="custom-theme-color-2" class="custom-theme-color-input" value="#a855f7" oninput="updateCustomThemePreview()" title="Color 2">
+                            <input type="color" id="custom-theme-color-3" class="custom-theme-color-input" value="#ec4899" oninput="updateCustomThemePreview()" title="Color 3">
+                            <button type="button" class="modal-footer-button bg-indigo-600" onclick="submitCustomThemeForm()">Create Theme</button>
                         </div>
                     </div>
                 </div>
@@ -3835,7 +3918,7 @@ body.dark-theme[data-palette="mint"] {
                 </div>
             </div>
 
-            <div class="settings-subcat" data-subcat="external-feeds">
+            <div class="settings-subcat" data-subcat="calendar-display">
                 <div class="mb-6">
                     <h4 class="text-lg font-semibold mb-3">External Calendars</h4>
                     <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
@@ -3851,45 +3934,6 @@ body.dark-theme[data-palette="mint"] {
                         <div id="external-feeds-status" class="text-xs text-gray-600 dark:text-gray-300"></div>
                         <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="refreshExternalFeeds(true)">Refresh Now</button>
                     </div>
-                </div>
-            </div>
-
-            <div class="settings-subcat" data-subcat="gcal-publish">
-                <div class="mb-6">
-                    <h4 class="text-lg font-semibold mb-3">Google Calendar Sync</h4>
-                    <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
-                        Publishes a live .ics feed via a secret GitHub Gist, which Google Calendar can subscribe to. The gist URL is unauthenticated once created — anyone with the link can read it, so keep it as private as the token below.
-                    </p>
-                    <div class="ics-toggle-row">
-                        <label class="ics-toggle-label">
-                            <input type="checkbox" class="ui-switch" id="ics-include-day-events" onchange="saveIcsEventTogglePref('icsIncludeDayEvents', this.checked)">
-                            <span><strong>A/B Day events</strong> — one event per school day ("A Day - School" / "B Day - School"), with your day notes as the description.</span>
-                        </label>
-                        <label class="ics-toggle-label">
-                            <input type="checkbox" class="ui-switch" id="ics-include-class-events" onchange="saveIcsEventTogglePref('icsIncludeClassEvents', this.checked)">
-                            <span><strong>Individual class events</strong> — one event per class per day ("Class - Teacher | Room"), with that class's quick note as the description.</span>
-                        </label>
-                    </div>
-                    <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">GitHub Token (Gist read/write scope)</label>
-                    <div class="flex gap-2 mb-3">
-                        <input type="password" id="pref-github-token" class="form-input flex-grow" placeholder="github_pat_..." onchange="saveGithubTokenPref(this.value)" autocomplete="off">
-                        <button type="button" class="modal-footer-button is-secondary" onclick="copyGithubToken()" title="Copy this token so you can paste it into the app on another device">Copy Token</button>
-                    </div>
-                    <div id="gist-sync-status" class="text-xs text-gray-600 dark:text-gray-300 mb-3">Not connected yet.</div>
-                    <div id="gist-sync-url-row" class="hidden mb-3">
-                        <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Subscribe in Google Calendar (Other calendars → + → From URL)</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="gist-sync-url" class="form-input" readonly>
-                            <button type="button" class="modal-footer-button bg-indigo-600" onclick="copyGistSyncUrl()">Copy</button>
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap gap-2 items-center">
-                        <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="syncNotesToGist(true)">Sync Now</button>
-                        <button type="button" class="modal-footer-button bg-red-600" onclick="confirmResetGistSync()">Reset Sync</button>
-                    </div>
-                    <p class="text-xs text-gray-600 dark:text-gray-300 mt-2">
-                        If your calendar app stops picking up new changes, use Reset Sync — it deletes the old feed and creates a fresh one. You'll need to re-subscribe with the new URL afterward; the old link stops working.
-                    </p>
                 </div>
             </div>
             </div>
@@ -3947,8 +3991,47 @@ body.dark-theme[data-palette="mint"] {
                 <div class="settings-category" data-settings-category="backup-sync">
                     <h4 class="text-2xl font-semibold mb-3">Backup &amp; Sync</h4>
                     <p class="text-sm mb-4 text-gray-600 dark:text-gray-300">
-                        Getting your data onto, out of, or between devices. Google Calendar's live .ics feed publishing lives under <strong>Google Calendar Sync</strong> instead, since it's calendar-specific.
+                        Everything for getting data onto, out of, or between devices -- Google Calendar publishing and app backup/restore both ride on the same GitHub Gist token, so they live together here.
                     </p>
+
+                    <div class="mb-6">
+                        <h5 class="text-lg font-semibold mb-2">Google Calendar Sync</h5>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                            Publishes a live .ics feed via a secret GitHub Gist, which Google Calendar can subscribe to. The gist URL is unauthenticated once created — anyone with the link can read it, so keep it as private as the token below.
+                        </p>
+                        <div class="ics-toggle-row">
+                            <label class="ics-toggle-label">
+                                <input type="checkbox" class="ui-switch" id="ics-include-day-events" onchange="saveIcsEventTogglePref('icsIncludeDayEvents', this.checked)">
+                                <span><strong>A/B Day events</strong> — one event per school day ("A Day - School" / "B Day - School"), with your day notes as the description.</span>
+                            </label>
+                            <label class="ics-toggle-label">
+                                <input type="checkbox" class="ui-switch" id="ics-include-class-events" onchange="saveIcsEventTogglePref('icsIncludeClassEvents', this.checked)">
+                                <span><strong>Individual class events</strong> — one event per class per day ("Class - Teacher | Room"), with that class's quick note as the description.</span>
+                            </label>
+                        </div>
+                        <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">GitHub Token (Gist read/write scope)</label>
+                        <div class="flex gap-2 mb-3">
+                            <input type="password" id="pref-github-token" class="form-input flex-grow" placeholder="github_pat_..." onchange="saveGithubTokenPref(this.value)" autocomplete="off">
+                            <button type="button" class="modal-footer-button is-secondary" onclick="copyGithubToken()" title="Copy this token so you can paste it into the app on another device">Copy Token</button>
+                        </div>
+                        <div id="gist-sync-status" class="text-xs text-gray-600 dark:text-gray-300 mb-3">Not connected yet.</div>
+                        <div id="gist-sync-url-row" class="hidden mb-3">
+                            <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Subscribe in Google Calendar (Other calendars → + → From URL)</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="gist-sync-url" class="form-input" readonly>
+                                <button type="button" class="modal-footer-button bg-indigo-600" onclick="copyGistSyncUrl()">Copy</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="syncNotesToGist(true)">Sync Now</button>
+                            <button type="button" class="modal-footer-button bg-red-600" onclick="confirmResetGistSync()">Reset Sync</button>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 mt-2">
+                            If your calendar app stops picking up new changes, use Reset Sync — it deletes the old feed and creates a fresh one. You'll need to re-subscribe with the new URL afterward; the old link stops working.
+                        </p>
+                    </div>
+
+                    <hr class="border-0 h-px bg-gradient-to-r from-transparent via-current opacity-20 my-4">
 
                     <div class="mb-6">
                         <h5 class="text-lg font-semibold mb-2">Export &amp; Import (local file)</h5>
@@ -3967,7 +4050,7 @@ body.dark-theme[data-palette="mint"] {
                     <div>
                         <h5 class="text-lg font-semibold mb-2">App Data Sync (GitHub Gist, cross-device)</h5>
                         <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
-                            Pushes everything this app stores -- classes, schedule dates, notes, reminders, calendar feeds, Home layout/widgets/presets, preferences -- into a private GitHub Gist, so you can pull it down on another device with the same token (set under <strong>Google Calendar Sync</strong>, since it shares that Gist). Auto-syncs a few seconds after any change once a token is set. Not live/two-way: on a second device, whichever side synced most recently wins, so restore right after switching devices instead of editing both at once.
+                            Pushes everything this app stores -- classes, schedule dates, notes, reminders, calendar feeds, Home layout/widgets/presets, preferences -- into the same private Gist as a second file, so you can pull it down on another device with the same token above. Auto-syncs a few seconds after any change once a token is set. Not live/two-way: on a second device, whichever side synced most recently wins, so restore right after switching devices instead of editing both at once.
                         </p>
                         <div class="flex flex-wrap gap-2 items-center">
                             <button type="button" class="modal-footer-button bg-green-600" onclick="pushAppDataToGist(true)">Push Now</button>
@@ -4247,12 +4330,10 @@ body.dark-theme[data-palette="mint"] {
         const SETTINGS_CATEGORIES = [
             { id: 'appearance', label: 'Appearance', parent: 'classes-wrap', desc: 'Theme and clock format.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36l-1.42-1.42M7.05 7.05L5.64 5.64m12.72 0l-1.42 1.42M7.05 16.95l-1.41 1.41"></path><circle cx="12" cy="12" r="4" stroke-width="2"></circle>' },
             { id: 'bell-schedule', label: 'Bell Schedule', parent: 'classes-wrap', desc: 'Day types, lunch waves, schedule types, custom periods.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s4.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>' },
-            { id: 'calendar-display', label: 'Calendar Display', parent: 'calendar-wrap', desc: 'Default view and which day the week starts on.', icon: '<rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"></rect><path stroke-linecap="round" stroke-width="2" d="M16 2v4M8 2v4M3 10h18"></path>' },
+            { id: 'calendar-display', label: 'Calendar', parent: 'calendar-wrap', desc: 'Default view, week start, and external .ics feeds.', icon: '<rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"></rect><path stroke-linecap="round" stroke-width="2" d="M16 2v4M8 2v4M3 10h18"></path>' },
             { id: 'categories-rules', label: 'Categories & Rules', parent: 'calendar-wrap', desc: 'Calendar categories and auto-categorization rules.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M3 12V6a2 2 0 012-2h6l10 10-8 8L3 12z"></path>' },
-            { id: 'external-feeds', label: 'External Calendars', parent: 'calendar-wrap', desc: 'Read-only .ics feeds like sports schedules or district calendars.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 015.656 5.656l-1.5 1.5"></path>' },
-            { id: 'gcal-publish', label: 'Google Calendar Sync', parent: 'calendar-wrap', desc: 'Publish your calendar as a live feed Google Calendar can subscribe to.', icon: '<rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"></rect><path stroke-linecap="round" stroke-width="2" d="M3 10h18M8 2v4M16 2v4M8 15l2 2 4-4"></path>' },
             { id: 'shortcuts', label: 'Keyboard Shortcuts', desc: 'View and rebind every shortcut key in the app.', icon: '<rect x="2" y="6" width="20" height="12" rx="2" stroke-width="2"></rect><path stroke-linecap="round" stroke-width="2" d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h12"></path>' },
-            { id: 'backup-sync', label: 'Backup & Sync', desc: 'Export/import a local backup, or sync across devices via GitHub.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4.583 9A8 8 0 0119 8.001M19.417 15A8 8 0 015 15.999"></path>' },
+            { id: 'backup-sync', label: 'Backup & Sync', desc: 'Google Calendar publishing, local backup, and cross-device sync.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4.583 9A8 8 0 0119 8.001M19.417 15A8 8 0 015 15.999"></path>' },
             { id: 'portal-sync', label: 'Portal Sync', desc: 'Import assignments from Skyward via the companion browser extension.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>' },
             { id: 'developer', label: 'Developer Tools', desc: 'Simulate a different date/time; commit current data as site defaults.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4-4 4M7 8l-4 4 4 4M14 4l-4 16"></path>' },
             { id: 'danger-zone', label: 'Danger Zone', desc: 'Clear notes, reset classes, or wipe everything. Cannot be undone.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"></path>' },
@@ -4263,6 +4344,7 @@ body.dark-theme[data-palette="mint"] {
         // just lands you in the right tab) when a label or one of its keywords matches.
         const SETTINGS_SEARCH_INDEX = [
             { label: 'Theme (Light/Dark/System)', category: 'appearance', keywords: 'appearance dark mode light color palette' },
+            { label: 'Create a Custom Theme', category: 'appearance', keywords: 'custom color gradient palette create new theme' },
             { label: 'Clock Format (12/24-hour)', category: 'appearance', keywords: 'time format clock' },
             { label: 'Day Type Calendar (A/B days)', category: 'bell-schedule', keywords: 'schedule a day b day rotation editor' },
             { label: 'Lunch Wave', category: 'bell-schedule', keywords: 'lunch period wave' },
@@ -4273,10 +4355,10 @@ body.dark-theme[data-palette="mint"] {
             { label: 'Week Start Day', category: 'calendar-display', keywords: 'sunday monday first day of week' },
             { label: 'Calendar Categories', category: 'categories-rules', keywords: 'category color icon label event type' },
             { label: 'Category Auto-Assign Rules', category: 'categories-rules', keywords: 'rules keyword auto category' },
-            { label: 'External Calendar Feeds (.ics)', category: 'external-feeds', keywords: 'ics feed subscribe canvas import calendar url sports district' },
-            { label: 'Google Calendar Publishing', category: 'gcal-publish', keywords: 'gcal google calendar subscribe url ics export publish' },
-            { label: 'ICS Export Options', category: 'gcal-publish', keywords: 'export ics include day events class events' },
-            { label: 'GitHub Token / Gist Sync', category: 'gcal-publish', keywords: 'gist token github' },
+            { label: 'External Calendar Feeds (.ics)', category: 'calendar-display', keywords: 'ics feed subscribe canvas import calendar url sports district' },
+            { label: 'Google Calendar Publishing', category: 'backup-sync', keywords: 'gcal google calendar subscribe url ics export publish' },
+            { label: 'ICS Export Options', category: 'backup-sync', keywords: 'export ics include day events class events' },
+            { label: 'GitHub Token / Gist Sync', category: 'backup-sync', keywords: 'gist token github' },
             { label: 'Export All Data', category: 'backup-sync', keywords: 'backup download json local file' },
             { label: 'Import All Data', category: 'backup-sync', keywords: 'restore upload json local file' },
             { label: 'App Data Sync (cross-device)', category: 'backup-sync', keywords: 'push restore gist sync devices cloud' },
@@ -4370,6 +4452,7 @@ body.dark-theme[data-palette="mint"] {
             renderLunchWaveSettingsUI();
             renderScheduleTypesEditor();
             renderCustomPeriodsList();
+            renderCustomThemeSwatches();
             loadPreferences();
             document.getElementById('pref-default-view-select').value = localStorage.getItem('calendarView') || 'month';
             document.getElementById('pref-week-start-select').value = localStorage.getItem('weekStart') || '0';
@@ -4461,7 +4544,7 @@ body.dark-theme[data-palette="mint"] {
             // Portal Sync (Skyward) cached assignment data, and the "seen updates" watermark for
             // the Recent App Updates banner -- also previously missing.
             'portalSyncParsedV1', 'portalSyncUnparsedV1', 'lastSeenAppUpdateTs',
-            'keyboardShortcutOverridesV1',
+            'keyboardShortcutOverridesV1', 'customThemesV1',
             'githubGistToken', 'githubGistId', 'githubGistRawUrl'
         ];
 
@@ -4559,12 +4642,112 @@ body.dark-theme[data-palette="mint"] {
             if (prefSelect) prefSelect.value = theme;
         }
 
+        // ===================== CUSTOM THEMES (user-created name + 3-color gradient) =====================
+        // A custom theme is just {id, name, c1, c2, c3} -- the same 3-color-gradient shape every
+        // built-in palette already has (see the `body[data-palette="..."]` CSS rules above), just
+        // authored by the user instead of hardcoded. Since there's no way to inject a new
+        // `body[data-palette="X"]` CSS rule at runtime, a custom theme is applied as inline CSS
+        // custom properties on <body> instead (see applyPalette) -- functionally identical, since
+        // both ultimately just set the same --accent-1/2/3 etc custom properties everything else
+        // in the app already reads.
+        let customThemes = [];
+        function loadCustomThemes() {
+            try {
+                const raw = JSON.parse(localStorage.getItem('customThemesV1') || '[]');
+                customThemes = Array.isArray(raw) ? raw : [];
+            } catch (e) { customThemes = []; }
+        }
+        function saveCustomThemes() {
+            localStorage.setItem('customThemesV1', JSON.stringify(customThemes));
+        }
+        function hexToRgba(hex, alpha) {
+            const m = /^#?([0-9a-f]{6})$/i.exec((hex || '').trim());
+            if (!m) return `rgba(99, 102, 241, ${alpha})`;
+            const num = parseInt(m[1], 16);
+            const r = (num >> 16) & 255, g = (num >> 8) & 255, b = num & 255;
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+        function createCustomTheme(name, c1, c2, c3) {
+            const trimmed = (name || '').trim();
+            if (!trimmed) { showActionToast('Give your theme a name first.'); return; }
+            const id = 'custom-' + Date.now().toString(36);
+            customThemes.push({ id, name: trimmed, c1, c2, c3 });
+            saveCustomThemes();
+            renderCustomThemeSwatches();
+            applyPalette('custom:' + id);
+        }
+        function deleteCustomTheme(id, event) {
+            if (event) event.stopPropagation();
+            const wasActive = currentPaletteState === 'custom:' + id;
+            customThemes = customThemes.filter(t => t.id !== id);
+            saveCustomThemes();
+            renderCustomThemeSwatches();
+            if (wasActive) applyPalette(DEFAULT_THEME_STATE.palette);
+        }
+        function findCustomTheme(id) {
+            return customThemes.find(t => t.id === id) || null;
+        }
+        // Builds one custom-theme swatch button, same shape/behavior as a built-in
+        // .theme-palette-swatch -- `deletable` adds a small "x" overlay (only shown in the
+        // Settings tab's management grid, not the quick popover switcher).
+        function customThemeSwatchHtml(theme, deletable) {
+            return `<button type="button" class="theme-palette-swatch ${deletable ? 'is-deletable' : ''}" data-palette="custom:${escapeAttr(theme.id)}" style="--sw1:${escapeAttr(theme.c1)};--sw2:${escapeAttr(theme.c2)};--sw3:${escapeAttr(theme.c3)}" onclick="applyPalette('custom:${escapeJsAttr(theme.id)}')" title="${escapeAttr(theme.name)}">
+                <span class="sr-only">${escapeHtml(theme.name)}</span>
+                ${deletable ? `<span class="theme-swatch-delete" onclick="deleteCustomTheme('${escapeJsAttr(theme.id)}', event)" title="Delete this theme">×</span>` : ''}
+            </button>`;
+        }
+        function renderCustomThemeSwatches() {
+            const popoverSlot = document.getElementById('theme-popover-custom-swatches');
+            if (popoverSlot) popoverSlot.innerHTML = customThemes.map(t => customThemeSwatchHtml(t, false)).join('');
+            const settingsSlot = document.getElementById('settings-custom-theme-swatches');
+            if (settingsSlot) {
+                settingsSlot.innerHTML = customThemes.length
+                    ? customThemes.map(t => customThemeSwatchHtml(t, true)).join('')
+                    : `<p class="text-xs text-gray-600 dark:text-gray-300">No custom themes yet -- create one below.</p>`;
+            }
+            document.querySelectorAll('.theme-palette-swatch').forEach(s => s.classList.toggle('active', s.dataset.palette === currentPaletteState));
+        }
+        function submitCustomThemeForm() {
+            const nameInput = document.getElementById('custom-theme-name-input');
+            const c1 = document.getElementById('custom-theme-color-1').value;
+            const c2 = document.getElementById('custom-theme-color-2').value;
+            const c3 = document.getElementById('custom-theme-color-3').value;
+            createCustomTheme(nameInput.value, c1, c2, c3);
+            nameInput.value = '';
+        }
+        function updateCustomThemePreview() {
+            const preview = document.getElementById('custom-theme-preview');
+            if (!preview) return;
+            const c1 = document.getElementById('custom-theme-color-1').value;
+            const c2 = document.getElementById('custom-theme-color-2').value;
+            const c3 = document.getElementById('custom-theme-color-3').value;
+            preview.style.background = `linear-gradient(135deg, ${c1}, ${c2}, ${c3})`;
+        }
         function applyPalette(palette) {
-            document.body.dataset.palette = palette;
+            const isCustom = typeof palette === 'string' && palette.indexOf('custom:') === 0;
+            const custom = isCustom ? findCustomTheme(palette.slice('custom:'.length)) : null;
+            if (isCustom && !custom) palette = DEFAULT_THEME_STATE.palette; // deleted theme, fall back
+            const style = document.body.style;
+            const customVars = ['--accent-1', '--accent-2', '--accent-3', '--accent-grad', '--glow-accent', '--scrollbar-thumb'];
+            if (custom) {
+                document.body.dataset.palette = ''; // no matching body[data-palette] rule for a custom theme
+                style.setProperty('--accent-1', custom.c1);
+                style.setProperty('--accent-2', custom.c2);
+                style.setProperty('--accent-3', custom.c3);
+                style.setProperty('--accent-grad', `linear-gradient(135deg, ${custom.c1}, ${custom.c2}, ${custom.c3})`);
+                style.setProperty('--glow-accent', hexToRgba(custom.c2, 0.32));
+                style.setProperty('--scrollbar-thumb', hexToRgba(custom.c3, 0.4));
+            } else {
+                // Clear any inline overrides a previous custom theme left behind, so the plain
+                // body[data-palette="X"] CSS rule takes over cleanly again.
+                customVars.forEach(v => style.removeProperty(v));
+                document.body.dataset.palette = palette;
+            }
             localStorage.setItem('themePalette', palette);
             currentPaletteState = palette;
             document.querySelectorAll('.theme-palette-swatch').forEach(s => s.classList.toggle('active', s.dataset.palette === palette));
         }
+        loadCustomThemes();
 
         // ===================== THEME POPOVER =====================
         function toggleThemePopover() {
@@ -4578,6 +4761,7 @@ body.dark-theme[data-palette="mint"] {
 
         function openThemePopover() {
             const popover = document.getElementById('theme-popover');
+            renderCustomThemeSwatches();
             positionThemePopover();
             popover.classList.remove('hidden');
             document.getElementById('theme-toggle').setAttribute('aria-expanded', 'true');
@@ -14996,6 +15180,7 @@ body.dark-theme[data-palette="mint"] {
             setInterval(displayTime, 1000);
 
             applyTheme(currentThemeState);
+            renderCustomThemeSwatches();
             applyPalette(currentPaletteState);
             applyMotionPref(currentMotionState);
             setupSidebarDock();
