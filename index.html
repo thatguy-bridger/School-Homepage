@@ -4577,8 +4577,11 @@ body.dark-theme[data-palette="mint"] {
         ];
         // Deliberately NOT synced/exported: simulatedDateOverrideV1 (a per-device testing-only
         // clock override -- restoring it onto another device would silently freeze that device's
-        // calendar/countdowns at a fake date with no visible explanation) and
-        // migratedClubSportsColors (a one-time internal migration flag, not user data).
+        // calendar/countdowns at a fake date with no visible explanation),
+        // migratedClubSportsColors (a one-time internal migration flag, not user data), and
+        // appDataSyncWatermark (this device's own bookkeeping of the newest gist snapshot it's
+        // already dealt with -- see checkForRemoteAppDataUpdate -- syncing it would defeat its
+        // purpose, same reasoning as githubGistId above).
 
         function exportAllData() {
             const data = {};
@@ -13168,6 +13171,7 @@ body.dark-theme[data-palette="mint"] {
                             }
                             localStorage.setItem('githubGistId', result.gistId);
                             applyImportedDataObject(data, APP_DATA_SYNC_KEYS);
+                            if (payload && payload.exportedAt) localStorage.setItem('appDataSyncWatermark', payload.exportedAt);
                             window.location.reload();
                         } catch (err) {
                             gistTokenEntryCheckInFlight = false;
@@ -13500,7 +13504,8 @@ body.dark-theme[data-palette="mint"] {
                 const value = localStorage.getItem(key);
                 if (value !== null) data[key] = value;
             });
-            return JSON.stringify({ app: 'school-dashboard', exportedAt: appNow().toISOString(), data }, null, 2);
+            const exportedAt = appNow().toISOString();
+            return { json: JSON.stringify({ app: 'school-dashboard', exportedAt, data }, null, 2), exportedAt };
         }
 
         // Shared by both the file-based Import and the gist-based Restore -- applies a decoded
@@ -13525,7 +13530,7 @@ body.dark-theme[data-palette="mint"] {
             if (showStatus && statusEl) statusEl.textContent = 'Pushing your data...';
 
             try {
-                const payload = buildAppDataPayload();
+                const { json: payload, exportedAt } = buildAppDataPayload();
                 let gistId = localStorage.getItem('githubGistId');
                 // A device with no local githubGistId (never restored, or storage got cleared)
                 // used to always POST a brand new gist here -- if that happened on a device that
@@ -13577,6 +13582,10 @@ body.dark-theme[data-palette="mint"] {
                 const data = await response.json();
                 localStorage.setItem('githubGistId', data.id);
                 localStorage.setItem('githubGistRawUrl', stableGistRawUrl(data));
+                // This device authored this exact snapshot, so it's already "seen" -- without this,
+                // the on-load remote-update check (checkForRemoteAppDataUpdate) would immediately
+                // prompt to "apply" the very data this device just pushed.
+                localStorage.setItem('appDataSyncWatermark', exportedAt);
 
                 if (showStatus && statusEl) statusEl.textContent = 'Data pushed just now.';
                 updateGistSyncUI();
@@ -13796,6 +13805,93 @@ body.dark-theme[data-palette="mint"] {
             return { gistId: data.id, content };
         }
 
+        // ===================== ON-LOAD REMOTE UPDATE CHECK =====================
+        // Auto-push (installAutoSyncStorageHook) covers this device's own edits reaching the gist,
+        // but a change made on another device only ever showed up here once the user happened to
+        // click "Restore My Data" -- there was no signal that anything had changed at all. This
+        // checks once per load whether the gist has a newer snapshot than this device has already
+        // seen, and if the actual data differs, asks before overwriting anything.
+        // Friendly category labels for the confirm-modal summary -- deliberately not exhaustive
+        // (an unmapped key still counts, just folds into "other settings" so nothing is silently
+        // left out of the summary).
+        const APP_DATA_KEY_LABELS = {
+            classDataV3: 'Classes', scheduleCalendarV1: 'Schedule', scheduleTypesV1: 'Schedule Types',
+            lunchWaveByDayTypeV1: 'Lunch Wave', userScheduleSlotOptionsV3: 'Bell Schedule',
+            dayNotesV1: 'Day Notes', classNotesV1: 'Class Notes',
+            remindersV1: 'Reminders', countdownsV1: 'Countdowns',
+            calendarCategories: 'Calendar Categories', calendarCategoryRules: 'Category Rules',
+            externalIcsFeeds: 'External Calendars', calendarCategoryFilter: 'Calendar Filters',
+            homeWidgetLayoutV1: 'Home Layout', homeWidgetSettingsV1: 'Home Widget Settings',
+            homeLayoutPresetV1: 'Home Presets', homeUserPresetsV1: 'Home Presets',
+            homeDigestConfigV1: 'Home Digest', calendarPreviewConfigV1: 'Calendar Preview',
+            theme: 'Theme', themePalette: 'Theme', customThemesV1: 'Custom Themes',
+            keyboardShortcutOverridesV1: 'Keyboard Shortcuts',
+            portalSyncParsedV1: 'Portal Sync Data', appUsageStatsV1: 'Usage Stats',
+            googleCalendarEmbedUrl: 'Google Calendar', showGoogleCalendar: 'Google Calendar',
+            calendarView: 'Preferences', weekStart: 'Preferences', timeFormat: 'Preferences', motionPref: 'Theme'
+        };
+        function summarizeChangedDataKeys(keys) {
+            const labels = new Set();
+            let hasUnlabeled = false;
+            keys.forEach(k => { if (APP_DATA_KEY_LABELS[k]) labels.add(APP_DATA_KEY_LABELS[k]); else hasUnlabeled = true; });
+            const list = Array.from(labels);
+            if (hasUnlabeled) list.push('other settings');
+            if (!list.length) return '';
+            if (list.length === 1) return list[0] + ' changed';
+            if (list.length === 2) return list[0] + ' and ' + list[1] + ' changed';
+            return list.slice(0, -1).join(', ') + ', and ' + list[list.length - 1] + ' changed';
+        }
+        async function checkForRemoteAppDataUpdate() {
+            const token = localStorage.getItem('githubGistToken');
+            if (!token) return;
+            if (gistTokenEntryCheckInFlight || gistSyncInFlight) return;
+            try {
+                let gistId = localStorage.getItem('githubGistId');
+                if (!gistId) gistId = await findAppDataGistId(token);
+                if (!gistId) return;
+                const result = await fetchAppDataFromGist(token, gistId);
+                if (result.gistId && result.gistId !== gistId) localStorage.setItem('githubGistId', result.gistId);
+
+                let payload;
+                try { payload = JSON.parse(result.content); } catch (e) { return; }
+                const remoteData = payload && payload.data;
+                const remoteTimestamp = payload && payload.exportedAt;
+                if (!remoteData || typeof remoteData !== 'object' || !remoteTimestamp) return;
+
+                const watermark = localStorage.getItem('appDataSyncWatermark');
+                // First check ever on this device (a pre-existing install just getting this
+                // feature, or a device that just restored) -- treat the current remote snapshot as
+                // the baseline instead of prompting about a "change" that's really just this device
+                // seeing the gist for the first time.
+                if (!watermark) { localStorage.setItem('appDataSyncWatermark', remoteTimestamp); return; }
+                if (remoteTimestamp <= watermark) return; // nothing newer than what's already been handled
+
+                const changedKeys = APP_DATA_SYNC_KEYS.filter(key =>
+                    Object.prototype.hasOwnProperty.call(remoteData, key) && localStorage.getItem(key) !== remoteData[key]
+                );
+                if (!changedKeys.length) { localStorage.setItem('appDataSyncWatermark', remoteTimestamp); return; }
+
+                const summary = summarizeChangedDataKeys(changedKeys);
+                showConfirmationModal(
+                    `Your synced data was updated on another device${summary ? ' (' + summary + ')' : ''}. Apply those changes here? This will overwrite the matching data on this device.`,
+                    [
+                        { text: 'Apply Changes', action: () => {
+                            applyImportedDataObject(remoteData, APP_DATA_SYNC_KEYS);
+                            localStorage.setItem('appDataSyncWatermark', remoteTimestamp);
+                            window.location.reload();
+                        }},
+                        { text: 'Not Now', action: () => {
+                            // Remembered so this exact snapshot doesn't nag again on the next
+                            // reload -- a genuinely newer change afterward will still prompt.
+                            localStorage.setItem('appDataSyncWatermark', remoteTimestamp);
+                        }}
+                    ]
+                );
+            } catch (err) {
+                console.error('Remote app data update check failed:', err);
+            }
+        }
+
         async function restoreAppDataFromGist() {
             const token = localStorage.getItem('githubGistToken');
             const statusEl = document.getElementById('gist-sync-status');
@@ -13841,6 +13937,7 @@ body.dark-theme[data-palette="mint"] {
             showConfirmationModal('Restore data from your gist? This will overwrite your current classes, schedule dates, notes, reminders, calendar feeds, and preferences on this device.', [
                 { text: 'Confirm', action: () => {
                     applyImportedDataObject(data, APP_DATA_SYNC_KEYS);
+                    if (payload && payload.exportedAt) localStorage.setItem('appDataSyncWatermark', payload.exportedAt);
                     window.location.reload();
                 }},
                 { text: 'Cancel', action: () => {} }
@@ -13907,6 +14004,7 @@ body.dark-theme[data-palette="mint"] {
                 }
                 localStorage.setItem('githubGistId', result.gistId);
                 applyImportedDataObject(data, APP_DATA_SYNC_KEYS);
+                if (payload && payload.exportedAt) localStorage.setItem('appDataSyncWatermark', payload.exportedAt);
                 statusEl.textContent = 'Found your data -- restoring now...';
                 window.location.reload();
             } catch (err) {
@@ -15206,6 +15304,7 @@ body.dark-theme[data-palette="mint"] {
             renderClassesCalendarPreview();
             applyGoogleCalendarPrefs();
             ensureGistAutoSync();
+            checkForRemoteAppDataUpdate();
             checkNoSchoolToast();
 
             displayTime();

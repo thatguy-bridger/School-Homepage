@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T10:20:00Z",
+  "title": "Reload now checks for updates synced from another device, and asks before applying",
+  "summary": [
+    "Editing on one device would already auto-push to your GitHub Gist, but another device never knew anything had changed until you happened to click Restore My Data. Now, whenever the app loads with a GitHub token set, it quietly checks whether the gist has anything newer than what this device has already handled.",
+    "If it does -- and the actual data is different, not just a timestamp bump -- a confirm modal explains what changed in plain terms (\"Classes and Reminders changed\") and asks before overwriting anything on this device. Declining just dismisses it for that snapshot; a genuinely newer change later will still prompt. The very first check on a device (or right after a restore) never prompts about its own baseline, only about changes that happen afterward."
+  ]
+}
