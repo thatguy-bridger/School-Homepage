@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T10:10:00Z",
+  "title": "Usage stats (streaks, weekly digest history) now backed up and synced too",
+  "summary": [
+    "Audited every localStorage key the app actually writes against the export/import and cross-device gist sync list. Custom themes and keyboard shortcut overrides were already covered (added in the last couple updates). Found one real gap: appUsageStatsV1 -- the per-day activity history (assignments completed, classes opened, streaks) that feeds the \"your week in review\" section of the weekly digest -- was never included, so it silently reset on a restore or a new device. It's now part of both Export/Import All Data and the automatic GitHub sync.",
+    "Two keys were confirmed as intentionally excluded rather than missed: the Simulate Date override (restoring a fake clock onto another device would be more surprising than helpful) and an internal one-time migration flag that isn't real user data."
+  ]
+}

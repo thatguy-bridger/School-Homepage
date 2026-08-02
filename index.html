@@ -4569,8 +4569,16 @@ body.dark-theme[data-palette="mint"] {
             // the Recent App Updates banner -- also previously missing.
             'portalSyncParsedV1', 'portalSyncUnparsedV1', 'lastSeenAppUpdateTs',
             'keyboardShortcutOverridesV1', 'customThemesV1',
+            // Usage analytics (streaks/assignments-completed/classes-opened feeding the weekly
+            // digest's "your week in review") -- previously missing from both manual export/import
+            // and gist sync, so that history silently reset on a restore or a new device.
+            'appUsageStatsV1',
             'githubGistToken', 'githubGistId', 'githubGistRawUrl'
         ];
+        // Deliberately NOT synced/exported: simulatedDateOverrideV1 (a per-device testing-only
+        // clock override -- restoring it onto another device would silently freeze that device's
+        // calendar/countdowns at a fake date with no visible explanation) and
+        // migratedClubSportsColors (a one-time internal migration flag, not user data).
 
         function exportAllData() {
             const data = {};
