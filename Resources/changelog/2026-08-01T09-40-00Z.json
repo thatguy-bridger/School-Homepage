@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-01T09:40:00Z",
+  "title": "Settings fully recategorized into 12 focused tabs",
+  "summary": [
+    "The Settings home screen went from 6 broad tiles down to 12 focused ones, each scoped to one real thing instead of several stacked together: Appearance, Bell Schedule, Calendar Display, Categories & Rules, External Calendars, Google Calendar Sync, Keyboard Shortcuts, Backup & Sync, Portal Sync, Developer Tools, Danger Zone, and Help.",
+    "Destructive actions (Clear All Notes, Reset Classes to Default, Reset Everything) were pulled out of wherever they used to be buried and grouped into a single Danger Zone tab, clearly separated from everyday settings. Simulate Date and the password-protected Set as Site Defaults moved into Developer Tools. The two different GitHub-Gist-based sync mechanisms -- publishing a live .ics feed for Google Calendar, versus full cross-device app data sync -- got split into Google Calendar Sync and Backup & Sync respectively, since they were previously mashed into one confusing 'Google Calendar Sync' section despite doing very different things.",
+    "The Classes and Calendar gear-icon buttons now deep-link straight into the specific tab they're about (Bell Schedule, Calendar Display, Categories & Rules) instead of a broad catch-all tab. Search and the keyboard-shortcut rebinding from the last update both carried over unchanged."
+  ]
+}

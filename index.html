@@ -3340,7 +3340,7 @@ body.dark-theme[data-palette="mint"] {
                             <button id="edit-classes-button" class="icon-btn p-3 rounded-full" onclick="toggleClassEditMode()" title="Edit Classes">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
-                            <button id="settings-button" class="icon-btn p-3 rounded-full" onclick="openAllSettingsModal('classes')" title="Settings">
+                            <button id="settings-button" class="icon-btn p-3 rounded-full" onclick="openAllSettingsModal('bell-schedule')" title="Settings">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             </button>
                         </div>
@@ -3372,7 +3372,7 @@ body.dark-theme[data-palette="mint"] {
                             <button type="button" id="calendar-legend-toggle-btn" class="icon-btn p-3 rounded-full" onclick="toggleCalendarLegend()" title="Legend">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </button>
-                            <button id="calendar-settings-button" class="icon-btn p-3 rounded-full" onclick="openAllSettingsModal('calendar')" title="Settings">
+                            <button id="calendar-settings-button" class="icon-btn p-3 rounded-full" onclick="openAllSettingsModal('calendar-display')" title="Settings">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             </button>
                         </div>
@@ -3393,7 +3393,7 @@ body.dark-theme[data-palette="mint"] {
                         <div class="flex flex-wrap items-center gap-2">
                             <button type="button" class="category-filter-chip active" data-group="classes" style="--chip-color:#6366f1;" onclick="toggleCalendarClassesFilter()"><span class="filter-chip-dot" style="background:#6366f1;"></span>Classes</button>
                             <button type="button" class="category-filter-chip active" data-group="reminders" style="--chip-color:#eab308;" onclick="toggleCalendarRemindersFilter()"><span class="filter-chip-dot" style="background:#eab308;"></span>Reminders</button>
-                            <button type="button" class="icon-btn p-2 rounded-full" onclick="openAllSettingsModal('calendar')" title="Edit categories &amp; rules">
+                            <button type="button" class="icon-btn p-2 rounded-full" onclick="openAllSettingsModal('categories-rules')" title="Edit categories &amp; rules">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             </button>
                         </div>
@@ -3548,86 +3548,82 @@ body.dark-theme[data-palette="mint"] {
             </div>
 
             <div class="flex-grow overflow-y-auto pr-4 -mr-4" id="scheduling-settings-body">
-                <div class="mb-8">
-                    <h4 class="text-2xl font-semibold mb-3">Preferences</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Theme</label>
-                            <select id="pref-theme-select" class="form-select" onchange="applyTheme(this.value)">
-                                <option value="system">System</option>
-                                <option value="light">Light</option>
-                                <option value="dark">Dark</option>
-                            </select>
+                <div class="settings-subcat" data-subcat="appearance">
+                    <div class="mb-8">
+                        <h4 class="text-2xl font-semibold mb-3">Appearance</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Theme</label>
+                                <select id="pref-theme-select" class="form-select" onchange="applyTheme(this.value)">
+                                    <option value="system">System</option>
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Clock Format</label>
+                                <select id="pref-time-format-select" class="form-select" onchange="saveTimeFormatPref(this.value)">
+                                    <option value="12">12-hour (2:30 PM)</option>
+                                    <option value="24">24-hour (14:30)</option>
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Clock Format</label>
-                            <select id="pref-time-format-select" class="form-select" onchange="saveTimeFormatPref(this.value)">
-                                <option value="12">12-hour (2:30 PM)</option>
-                                <option value="24">24-hour (14:30)</option>
-                            </select>
+                        <div class="mt-4 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4 text-sm text-gray-600 dark:text-gray-300">
+                            Color palette and motion (animation) preferences live in the theme popover -- click the theme icon in the top bar.
                         </div>
-                    </div>
-                    <div class="mt-4 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4 text-sm text-gray-600 dark:text-gray-300">
-                        The classes screen now uses a built-in calendar preview instead of the old embedded Google Calendar panel.
                     </div>
                 </div>
 
-                <div class="mb-8">
-                    <h4 class="text-2xl font-semibold mb-3">Class Schedule</h4>
+                <div class="settings-subcat" data-subcat="bell-schedule">
+                    <div class="mb-8">
+                        <h4 class="text-2xl font-semibold mb-3">Bell Schedule</h4>
 
-                    <div class="mb-6 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4">
-                        <h5 class="text-lg font-semibold mb-1">Day Type Calendar</h5>
-                        <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Click days to assign A/B rotation, mark a range no-school, or tag a Short/Assembly day -- across any month, past or future.</p>
-                        <button type="button" class="modal-footer-button" onclick="openDayTypeEditor()">Open Class Schedule Editor</button>
-                    </div>
-
-                    <div class="mb-6 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4">
-                        <h5 class="text-lg font-semibold mb-2">Lunch Wave</h5>
-                        <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Which lunch wave A Days and B Days each use -- controls which 3rd/7th period + Lunch time applies on multi-wave schedules (Regular, Assembly).</p>
-                        <div id="lunch-wave-settings" class="space-y-1"></div>
-                    </div>
-
-                    <div>
-                        <h5 class="text-lg font-semibold mb-1">Schedule Types</h5>
-                        <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Short Day and Assembly Day are built in; add your own for any other bell-schedule variant your school uses. Edit a type to set its period times (Lunch included).</p>
-                        <div id="schedule-types-list" class="space-y-2 mb-3"></div>
-                        <button type="button" class="modal-footer-button" onclick="addCustomScheduleType()">+ Add Schedule Type</button>
-                    </div>
-
-                    <div class="mt-6">
-                        <h5 class="text-lg font-semibold mb-1">Custom Periods</h5>
-                        <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Add a period beyond the regular 1st-8th/Lunch/Advisory/Assembly set -- for a special block a particular day needs (a club period, an assembly rehearsal, a makeup exam slot, etc). Once added it shows up in every class's period picker and in each schedule type's time editor, same as any built-in period.</p>
-                        <div id="custom-periods-list" class="space-y-2 mb-3"></div>
-                        <button type="button" class="modal-footer-button" onclick="openCustomPeriodModal()">+ Add Custom Period</button>
-                    </div>
-
-                    <details class="mt-6">
-                        <summary class="cursor-pointer text-sm font-semibold text-gray-600 dark:text-gray-300">Advanced: raw date lists</summary>
-                        <div class="mt-4">
-                            <div class="mb-6">
-                                <h5 class="text-lg font-semibold mb-2">A-Days</h5>
-                                <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Enter dates in M.D.YYYY format, separated by commas (e.g., 8.18.2025, 8.20.2025). Prefer the Class Schedule Editor above for everyday use -- this is a bulk import/export shortcut.</p>
-                                <textarea id="adays-input" class="form-input w-full h-32"></textarea>
-                            </div>
-                            <div class="mb-6">
-                                <h5 class="text-lg font-semibold mb-2">B-Days</h5>
-                                <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Enter dates in M.D.YYYY format, separated by commas (e.g., 8.19.2025, 8.21.2025).</p>
-                                <textarea id="bdays-input" class="form-input w-full h-32"></textarea>
-                            </div>
-                            <div class="mb-2">
-                                <h5 class="text-lg font-semibold mb-2">Clear / No School Days</h5>
-                                <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Dates listed here have their A/B assignment removed (back to no-school) on Save. A weekday not listed anywhere is already no-school by default -- this box is only needed to explicitly clear an existing assignment via text.</p>
-                                <textarea id="noschool-input" class="form-input w-full h-24"></textarea>
-                            </div>
+                        <div class="mb-6 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4">
+                            <h5 class="text-lg font-semibold mb-1">Day Type Calendar</h5>
+                            <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Click days to assign A/B rotation, mark a range no-school, or tag a Short/Assembly day -- across any month, past or future.</p>
+                            <button type="button" class="modal-footer-button" onclick="openDayTypeEditor()">Open Class Schedule Editor</button>
                         </div>
-                    </details>
-                </div>
 
-                <div class="mb-4">
-                    <h4 class="text-2xl font-semibold mb-3">Data</h4>
-                    <div class="flex flex-wrap gap-3">
-                        <button type="button" class="modal-footer-button bg-red-600" onclick="confirmResetClasses()">Reset Classes to Default</button>
-                        <button type="button" class="modal-footer-button bg-red-600" onclick="confirmResetEverything()">Reset Everything</button>
+                        <div class="mb-6 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4">
+                            <h5 class="text-lg font-semibold mb-2">Lunch Wave</h5>
+                            <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Which lunch wave A Days and B Days each use -- controls which 3rd/7th period + Lunch time applies on multi-wave schedules (Regular, Assembly).</p>
+                            <div id="lunch-wave-settings" class="space-y-1"></div>
+                        </div>
+
+                        <div>
+                            <h5 class="text-lg font-semibold mb-1">Schedule Types</h5>
+                            <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Short Day and Assembly Day are built in; add your own for any other bell-schedule variant your school uses. Edit a type to set its period times (Lunch included).</p>
+                            <div id="schedule-types-list" class="space-y-2 mb-3"></div>
+                            <button type="button" class="modal-footer-button" onclick="addCustomScheduleType()">+ Add Schedule Type</button>
+                        </div>
+
+                        <div class="mt-6">
+                            <h5 class="text-lg font-semibold mb-1">Custom Periods</h5>
+                            <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Add a period beyond the regular 1st-8th/Lunch/Advisory/Assembly set -- for a special block a particular day needs (a club period, an assembly rehearsal, a makeup exam slot, etc). Once added it shows up in every class's period picker and in each schedule type's time editor, same as any built-in period.</p>
+                            <div id="custom-periods-list" class="space-y-2 mb-3"></div>
+                            <button type="button" class="modal-footer-button" onclick="openCustomPeriodModal()">+ Add Custom Period</button>
+                        </div>
+
+                        <details class="mt-6">
+                            <summary class="cursor-pointer text-sm font-semibold text-gray-600 dark:text-gray-300">Advanced: raw date lists</summary>
+                            <div class="mt-4">
+                                <div class="mb-6">
+                                    <h5 class="text-lg font-semibold mb-2">A-Days</h5>
+                                    <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Enter dates in M.D.YYYY format, separated by commas (e.g., 8.18.2025, 8.20.2025). Prefer the Class Schedule Editor above for everyday use -- this is a bulk import/export shortcut.</p>
+                                    <textarea id="adays-input" class="form-input w-full h-32"></textarea>
+                                </div>
+                                <div class="mb-6">
+                                    <h5 class="text-lg font-semibold mb-2">B-Days</h5>
+                                    <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Enter dates in M.D.YYYY format, separated by commas (e.g., 8.19.2025, 8.21.2025).</p>
+                                    <textarea id="bdays-input" class="form-input w-full h-32"></textarea>
+                                </div>
+                                <div class="mb-2">
+                                    <h5 class="text-lg font-semibold mb-2">Clear / No School Days</h5>
+                                    <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Dates listed here have their A/B assignment removed (back to no-school) on Save. A weekday not listed anywhere is already no-school by default -- this box is only needed to explicitly clear an existing assignment via text.</p>
+                                    <textarea id="noschool-input" class="form-input w-full h-24"></textarea>
+                                </div>
+                            </div>
+                        </details>
                     </div>
                 </div>
             </div>
@@ -3795,122 +3791,106 @@ body.dark-theme[data-palette="mint"] {
             </div>
 
             <div class="flex-grow overflow-y-auto pr-4 -mr-4" id="calendar-settings-body">
-            <div class="mb-6">
-                <h4 class="text-lg font-semibold mb-3">Preferences</h4>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Default View</label>
-                        <select id="pref-default-view-select" class="form-select" onchange="saveDefaultViewPref(this.value)">
-                            <option value="month">Month</option>
-                            <option value="week">Week</option>
-                            <option value="day">Day</option>
-                            <option value="agenda">Agenda</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Week Starts On</label>
-                        <select id="pref-week-start-select" class="form-select" onchange="saveWeekStartPref(this.value)">
-                            <option value="0">Sunday</option>
-                            <option value="1">Monday</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mb-6">
-                <h4 class="text-lg font-semibold mb-3">Categories</h4>
-                <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
-                    The categories used for calendar dots, filter chips, the legend, and reminder/countdown tags. Assignment can't be deleted (it's tied to Canvas/CVA), but its color, icon, and label are still yours to change.
-                </p>
-                <div id="calendar-categories-list" class="mb-3"></div>
-                <button type="button" class="modal-footer-button is-secondary" onclick="addCalendarCategory()">+ Add Category</button>
-            </div>
-
-            <div class="mb-6">
-                <h4 class="text-lg font-semibold mb-3">Auto-Categorization Rules</h4>
-                <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
-                    Decides which category a calendar event (not an assignment) gets. Checked top to bottom -- the first matching rule wins. An event that matches nothing falls back to that feed's default category, set below in External Calendars.
-                </p>
-                <div id="calendar-category-rules-list" class="mb-3"></div>
-                <button type="button" class="modal-footer-button is-secondary" onclick="addCalendarCategoryRule()">+ Add Rule</button>
-            </div>
-
-            <div class="mb-6">
-                <h4 class="text-lg font-semibold mb-3">External Calendars</h4>
-                <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
-                    Read-only .ics feeds (sports schedules, school district calendars, etc.) shown alongside your notes. Fetched directly from the browser; if a feed blocks that, a public CORS-proxy is used as a fallback.
-                </p>
-                <div id="external-feeds-list" class="mb-3"></div>
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <input type="text" id="external-feed-label-input" class="form-input" placeholder="Label (e.g. Alta Hawks Athletics)">
-                    <input type="url" id="external-feed-url-input" class="form-input" placeholder="https://.../calendar.ics">
-                    <button type="button" class="modal-footer-button bg-indigo-600 flex-shrink-0" onclick="addExternalFeed()">Add</button>
-                </div>
-                <div class="flex items-center justify-between mt-3">
-                    <div id="external-feeds-status" class="text-xs text-gray-600 dark:text-gray-300"></div>
-                    <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="refreshExternalFeeds(true)">Refresh Now</button>
-                </div>
-            </div>
-
-            <div class="mb-6">
-                <h4 class="text-lg font-semibold mb-3">Google Calendar Sync</h4>
-                <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
-                    Publishes a live .ics feed via a secret GitHub Gist, which Google Calendar can subscribe to. The gist URL is unauthenticated once created — anyone with the link can read it, so keep it as private as the token below.
-                </p>
-                <div class="ics-toggle-row">
-                    <label class="ics-toggle-label">
-                        <input type="checkbox" class="ui-switch" id="ics-include-day-events" onchange="saveIcsEventTogglePref('icsIncludeDayEvents', this.checked)">
-                        <span><strong>A/B Day events</strong> — one event per school day ("A Day - School" / "B Day - School"), with your day notes as the description.</span>
-                    </label>
-                    <label class="ics-toggle-label">
-                        <input type="checkbox" class="ui-switch" id="ics-include-class-events" onchange="saveIcsEventTogglePref('icsIncludeClassEvents', this.checked)">
-                        <span><strong>Individual class events</strong> — one event per class per day ("Class - Teacher | Room"), with that class's quick note as the description.</span>
-                    </label>
-                </div>
-                <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">GitHub Token (Gist read/write scope)</label>
-                <div class="flex gap-2 mb-3">
-                    <input type="password" id="pref-github-token" class="form-input flex-grow" placeholder="github_pat_..." onchange="saveGithubTokenPref(this.value)" autocomplete="off">
-                    <button type="button" class="modal-footer-button is-secondary" onclick="copyGithubToken()" title="Copy this token so you can paste it into the app on another device">Copy Token</button>
-                </div>
-                <div id="gist-sync-status" class="text-xs text-gray-600 dark:text-gray-300 mb-3">Not connected yet.</div>
-                <div id="gist-sync-url-row" class="hidden mb-3">
-                    <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Subscribe in Google Calendar (Other calendars → + → From URL)</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="gist-sync-url" class="form-input" readonly>
-                        <button type="button" class="modal-footer-button bg-indigo-600" onclick="copyGistSyncUrl()">Copy</button>
+            <div class="settings-subcat" data-subcat="calendar-display">
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold mb-3">Calendar Display</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Default View</label>
+                            <select id="pref-default-view-select" class="form-select" onchange="saveDefaultViewPref(this.value)">
+                                <option value="month">Month</option>
+                                <option value="week">Week</option>
+                                <option value="day">Day</option>
+                                <option value="agenda">Agenda</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Week Starts On</label>
+                            <select id="pref-week-start-select" class="form-select" onchange="saveWeekStartPref(this.value)">
+                                <option value="0">Sunday</option>
+                                <option value="1">Monday</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-                <div class="flex flex-wrap gap-2 items-center">
-                    <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="syncNotesToGist(true)">Sync Now</button>
-                    <button type="button" class="modal-footer-button bg-red-600" onclick="confirmResetGistSync()">Reset Sync</button>
-                </div>
-                <p class="text-xs text-gray-600 dark:text-gray-300 mt-2">
-                    If your calendar app stops picking up new changes, use Reset Sync — it deletes the old feed and creates a fresh one. You'll need to re-subscribe with the new URL afterward; the old link stops working.
-                </p>
-
-                <hr class="border-0 h-px bg-gradient-to-r from-transparent via-current opacity-20 my-4">
-
-                <h4 class="text-lg font-semibold mb-2">App Data Backup &amp; Sync</h4>
-                <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
-                    Pushes everything this app stores -- classes, schedule dates, notes, reminders, calendar feeds, Home layout/widgets/presets, preferences -- into the same private gist as a second file, so you can pull it down on another device with just this same token. Auto-syncs a few seconds after any change once a token is set, so you don't need to click Push yourself -- it's still not live/two-way, though: on a second device, whichever side synced most recently wins, so restore right after switching devices instead of editing both at once.
-                </p>
-                <div class="flex flex-wrap gap-2 items-center">
-                    <button type="button" class="modal-footer-button bg-green-600" onclick="pushAppDataToGist(true)">Push Now</button>
-                    <button type="button" class="modal-footer-button bg-indigo-600" onclick="restoreAppDataFromGist()">Restore My Data</button>
-                </div>
-
-                <hr class="border-0 h-px bg-gradient-to-r from-transparent via-current opacity-20 my-4">
-
-                <h4 class="text-lg font-semibold mb-2">Set as Site Defaults</h4>
-                <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
-                    Password-protected. Commits your current classes, schedule, theme, reminders, and calendar feeds straight to GitHub as the new defaults every fresh install of this app starts from. This edits the live source file directly and can't be undone from here.
-                </p>
-                <button type="button" class="modal-footer-button bg-red-600" onclick="promptSetAsSiteDefaults()">Set as Site Defaults</button>
             </div>
 
-            <div>
-                <h4 class="text-lg font-semibold mb-3">Data</h4>
-                <button type="button" class="modal-footer-button bg-red-600" onclick="confirmClearAllNotes()">Clear All Notes</button>
+            <div class="settings-subcat" data-subcat="categories-rules">
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold mb-3">Categories</h4>
+                    <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                        The categories used for calendar dots, filter chips, the legend, and reminder/countdown tags. Assignment can't be deleted (it's tied to Canvas/CVA), but its color, icon, and label are still yours to change.
+                    </p>
+                    <div id="calendar-categories-list" class="mb-3"></div>
+                    <button type="button" class="modal-footer-button is-secondary" onclick="addCalendarCategory()">+ Add Category</button>
+                </div>
+
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold mb-3">Auto-Categorization Rules</h4>
+                    <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                        Decides which category a calendar event (not an assignment) gets. Checked top to bottom -- the first matching rule wins. An event that matches nothing falls back to that feed's default category, set below in External Calendars.
+                    </p>
+                    <div id="calendar-category-rules-list" class="mb-3"></div>
+                    <button type="button" class="modal-footer-button is-secondary" onclick="addCalendarCategoryRule()">+ Add Rule</button>
+                </div>
+            </div>
+
+            <div class="settings-subcat" data-subcat="external-feeds">
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold mb-3">External Calendars</h4>
+                    <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                        Read-only .ics feeds (sports schedules, school district calendars, etc.) shown alongside your notes. Fetched directly from the browser; if a feed blocks that, a public CORS-proxy is used as a fallback.
+                    </p>
+                    <div id="external-feeds-list" class="mb-3"></div>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="external-feed-label-input" class="form-input" placeholder="Label (e.g. Alta Hawks Athletics)">
+                        <input type="url" id="external-feed-url-input" class="form-input" placeholder="https://.../calendar.ics">
+                        <button type="button" class="modal-footer-button bg-indigo-600 flex-shrink-0" onclick="addExternalFeed()">Add</button>
+                    </div>
+                    <div class="flex items-center justify-between mt-3">
+                        <div id="external-feeds-status" class="text-xs text-gray-600 dark:text-gray-300"></div>
+                        <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="refreshExternalFeeds(true)">Refresh Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-subcat" data-subcat="gcal-publish">
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold mb-3">Google Calendar Sync</h4>
+                    <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                        Publishes a live .ics feed via a secret GitHub Gist, which Google Calendar can subscribe to. The gist URL is unauthenticated once created — anyone with the link can read it, so keep it as private as the token below.
+                    </p>
+                    <div class="ics-toggle-row">
+                        <label class="ics-toggle-label">
+                            <input type="checkbox" class="ui-switch" id="ics-include-day-events" onchange="saveIcsEventTogglePref('icsIncludeDayEvents', this.checked)">
+                            <span><strong>A/B Day events</strong> — one event per school day ("A Day - School" / "B Day - School"), with your day notes as the description.</span>
+                        </label>
+                        <label class="ics-toggle-label">
+                            <input type="checkbox" class="ui-switch" id="ics-include-class-events" onchange="saveIcsEventTogglePref('icsIncludeClassEvents', this.checked)">
+                            <span><strong>Individual class events</strong> — one event per class per day ("Class - Teacher | Room"), with that class's quick note as the description.</span>
+                        </label>
+                    </div>
+                    <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">GitHub Token (Gist read/write scope)</label>
+                    <div class="flex gap-2 mb-3">
+                        <input type="password" id="pref-github-token" class="form-input flex-grow" placeholder="github_pat_..." onchange="saveGithubTokenPref(this.value)" autocomplete="off">
+                        <button type="button" class="modal-footer-button is-secondary" onclick="copyGithubToken()" title="Copy this token so you can paste it into the app on another device">Copy Token</button>
+                    </div>
+                    <div id="gist-sync-status" class="text-xs text-gray-600 dark:text-gray-300 mb-3">Not connected yet.</div>
+                    <div id="gist-sync-url-row" class="hidden mb-3">
+                        <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Subscribe in Google Calendar (Other calendars → + → From URL)</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="gist-sync-url" class="form-input" readonly>
+                            <button type="button" class="modal-footer-button bg-indigo-600" onclick="copyGistSyncUrl()">Copy</button>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="syncNotesToGist(true)">Sync Now</button>
+                        <button type="button" class="modal-footer-button bg-red-600" onclick="confirmResetGistSync()">Reset Sync</button>
+                    </div>
+                    <p class="text-xs text-gray-600 dark:text-gray-300 mt-2">
+                        If your calendar app stops picking up new changes, use Reset Sync — it deletes the old feed and creates a fresh one. You'll need to re-subscribe with the new URL afterward; the old link stops working.
+                    </p>
+                </div>
             </div>
             </div>
         </div>
@@ -3945,12 +3925,12 @@ body.dark-theme[data-palette="mint"] {
                     <div class="settings-home-grid" id="settings-home-grid"></div>
                 </div>
 
-                <div class="settings-category" data-settings-category="classes">
+                <div class="settings-category" data-settings-category="classes-wrap">
                     <h4 class="text-2xl font-semibold mb-3">Classes &amp; Schedule</h4>
                     <div id="all-settings-scheduling-slot" class="mb-4"></div>
                 </div>
 
-                <div class="settings-category" data-settings-category="calendar">
+                <div class="settings-category" data-settings-category="calendar-wrap">
                     <h4 class="text-2xl font-semibold mb-3">Calendar</h4>
                     <div id="all-settings-calendar-slot" class="mb-4"></div>
                 </div>
@@ -3964,24 +3944,14 @@ body.dark-theme[data-palette="mint"] {
                     <button type="button" class="modal-footer-button" onclick="resetAllShortcuts()">Reset All to Defaults</button>
                 </div>
 
-                <div class="settings-category" data-settings-category="help">
-                    <div class="mb-4">
-                        <h4 class="text-2xl font-semibold mb-3">Help</h4>
-                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
-                            Replay the guided walkthrough of the app's main screens and widgets.
-                        </p>
-                        <button type="button" class="modal-footer-button bg-indigo-600" onclick="closeAllSettingsModal(); startOnboardingTour();">Take the Tour</button>
-                    </div>
-                </div>
-
-                <div class="settings-category" data-settings-category="data-sync">
-                    <h4 class="text-2xl font-semibold mb-3">Data &amp; Sync</h4>
+                <div class="settings-category" data-settings-category="backup-sync">
+                    <h4 class="text-2xl font-semibold mb-3">Backup &amp; Sync</h4>
                     <p class="text-sm mb-4 text-gray-600 dark:text-gray-300">
-                        Everything for getting data into, out of, or between devices for this app. Google Calendar's live .ics feed sync lives under the <strong>Calendar</strong> tab, alongside the rest of the calendar settings it affects.
+                        Getting your data onto, out of, or between devices. Google Calendar's live .ics feed publishing lives under <strong>Google Calendar Sync</strong> instead, since it's calendar-specific.
                     </p>
 
                     <div class="mb-6">
-                        <h5 class="text-lg font-semibold mb-2">Export &amp; Import</h5>
+                        <h5 class="text-lg font-semibold mb-2">Export &amp; Import (local file)</h5>
                         <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
                             Export everything in this app -- classes, schedule dates, notes, calendar feeds, and preferences -- as one file, and re-import it later on this or another device. The export includes your GitHub sync token if you've set one up, so keep the file as private as you would a password.
                         </p>
@@ -3994,23 +3964,35 @@ body.dark-theme[data-palette="mint"] {
 
                     <hr class="border-0 h-px bg-gradient-to-r from-transparent via-current opacity-20 my-4">
 
-                    <div class="mb-4">
-                        <h5 class="text-lg font-semibold mb-2">Portal Sync (Skyward)</h5>
+                    <div>
+                        <h5 class="text-lg font-semibold mb-2">App Data Sync (GitHub Gist, cross-device)</h5>
                         <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
-                            For schools like Skyward with no API access: install the companion browser extension (in this app's <code>portal-sync-extension</code> folder), browse to your Skyward assignments page while logged in, then export the JSON from the extension's popup and import it here. Assignments with a date the app can understand are folded into Due Soon; the rest still show below so you can check them manually.
+                            Pushes everything this app stores -- classes, schedule dates, notes, reminders, calendar feeds, Home layout/widgets/presets, preferences -- into a private GitHub Gist, so you can pull it down on another device with the same token (set under <strong>Google Calendar Sync</strong>, since it shares that Gist). Auto-syncs a few seconds after any change once a token is set. Not live/two-way: on a second device, whichever side synced most recently wins, so restore right after switching devices instead of editing both at once.
                         </p>
-                        <div class="flex flex-wrap gap-3 items-center">
-                            <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="document.getElementById('portal-sync-import-input').click()">Import Portal Sync JSON</button>
-                            <input type="file" id="portal-sync-import-input" accept="application/json,.json" class="hidden">
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <button type="button" class="modal-footer-button bg-green-600" onclick="pushAppDataToGist(true)">Push Now</button>
+                            <button type="button" class="modal-footer-button bg-indigo-600" onclick="restoreAppDataFromGist()">Restore My Data</button>
                         </div>
-                        <div id="portal-sync-status" class="text-xs text-gray-600 dark:text-gray-300 mt-2"></div>
-                        <div id="portal-sync-unmatched-list" class="mt-3"></div>
                     </div>
                 </div>
 
-                <div class="settings-category" data-settings-category="simulate-date">
-                    <div class="mb-4">
-                        <h4 class="text-2xl font-semibold mb-3">Simulate Date</h4>
+                <div class="settings-category" data-settings-category="portal-sync">
+                    <h4 class="text-2xl font-semibold mb-3">Portal Sync (Skyward)</h4>
+                    <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                        For schools like Skyward with no API access: install the companion browser extension (in this app's <code>portal-sync-extension</code> folder), browse to your Skyward assignments page while logged in, then export the JSON from the extension's popup and import it here. Assignments with a date the app can understand are folded into Due Soon; the rest still show below so you can check them manually.
+                    </p>
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="document.getElementById('portal-sync-import-input').click()">Import Portal Sync JSON</button>
+                        <input type="file" id="portal-sync-import-input" accept="application/json,.json" class="hidden">
+                    </div>
+                    <div id="portal-sync-status" class="text-xs text-gray-600 dark:text-gray-300 mt-2"></div>
+                    <div id="portal-sync-unmatched-list" class="mt-3"></div>
+                </div>
+
+                <div class="settings-category" data-settings-category="developer">
+                    <h4 class="text-2xl font-semibold mb-3">Developer Tools</h4>
+                    <div class="mb-8">
+                        <h5 class="text-lg font-semibold mb-2">Simulate Date</h5>
                         <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
                             Test the app as if it were a different date/time -- class schedules, countdowns, and "no school today" logic all use this instead of your real system clock while it's active. It keeps ticking forward in real time from whatever moment you pick, so clocks and countdowns still move. Nothing here is sent anywhere; it only affects this browser tab.
                         </p>
@@ -4020,6 +4002,36 @@ body.dark-theme[data-palette="mint"] {
                             <button type="button" id="simulate-date-clear-btn" class="modal-footer-button">Clear (use real time)</button>
                         </div>
                         <div id="simulate-date-status" class="text-xs text-gray-600 dark:text-gray-300 mt-2"></div>
+                    </div>
+
+                    <hr class="border-0 h-px bg-gradient-to-r from-transparent via-current opacity-20 my-4">
+
+                    <div>
+                        <h5 class="text-lg font-semibold mb-2">Set as Site Defaults</h5>
+                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                            Password-protected. Commits your current classes, schedule, theme, reminders, and calendar feeds straight to GitHub as the new defaults every fresh install of this app starts from. This edits the live source file directly and can't be undone from here.
+                        </p>
+                        <button type="button" class="modal-footer-button bg-red-600" onclick="promptSetAsSiteDefaults()">Set as Site Defaults</button>
+                    </div>
+                </div>
+
+                <div class="settings-category" data-settings-category="danger-zone">
+                    <h4 class="text-2xl font-semibold mb-3">Danger Zone</h4>
+                    <p class="text-sm mb-4 text-gray-600 dark:text-gray-300">Every action below is destructive and cannot be undone -- grouped together here on purpose, away from everyday settings.</p>
+                    <div class="flex flex-wrap gap-3">
+                        <button type="button" class="modal-footer-button bg-red-600" onclick="confirmClearAllNotes()">Clear All Notes</button>
+                        <button type="button" class="modal-footer-button bg-red-600" onclick="confirmResetClasses()">Reset Classes to Default</button>
+                        <button type="button" class="modal-footer-button bg-red-600" onclick="confirmResetEverything()">Reset Everything</button>
+                    </div>
+                </div>
+
+                <div class="settings-category" data-settings-category="help">
+                    <div class="mb-4">
+                        <h4 class="text-2xl font-semibold mb-3">Help</h4>
+                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                            Replay the guided walkthrough of the app's main screens and widgets.
+                        </p>
+                        <button type="button" class="modal-footer-button bg-indigo-600" onclick="closeAllSettingsModal(); startOnboardingTour();">Take the Tour</button>
                     </div>
                 </div>
             </div>
@@ -4227,40 +4239,54 @@ body.dark-theme[data-palette="mint"] {
         // renderSettingsHomeGrid) and `desc` is the one-line blurb shown on its home-grid card --
         // both purely presentational, so adding a category here only requires an id/label to stay
         // functional, icon/desc are just for the home hub's polish.
+        // Every real settings tab/tile shown on the Settings home grid and in the tab strip.
+        // `parent` is set only for tabs whose content lives inside one of the two borrowed modal
+        // bodies (scheduling-settings-body / calendar-settings-body) -- see showSettingsCategory,
+        // which shows the named parent wrapper and then filters to the matching .settings-subcat
+        // inside it. Tabs with no `parent` own a real top-level .settings-category div directly.
         const SETTINGS_CATEGORIES = [
-            { id: 'classes', label: 'Classes & Schedule', desc: 'Class cards, bell schedule, day types, lunch waves, custom periods.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s4.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>' },
-            { id: 'calendar', label: 'Calendar', desc: 'Categories, filters, external feeds, Google Calendar embed, view defaults.', icon: '<rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"></rect><path stroke-linecap="round" stroke-width="2" d="M16 2v4M8 2v4M3 10h18"></path>' },
+            { id: 'appearance', label: 'Appearance', parent: 'classes-wrap', desc: 'Theme and clock format.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36l-1.42-1.42M7.05 7.05L5.64 5.64m12.72 0l-1.42 1.42M7.05 16.95l-1.41 1.41"></path><circle cx="12" cy="12" r="4" stroke-width="2"></circle>' },
+            { id: 'bell-schedule', label: 'Bell Schedule', parent: 'classes-wrap', desc: 'Day types, lunch waves, schedule types, custom periods.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s4.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>' },
+            { id: 'calendar-display', label: 'Calendar Display', parent: 'calendar-wrap', desc: 'Default view and which day the week starts on.', icon: '<rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"></rect><path stroke-linecap="round" stroke-width="2" d="M16 2v4M8 2v4M3 10h18"></path>' },
+            { id: 'categories-rules', label: 'Categories & Rules', parent: 'calendar-wrap', desc: 'Calendar categories and auto-categorization rules.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M3 12V6a2 2 0 012-2h6l10 10-8 8L3 12z"></path>' },
+            { id: 'external-feeds', label: 'External Calendars', parent: 'calendar-wrap', desc: 'Read-only .ics feeds like sports schedules or district calendars.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 015.656 5.656l-1.5 1.5"></path>' },
+            { id: 'gcal-publish', label: 'Google Calendar Sync', parent: 'calendar-wrap', desc: 'Publish your calendar as a live feed Google Calendar can subscribe to.', icon: '<rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"></rect><path stroke-linecap="round" stroke-width="2" d="M3 10h18M8 2v4M16 2v4M8 15l2 2 4-4"></path>' },
             { id: 'shortcuts', label: 'Keyboard Shortcuts', desc: 'View and rebind every shortcut key in the app.', icon: '<rect x="2" y="6" width="20" height="12" rx="2" stroke-width="2"></rect><path stroke-linecap="round" stroke-width="2" d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h12"></path>' },
-            { id: 'data-sync', label: 'Data & Sync', desc: 'Export/import a full backup, GitHub sync, Skyward portal sync.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4.583 9A8 8 0 0119 8.001M19.417 15A8 8 0 015 15.999"></path>' },
-            { id: 'simulate-date', label: 'Simulate Date', desc: 'Preview the app as if it were a different date/time.', icon: '<circle cx="12" cy="12" r="9" stroke-width="2"></circle><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 7v5l3 3"></path>' },
+            { id: 'backup-sync', label: 'Backup & Sync', desc: 'Export/import a local backup, or sync across devices via GitHub.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4.583 9A8 8 0 0119 8.001M19.417 15A8 8 0 015 15.999"></path>' },
+            { id: 'portal-sync', label: 'Portal Sync', desc: 'Import assignments from Skyward via the companion browser extension.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>' },
+            { id: 'developer', label: 'Developer Tools', desc: 'Simulate a different date/time; commit current data as site defaults.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4-4 4M7 8l-4 4 4 4M14 4l-4 16"></path>' },
+            { id: 'danger-zone', label: 'Danger Zone', desc: 'Clear notes, reset classes, or wipe everything. Cannot be undone.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"></path>' },
             { id: 'help', label: 'Help', desc: 'Replay the guided tour of the app.', icon: '<circle cx="12" cy="12" r="9" stroke-width="2"></circle><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 9a2.25 2.25 0 114.5 1.5c-.5.5-1.5.9-1.5 2.25M12 17h.01"></path>' }
         ];
         // Flat, curated index of individual settings/controls for the search box -- each entry
         // jumps straight to its category (the modal doesn't scroll-to/highlight the exact control,
         // just lands you in the right tab) when a label or one of its keywords matches.
         const SETTINGS_SEARCH_INDEX = [
-            { label: 'Theme (Light/Dark/System)', category: 'classes', keywords: 'appearance dark mode light color palette' },
-            { label: 'Clock Format (12/24-hour)', category: 'classes', keywords: 'time format clock' },
-            { label: 'Day Type Calendar (A/B days)', category: 'classes', keywords: 'schedule a day b day rotation editor' },
-            { label: 'Lunch Wave', category: 'classes', keywords: 'lunch period wave' },
-            { label: 'Schedule Types', category: 'classes', keywords: 'bell schedule short assembly day type' },
-            { label: 'Custom Periods', category: 'classes', keywords: 'period add block' },
-            { label: 'A-Days / B-Days raw date lists', category: 'classes', keywords: 'advanced bulk dates' },
-            { label: 'Reset Classes to Default', category: 'classes', keywords: 'clear classes reset' },
-            { label: 'Reset Everything', category: 'classes', keywords: 'wipe factory reset clear all data' },
-            { label: 'Calendar View Default (Month/Week/etc)', category: 'calendar', keywords: 'default view day week month agenda' },
-            { label: 'Week Start Day', category: 'calendar', keywords: 'sunday monday first day of week' },
-            { label: 'Calendar Categories', category: 'calendar', keywords: 'category color icon label event type' },
-            { label: 'Category Auto-Assign Rules', category: 'calendar', keywords: 'rules keyword auto category' },
-            { label: 'External Calendar Feeds (.ics)', category: 'calendar', keywords: 'ics feed subscribe canvas import calendar url' },
-            { label: 'Google Calendar Embed', category: 'calendar', keywords: 'gcal embed google calendar url show' },
-            { label: 'ICS Export Options', category: 'calendar', keywords: 'export ics include day events class events' },
-            { label: 'GitHub Sync', category: 'data-sync', keywords: 'gist token sync devices backup cloud' },
-            { label: 'Export All Data', category: 'data-sync', keywords: 'backup download json' },
-            { label: 'Import All Data', category: 'data-sync', keywords: 'restore upload json' },
-            { label: 'Portal Sync (Skyward)', category: 'data-sync', keywords: 'skyward extension assignments import' },
+            { label: 'Theme (Light/Dark/System)', category: 'appearance', keywords: 'appearance dark mode light color palette' },
+            { label: 'Clock Format (12/24-hour)', category: 'appearance', keywords: 'time format clock' },
+            { label: 'Day Type Calendar (A/B days)', category: 'bell-schedule', keywords: 'schedule a day b day rotation editor' },
+            { label: 'Lunch Wave', category: 'bell-schedule', keywords: 'lunch period wave' },
+            { label: 'Schedule Types', category: 'bell-schedule', keywords: 'bell schedule short assembly day type' },
+            { label: 'Custom Periods', category: 'bell-schedule', keywords: 'period add block' },
+            { label: 'A-Days / B-Days raw date lists', category: 'bell-schedule', keywords: 'advanced bulk dates' },
+            { label: 'Calendar View Default (Month/Week/etc)', category: 'calendar-display', keywords: 'default view day week month agenda' },
+            { label: 'Week Start Day', category: 'calendar-display', keywords: 'sunday monday first day of week' },
+            { label: 'Calendar Categories', category: 'categories-rules', keywords: 'category color icon label event type' },
+            { label: 'Category Auto-Assign Rules', category: 'categories-rules', keywords: 'rules keyword auto category' },
+            { label: 'External Calendar Feeds (.ics)', category: 'external-feeds', keywords: 'ics feed subscribe canvas import calendar url sports district' },
+            { label: 'Google Calendar Publishing', category: 'gcal-publish', keywords: 'gcal google calendar subscribe url ics export publish' },
+            { label: 'ICS Export Options', category: 'gcal-publish', keywords: 'export ics include day events class events' },
+            { label: 'GitHub Token / Gist Sync', category: 'gcal-publish', keywords: 'gist token github' },
+            { label: 'Export All Data', category: 'backup-sync', keywords: 'backup download json local file' },
+            { label: 'Import All Data', category: 'backup-sync', keywords: 'restore upload json local file' },
+            { label: 'App Data Sync (cross-device)', category: 'backup-sync', keywords: 'push restore gist sync devices cloud' },
+            { label: 'Portal Sync (Skyward)', category: 'portal-sync', keywords: 'skyward extension assignments import' },
             { label: 'Keyboard Shortcuts List', category: 'shortcuts', keywords: 'hotkey key bind remap rebind edit' },
-            { label: 'Simulate Date/Time', category: 'simulate-date', keywords: 'fake test clock override date' },
+            { label: 'Simulate Date/Time', category: 'developer', keywords: 'fake test clock override date' },
+            { label: 'Set as Site Defaults', category: 'developer', keywords: 'admin publish defaults source github' },
+            { label: 'Clear All Notes', category: 'danger-zone', keywords: 'delete wipe day notes' },
+            { label: 'Reset Classes to Default', category: 'danger-zone', keywords: 'clear classes reset' },
+            { label: 'Reset Everything', category: 'danger-zone', keywords: 'wipe factory reset clear all data' },
             { label: 'Take the Tour', category: 'help', keywords: 'tour walkthrough onboarding guide' }
         ];
         function renderSettingsTabs() {
@@ -4314,9 +4340,19 @@ body.dark-theme[data-palette="mint"] {
             if (first) { e.preventDefault(); first.click(); }
         }
         function showSettingsCategory(category) {
-            const valid = category === 'home' || SETTINGS_CATEGORIES.some(c => c.id === category) ? category : 'home';
+            const matched = category === 'home' ? { id: 'home' } : SETTINGS_CATEGORIES.find(c => c.id === category);
+            const valid = matched ? matched.id : 'home';
+            // Tabs whose content lives inside one of the two borrowed modal bodies (see `parent`
+            // on SETTINGS_CATEGORIES) don't own their own top-level .settings-category -- show
+            // that shared parent wrapper instead, then filter down to just this tab's .settings-subcat
+            // inside it so the other subsections sharing that body stay hidden.
+            const parentWrapper = matched && matched.parent;
             document.querySelectorAll('.settings-category').forEach(el => {
-                el.classList.toggle('hidden', el.dataset.settingsCategory !== valid);
+                const id = el.dataset.settingsCategory;
+                el.classList.toggle('hidden', !(id === valid || (parentWrapper && id === parentWrapper)));
+            });
+            document.querySelectorAll('.settings-subcat').forEach(el => {
+                el.classList.toggle('hidden', el.dataset.subcat !== valid);
             });
             document.querySelectorAll('.settings-tab-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.settingsTab === valid);
