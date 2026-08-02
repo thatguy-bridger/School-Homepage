@@ -2392,9 +2392,33 @@ body.dark-theme[data-palette="mint"] {
             gap: 0.75rem;
             font-size: 0.8rem;
             color: var(--text-primary);
-            padding: 0.3rem 0;
+            padding: 0.45rem 0.85rem;
+            background: color-mix(in srgb, var(--accent-2) 6%, var(--glass-bg-strong));
+            border: 1px solid color-mix(in srgb, var(--accent-2) 16%, var(--glass-border));
+            border-radius: 0.75rem;
+            margin-bottom: 0.4rem;
         }
         .ui-setting-row > span:first-child { min-width: 0; }
+
+        /* ===================== SETTINGS AREA THEMING =====================
+           Shared classes so the Settings modal (and the schedule/digest/preview config panels
+           that reuse .ui-setting-row) pick up the active palette instead of flat Tailwind grays --
+           color-mix blends a slice of --accent-2 into the existing text/glass tokens, so it still
+           adapts correctly to light/dark and to a user's custom theme (see createCustomTheme). */
+        .settings-desc { color: color-mix(in srgb, var(--accent-2) 18%, var(--text-secondary)) !important; }
+        .settings-info-box {
+            background: color-mix(in srgb, var(--accent-2) 10%, var(--glass-bg-strong));
+            border: 1px solid color-mix(in srgb, var(--accent-2) 32%, var(--glass-border));
+            border-radius: 1rem;
+        }
+        .settings-list-row {
+            background: color-mix(in srgb, var(--accent-2) 6%, var(--glass-bg-strong));
+            border: 1px solid color-mix(in srgb, var(--accent-2) 16%, var(--glass-border));
+            border-radius: 0.75rem;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+            margin-bottom: 0.4rem;
+        }
         .ui-switch {
             appearance: none;
             -webkit-appearance: none;
@@ -3598,7 +3622,7 @@ body.dark-theme[data-palette="mint"] {
                         <h4 class="text-2xl font-semibold mb-3">Appearance</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Theme</label>
+                                <label class="block text-sm font-medium mb-1 settings-desc">Theme</label>
                                 <select id="pref-theme-select" class="form-select" onchange="applyTheme(this.value)">
                                     <option value="system">System</option>
                                     <option value="light">Light</option>
@@ -3606,21 +3630,21 @@ body.dark-theme[data-palette="mint"] {
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Clock Format</label>
+                                <label class="block text-sm font-medium mb-1 settings-desc">Clock Format</label>
                                 <select id="pref-time-format-select" class="form-select" onchange="saveTimeFormatPref(this.value)">
                                     <option value="12">12-hour (2:30 PM)</option>
                                     <option value="24">24-hour (14:30)</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="mt-4 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4 text-sm text-gray-600 dark:text-gray-300">
+                        <div class="mt-4 rounded-2xl settings-info-box p-4 text-sm settings-desc">
                             Motion (animation) preferences live in the theme popover -- click the theme icon in the top bar.
                         </div>
                     </div>
 
                     <div class="mb-8">
                         <h5 class="text-lg font-semibold mb-2">Color Palette</h5>
-                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">Pick a built-in palette here, or create your own below -- every palette is a 3-color gradient used across accents, glows, and highlights throughout the app.</p>
+                        <p class="text-sm mb-3 settings-desc">Pick a built-in palette here, or create your own below -- every palette is a 3-color gradient used across accents, glows, and highlights throughout the app.</p>
                         <div class="custom-theme-swatch-grid">
                             <button type="button" class="theme-palette-swatch" data-palette="crimson" style="--sw1:#dc2626;--sw2:#ef4444;--sw3:#f87171" onclick="applyPalette('crimson')" title="Crimson"><span class="sr-only">Crimson</span></button>
                             <button type="button" class="theme-palette-swatch" data-palette="coral" style="--sw1:#f97316;--sw2:#fb7185;--sw3:#ec4899" onclick="applyPalette('coral')" title="Coral"><span class="sr-only">Coral</span></button>
@@ -3642,10 +3666,10 @@ body.dark-theme[data-palette="mint"] {
 
                         <h5 class="text-lg font-semibold mb-2 mt-6">Your Custom Themes</h5>
                         <div class="custom-theme-swatch-grid" id="settings-custom-theme-swatches"></div>
-                        <p class="text-xs text-gray-600 dark:text-gray-300 mb-2">Hover a custom theme's swatch to delete it.</p>
+                        <p class="text-xs settings-desc mb-2">Hover a custom theme's swatch to delete it.</p>
 
                         <h5 class="text-lg font-semibold mb-2 mt-4">Create a Theme</h5>
-                        <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">Name it, pick 3 colors for its gradient, then create -- it's applied immediately and saved to Your Custom Themes above.</p>
+                        <p class="text-xs settings-desc mb-3">Name it, pick 3 colors for its gradient, then create -- it's applied immediately and saved to Your Custom Themes above.</p>
                         <div class="custom-theme-form">
                             <div class="custom-theme-preview" id="custom-theme-preview" style="background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);"></div>
                             <input type="text" id="custom-theme-name-input" class="form-input" placeholder="Theme name (e.g. Sunset Beach)">
@@ -3661,48 +3685,48 @@ body.dark-theme[data-palette="mint"] {
                     <div class="mb-8">
                         <h4 class="text-2xl font-semibold mb-3">Bell Schedule</h4>
 
-                        <div class="mb-6 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4">
+                        <div class="mb-6 rounded-2xl settings-info-box p-4">
                             <h5 class="text-lg font-semibold mb-1">Day Type Calendar</h5>
-                            <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Click days to assign A/B rotation, mark a range no-school, or tag a Short/Assembly day -- across any month, past or future.</p>
+                            <p class="settings-desc text-sm mb-3">Click days to assign A/B rotation, mark a range no-school, or tag a Short/Assembly day -- across any month, past or future.</p>
                             <button type="button" class="modal-footer-button" onclick="openDayTypeEditor()">Open Class Schedule Editor</button>
                         </div>
 
-                        <div class="mb-6 rounded-2xl border border-dashed border-gray-300/80 dark:border-gray-700/80 p-4">
+                        <div class="mb-6 rounded-2xl settings-info-box p-4">
                             <h5 class="text-lg font-semibold mb-2">Lunch Wave</h5>
-                            <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Which lunch wave A Days and B Days each use -- controls which 3rd/7th period + Lunch time applies on multi-wave schedules (Regular, Assembly).</p>
+                            <p class="settings-desc text-sm mb-2">Which lunch wave A Days and B Days each use -- controls which 3rd/7th period + Lunch time applies on multi-wave schedules (Regular, Assembly).</p>
                             <div id="lunch-wave-settings" class="space-y-1"></div>
                         </div>
 
                         <div>
                             <h5 class="text-lg font-semibold mb-1">Schedule Types</h5>
-                            <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Short Day and Assembly Day are built in; add your own for any other bell-schedule variant your school uses. Edit a type to set its period times (Lunch included).</p>
+                            <p class="settings-desc text-sm mb-3">Short Day and Assembly Day are built in; add your own for any other bell-schedule variant your school uses. Edit a type to set its period times (Lunch included).</p>
                             <div id="schedule-types-list" class="space-y-2 mb-3"></div>
                             <button type="button" class="modal-footer-button" onclick="addCustomScheduleType()">+ Add Schedule Type</button>
                         </div>
 
                         <div class="mt-6">
                             <h5 class="text-lg font-semibold mb-1">Custom Periods</h5>
-                            <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Add a period beyond the regular 1st-8th/Lunch/Advisory/Assembly set -- for a special block a particular day needs (a club period, an assembly rehearsal, a makeup exam slot, etc). Once added it shows up in every class's period picker and in each schedule type's time editor, same as any built-in period.</p>
+                            <p class="settings-desc text-sm mb-3">Add a period beyond the regular 1st-8th/Lunch/Advisory/Assembly set -- for a special block a particular day needs (a club period, an assembly rehearsal, a makeup exam slot, etc). Once added it shows up in every class's period picker and in each schedule type's time editor, same as any built-in period.</p>
                             <div id="custom-periods-list" class="space-y-2 mb-3"></div>
                             <button type="button" class="modal-footer-button" onclick="openCustomPeriodModal()">+ Add Custom Period</button>
                         </div>
 
                         <details class="mt-6">
-                            <summary class="cursor-pointer text-sm font-semibold text-gray-600 dark:text-gray-300">Advanced: raw date lists</summary>
+                            <summary class="cursor-pointer text-sm font-semibold settings-desc">Advanced: raw date lists</summary>
                             <div class="mt-4">
                                 <div class="mb-6">
                                     <h5 class="text-lg font-semibold mb-2">A-Days</h5>
-                                    <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Enter dates in M.D.YYYY format, separated by commas (e.g., 8.18.2025, 8.20.2025). Prefer the Class Schedule Editor above for everyday use -- this is a bulk import/export shortcut.</p>
+                                    <p class="settings-desc text-sm mb-2">Enter dates in M.D.YYYY format, separated by commas (e.g., 8.18.2025, 8.20.2025). Prefer the Class Schedule Editor above for everyday use -- this is a bulk import/export shortcut.</p>
                                     <textarea id="adays-input" class="form-input w-full h-32"></textarea>
                                 </div>
                                 <div class="mb-6">
                                     <h5 class="text-lg font-semibold mb-2">B-Days</h5>
-                                    <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Enter dates in M.D.YYYY format, separated by commas (e.g., 8.19.2025, 8.21.2025).</p>
+                                    <p class="settings-desc text-sm mb-2">Enter dates in M.D.YYYY format, separated by commas (e.g., 8.19.2025, 8.21.2025).</p>
                                     <textarea id="bdays-input" class="form-input w-full h-32"></textarea>
                                 </div>
                                 <div class="mb-2">
                                     <h5 class="text-lg font-semibold mb-2">Clear / No School Days</h5>
-                                    <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">Dates listed here have their A/B assignment removed (back to no-school) on Save. A weekday not listed anywhere is already no-school by default -- this box is only needed to explicitly clear an existing assignment via text.</p>
+                                    <p class="settings-desc text-sm mb-2">Dates listed here have their A/B assignment removed (back to no-school) on Save. A weekday not listed anywhere is already no-school by default -- this box is only needed to explicitly clear an existing assignment via text.</p>
                                     <textarea id="noschool-input" class="form-input w-full h-24"></textarea>
                                 </div>
                             </div>
@@ -3739,7 +3763,7 @@ body.dark-theme[data-palette="mint"] {
                 </div>
                 <div id="day-type-editor-toolbar" class="flex flex-wrap items-center gap-2 text-sm"></div>
             </div>
-            <p class="text-gray-600 dark:text-gray-300 text-sm mb-3 flex-shrink-0">
+            <p class="settings-desc text-sm mb-3 flex-shrink-0">
                 Click a weekday to assign it the next A/B rotation, or click again to clear it back to no-school. Drag or shift-click a range to assign that whole range, alternating A/B in date order. Select a range and use the toolbar to mark it No School or tag it with a special schedule.
             </p>
 
@@ -3810,7 +3834,7 @@ body.dark-theme[data-palette="mint"] {
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <p class="text-gray-600 text-sm mb-2 dark:text-gray-300 flex-shrink-0">
+            <p class="settings-desc text-sm mb-2 flex-shrink-0">
                 Pick which periods run under this schedule type -- only checked ones get a time card below. Set each one's start/end time in 24-hour format.
             </p>
             <div id="schedule-type-editor-period-picker" class="mb-4 flex-shrink-0 pb-3 border-b border-gray-200 dark:border-gray-700 overflow-y-auto" style="max-height:40vh;"></div>
@@ -3830,7 +3854,7 @@ body.dark-theme[data-palette="mint"] {
     <div id="text-prompt-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[65] hidden opacity-0" onclick="closeTextPromptModal(event)">
         <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-sm p-6 border" onclick="event.stopPropagation()">
             <h3 id="text-prompt-modal-title" class="text-lg font-bold mb-2"></h3>
-            <p id="text-prompt-modal-desc" class="text-sm text-gray-600 dark:text-gray-300 mb-3"></p>
+            <p id="text-prompt-modal-desc" class="text-sm settings-desc mb-3"></p>
             <input type="text" id="text-prompt-modal-input" class="form-input mb-5" onkeydown="if(event.key==='Enter'){event.preventDefault();submitTextPromptModal();}">
             <div class="flex justify-end gap-2">
                 <button type="button" class="modal-footer-button is-secondary" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="closeTextPromptModal()">Cancel</button>
@@ -3879,7 +3903,7 @@ body.dark-theme[data-palette="mint"] {
                     <h4 class="text-lg font-semibold mb-3">Calendar Display</h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Default View</label>
+                            <label class="block text-sm font-medium mb-1 settings-desc">Default View</label>
                             <select id="pref-default-view-select" class="form-select" onchange="saveDefaultViewPref(this.value)">
                                 <option value="month">Month</option>
                                 <option value="week">Week</option>
@@ -3888,7 +3912,7 @@ body.dark-theme[data-palette="mint"] {
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Week Starts On</label>
+                            <label class="block text-sm font-medium mb-1 settings-desc">Week Starts On</label>
                             <select id="pref-week-start-select" class="form-select" onchange="saveWeekStartPref(this.value)">
                                 <option value="0">Sunday</option>
                                 <option value="1">Monday</option>
@@ -3901,7 +3925,7 @@ body.dark-theme[data-palette="mint"] {
             <div class="settings-subcat" data-subcat="categories-rules">
                 <div class="mb-6">
                     <h4 class="text-lg font-semibold mb-3">Categories</h4>
-                    <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                    <p class="text-xs settings-desc mb-3">
                         The categories used for calendar dots, filter chips, the legend, and reminder/countdown tags. Assignment can't be deleted (it's tied to Canvas/CVA), but its color, icon, and label are still yours to change.
                     </p>
                     <div id="calendar-categories-list" class="mb-3"></div>
@@ -3910,7 +3934,7 @@ body.dark-theme[data-palette="mint"] {
 
                 <div class="mb-6">
                     <h4 class="text-lg font-semibold mb-3">Auto-Categorization Rules</h4>
-                    <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                    <p class="text-xs settings-desc mb-3">
                         Decides which category a calendar event (not an assignment) gets. Checked top to bottom -- the first matching rule wins. An event that matches nothing falls back to that feed's default category, set below in External Calendars.
                     </p>
                     <div id="calendar-category-rules-list" class="mb-3"></div>
@@ -3921,7 +3945,7 @@ body.dark-theme[data-palette="mint"] {
             <div class="settings-subcat" data-subcat="calendar-display">
                 <div class="mb-6">
                     <h4 class="text-lg font-semibold mb-3">External Calendars</h4>
-                    <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                    <p class="text-xs settings-desc mb-3">
                         Read-only .ics feeds (sports schedules, school district calendars, etc.) shown alongside your notes. Fetched directly from the browser; if a feed blocks that, a public CORS-proxy is used as a fallback.
                     </p>
                     <div id="external-feeds-list" class="mb-3"></div>
@@ -3931,7 +3955,7 @@ body.dark-theme[data-palette="mint"] {
                         <button type="button" class="modal-footer-button bg-indigo-600 flex-shrink-0" onclick="addExternalFeed()">Add</button>
                     </div>
                     <div class="flex items-center justify-between mt-3">
-                        <div id="external-feeds-status" class="text-xs text-gray-600 dark:text-gray-300"></div>
+                        <div id="external-feeds-status" class="text-xs settings-desc"></div>
                         <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="refreshExternalFeeds(true)">Refresh Now</button>
                     </div>
                 </div>
@@ -3965,7 +3989,7 @@ body.dark-theme[data-palette="mint"] {
             <div class="flex-grow overflow-y-auto pr-4 -mr-4">
                 <div class="settings-category" data-settings-category="home">
                     <h4 class="text-2xl font-semibold mb-3">Settings</h4>
-                    <p class="text-sm mb-4 text-gray-600 dark:text-gray-300">Pick a category below, or search above for a specific setting.</p>
+                    <p class="text-sm mb-4 settings-desc">Pick a category below, or search above for a specific setting.</p>
                     <div class="settings-home-grid" id="settings-home-grid"></div>
                 </div>
 
@@ -3981,7 +4005,7 @@ body.dark-theme[data-palette="mint"] {
 
                 <div class="settings-category" data-settings-category="shortcuts">
                     <h4 class="text-2xl font-semibold mb-3">Keyboard Shortcuts</h4>
-                    <p class="text-sm mb-4 text-gray-600 dark:text-gray-300">
+                    <p class="text-sm mb-4 settings-desc">
                         Click a shortcut's key to rebind it -- then press the new key combination. Shortcuts only fire when you're not typing in a field and no other dialog is open.
                     </p>
                     <div id="settings-shortcuts-list" class="mb-4"></div>
@@ -3990,13 +4014,13 @@ body.dark-theme[data-palette="mint"] {
 
                 <div class="settings-category" data-settings-category="backup-sync">
                     <h4 class="text-2xl font-semibold mb-3">Backup &amp; Sync</h4>
-                    <p class="text-sm mb-4 text-gray-600 dark:text-gray-300">
+                    <p class="text-sm mb-4 settings-desc">
                         Everything for getting data onto, out of, or between devices -- Google Calendar publishing and app backup/restore both ride on the same GitHub Gist token, so they live together here.
                     </p>
 
                     <div class="mb-6">
                         <h5 class="text-lg font-semibold mb-2">Google Calendar Sync</h5>
-                        <p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                        <p class="text-xs settings-desc mb-3">
                             Publishes a live .ics feed via a secret GitHub Gist, which Google Calendar can subscribe to. The gist URL is unauthenticated once created — anyone with the link can read it, so keep it as private as the token below.
                         </p>
                         <div class="ics-toggle-row">
@@ -4009,14 +4033,14 @@ body.dark-theme[data-palette="mint"] {
                                 <span><strong>Individual class events</strong> — one event per class per day ("Class - Teacher | Room"), with that class's quick note as the description.</span>
                             </label>
                         </div>
-                        <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">GitHub Token (Gist read/write scope)</label>
+                        <label class="block text-sm font-medium mb-1 settings-desc">GitHub Token (Gist read/write scope)</label>
                         <div class="flex gap-2 mb-3">
                             <input type="password" id="pref-github-token" class="form-input flex-grow" placeholder="github_pat_..." onchange="saveGithubTokenPref(this.value)" autocomplete="off">
                             <button type="button" class="modal-footer-button is-secondary" onclick="copyGithubToken()" title="Copy this token so you can paste it into the app on another device">Copy Token</button>
                         </div>
-                        <div id="gist-sync-status" class="text-xs text-gray-600 dark:text-gray-300 mb-3">Not connected yet.</div>
+                        <div id="gist-sync-status" class="text-xs settings-desc mb-3">Not connected yet.</div>
                         <div id="gist-sync-url-row" class="hidden mb-3">
-                            <label class="block text-sm font-medium mb-1 text-gray-600 dark:text-gray-300">Subscribe in Google Calendar (Other calendars → + → From URL)</label>
+                            <label class="block text-sm font-medium mb-1 settings-desc">Subscribe in Google Calendar (Other calendars → + → From URL)</label>
                             <div class="flex gap-2">
                                 <input type="text" id="gist-sync-url" class="form-input" readonly>
                                 <button type="button" class="modal-footer-button bg-indigo-600" onclick="copyGistSyncUrl()">Copy</button>
@@ -4026,7 +4050,7 @@ body.dark-theme[data-palette="mint"] {
                             <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="syncNotesToGist(true)">Sync Now</button>
                             <button type="button" class="modal-footer-button bg-red-600" onclick="confirmResetGistSync()">Reset Sync</button>
                         </div>
-                        <p class="text-xs text-gray-600 dark:text-gray-300 mt-2">
+                        <p class="text-xs settings-desc mt-2">
                             If your calendar app stops picking up new changes, use Reset Sync — it deletes the old feed and creates a fresh one. You'll need to re-subscribe with the new URL afterward; the old link stops working.
                         </p>
                     </div>
@@ -4035,7 +4059,7 @@ body.dark-theme[data-palette="mint"] {
 
                     <div class="mb-6">
                         <h5 class="text-lg font-semibold mb-2">Export &amp; Import (local file)</h5>
-                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                        <p class="text-sm mb-3 settings-desc">
                             Export everything in this app -- classes, schedule dates, notes, calendar feeds, and preferences -- as one file, and re-import it later on this or another device. The export includes your GitHub sync token if you've set one up, so keep the file as private as you would a password.
                         </p>
                         <div class="flex flex-wrap gap-3 items-center">
@@ -4049,7 +4073,7 @@ body.dark-theme[data-palette="mint"] {
 
                     <div>
                         <h5 class="text-lg font-semibold mb-2">App Data Sync (GitHub Gist, cross-device)</h5>
-                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                        <p class="text-sm mb-3 settings-desc">
                             Pushes everything this app stores -- classes, schedule dates, notes, reminders, calendar feeds, Home layout/widgets/presets, preferences -- into the same private Gist as a second file, so you can pull it down on another device with the same token above. Auto-syncs a few seconds after any change once a token is set. Not live/two-way: on a second device, whichever side synced most recently wins, so restore right after switching devices instead of editing both at once.
                         </p>
                         <div class="flex flex-wrap gap-2 items-center">
@@ -4061,14 +4085,14 @@ body.dark-theme[data-palette="mint"] {
 
                 <div class="settings-category" data-settings-category="portal-sync">
                     <h4 class="text-2xl font-semibold mb-3">Portal Sync (Skyward)</h4>
-                    <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                    <p class="text-sm mb-3 settings-desc">
                         For schools like Skyward with no API access: install the companion browser extension (in this app's <code>portal-sync-extension</code> folder), browse to your Skyward assignments page while logged in, then export the JSON from the extension's popup and import it here. Assignments with a date the app can understand are folded into Due Soon; the rest still show below so you can check them manually.
                     </p>
                     <div class="flex flex-wrap gap-3 items-center">
                         <button type="button" class="modal-footer-button bg-blue-600 text-white" onclick="document.getElementById('portal-sync-import-input').click()">Import Portal Sync JSON</button>
                         <input type="file" id="portal-sync-import-input" accept="application/json,.json" class="hidden">
                     </div>
-                    <div id="portal-sync-status" class="text-xs text-gray-600 dark:text-gray-300 mt-2"></div>
+                    <div id="portal-sync-status" class="text-xs settings-desc mt-2"></div>
                     <div id="portal-sync-unmatched-list" class="mt-3"></div>
                 </div>
 
@@ -4076,7 +4100,7 @@ body.dark-theme[data-palette="mint"] {
                     <h4 class="text-2xl font-semibold mb-3">Developer Tools</h4>
                     <div class="mb-8">
                         <h5 class="text-lg font-semibold mb-2">Simulate Date</h5>
-                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                        <p class="text-sm mb-3 settings-desc">
                             Test the app as if it were a different date/time -- class schedules, countdowns, and "no school today" logic all use this instead of your real system clock while it's active. It keeps ticking forward in real time from whatever moment you pick, so clocks and countdowns still move. Nothing here is sent anywhere; it only affects this browser tab.
                         </p>
                         <div class="flex flex-wrap gap-3 items-center">
@@ -4084,14 +4108,14 @@ body.dark-theme[data-palette="mint"] {
                             <button type="button" id="simulate-date-apply-btn" class="modal-footer-button bg-blue-600 text-white">Apply</button>
                             <button type="button" id="simulate-date-clear-btn" class="modal-footer-button">Clear (use real time)</button>
                         </div>
-                        <div id="simulate-date-status" class="text-xs text-gray-600 dark:text-gray-300 mt-2"></div>
+                        <div id="simulate-date-status" class="text-xs settings-desc mt-2"></div>
                     </div>
 
                     <hr class="border-0 h-px bg-gradient-to-r from-transparent via-current opacity-20 my-4">
 
                     <div>
                         <h5 class="text-lg font-semibold mb-2">Set as Site Defaults</h5>
-                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                        <p class="text-sm mb-3 settings-desc">
                             Password-protected. Commits your current classes, schedule, theme, reminders, and calendar feeds straight to GitHub as the new defaults every fresh install of this app starts from. This edits the live source file directly and can't be undone from here.
                         </p>
                         <button type="button" class="modal-footer-button bg-red-600" onclick="promptSetAsSiteDefaults()">Set as Site Defaults</button>
@@ -4100,7 +4124,7 @@ body.dark-theme[data-palette="mint"] {
 
                 <div class="settings-category" data-settings-category="danger-zone">
                     <h4 class="text-2xl font-semibold mb-3">Danger Zone</h4>
-                    <p class="text-sm mb-4 text-gray-600 dark:text-gray-300">Every action below is destructive and cannot be undone -- grouped together here on purpose, away from everyday settings.</p>
+                    <p class="text-sm mb-4 settings-desc">Every action below is destructive and cannot be undone -- grouped together here on purpose, away from everyday settings.</p>
                     <div class="flex flex-wrap gap-3">
                         <button type="button" class="modal-footer-button bg-red-600" onclick="confirmClearAllNotes()">Clear All Notes</button>
                         <button type="button" class="modal-footer-button bg-red-600" onclick="confirmResetClasses()">Reset Classes to Default</button>
@@ -4111,7 +4135,7 @@ body.dark-theme[data-palette="mint"] {
                 <div class="settings-category" data-settings-category="help">
                     <div class="mb-4">
                         <h4 class="text-2xl font-semibold mb-3">Help</h4>
-                        <p class="text-sm mb-3 text-gray-600 dark:text-gray-300">
+                        <p class="text-sm mb-3 settings-desc">
                             Replay the guided walkthrough of the app's main screens and widgets.
                         </p>
                         <button type="button" class="modal-footer-button bg-indigo-600" onclick="closeAllSettingsModal(); startOnboardingTour();">Take the Tour</button>
@@ -4703,7 +4727,7 @@ body.dark-theme[data-palette="mint"] {
             if (settingsSlot) {
                 settingsSlot.innerHTML = customThemes.length
                     ? customThemes.map(t => customThemeSwatchHtml(t, true)).join('')
-                    : `<p class="text-xs text-gray-600 dark:text-gray-300">No custom themes yet -- create one below.</p>`;
+                    : `<p class="text-xs settings-desc">No custom themes yet -- create one below.</p>`;
             }
             document.querySelectorAll('.theme-palette-swatch').forEach(s => s.classList.toggle('active', s.dataset.palette === currentPaletteState));
         }
@@ -6559,7 +6583,7 @@ body.dark-theme[data-palette="mint"] {
             if (!el) return;
             el.innerHTML = scheduleTypes.map(st => `
                 <div class="flex items-center gap-2 ui-setting-row">
-                    <span class="flex-1 font-medium">${escapeHtml(st.label)}${st.builtin ? ' <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(built-in)</span>' : ''}</span>
+                    <span class="flex-1 font-medium">${escapeHtml(st.label)}${st.builtin ? ' <span class="text-xs settings-desc font-normal">(built-in)</span>' : ''}</span>
                     <button type="button" class="modal-footer-button" style="padding:0.35rem 0.75rem;font-size:0.75rem;" onclick="openScheduleTypeEditor('${escapeJsAttr(st.id)}')">Edit</button>
                     ${st.builtin ? '' : `<button type="button" class="modal-footer-button bg-red-600" style="padding:0.35rem 0.75rem;font-size:0.75rem;" onclick="removeScheduleType('${escapeJsAttr(st.id)}')">Delete</button>`}
                 </div>
@@ -6620,7 +6644,7 @@ body.dark-theme[data-palette="mint"] {
                 const scopeLabel = s.custom ? (s.scope === 'any' ? 'any day' : s.scope + ' Day only') : (s.value === 'ADVISORY' || s.value === 'ASSEMBLY' ? 'any day' : (s.value.split('_')[0] === 'A' ? 'A Day only' : 'B Day only'));
                 return `
                 <div class="flex items-center gap-2 ui-setting-row">
-                    <span class="flex-1 font-medium">${escapeHtml(s.label)} <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(${scopeLabel}${s.custom ? '' : ' &middot; built-in'})</span></span>
+                    <span class="flex-1 font-medium">${escapeHtml(s.label)} <span class="text-xs settings-desc font-normal">(${scopeLabel}${s.custom ? '' : ' &middot; built-in'})</span></span>
                     ${s.custom ? `<button type="button" class="modal-footer-button bg-red-600" style="padding:0.35rem 0.75rem;font-size:0.75rem;" onclick="removeCustomPeriodSlot('${escapeJsAttr(s.value)}')">Remove</button>` : ''}
                 </div>
             `;
@@ -6756,7 +6780,7 @@ body.dark-theme[data-palette="mint"] {
             const groupHtml = (key, label, slots) => `
                 <div class="rounded-lg border border-gray-200 dark:border-gray-700 mb-2 overflow-hidden">
                     <button type="button" class="w-full flex items-center justify-between px-3 py-2 text-sm font-semibold bg-gray-50 dark:bg-gray-800/60" onclick="toggleScheduleTypeEditorGroup('${key}')">
-                        <span>${label} <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(${slots.length})</span></span>
+                        <span>${label} <span class="text-xs settings-desc font-normal">(${slots.length})</span></span>
                         <svg class="w-4 h-4 transition-transform ${scheduleTypeEditorGroupsOpen[key] ? '' : '-rotate-90'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div class="mini-cal-config-grid p-3 ${scheduleTypeEditorGroupsOpen[key] ? '' : 'hidden'}">
@@ -6795,7 +6819,7 @@ body.dark-theme[data-palette="mint"] {
             // scroll through.
             grid.className = 'grid grid-cols-2 sm:grid-cols-3 gap-2 overflow-y-auto flex-grow content-start';
             if (!periodsToDisplay.length) {
-                grid.innerHTML = `<p class="text-sm text-gray-500 dark:text-gray-400 col-span-full text-center">No periods selected yet -- check some above.</p>`;
+                grid.innerHTML = `<p class="text-sm settings-desc col-span-full text-center">No periods selected yet -- check some above.</p>`;
                 return;
             }
             grid.innerHTML = periodsToDisplay.map(slot => {
@@ -6809,7 +6833,7 @@ body.dark-theme[data-palette="mint"] {
                     const slotDayType = slot.value.split('_')[0];
                     const wave = lunchWaveByDayType[slotDayType] || '1st';
                     const waveLabel = wave === '2nd' ? '2nd Lunch' : '1st Lunch';
-                    rowsHtml = `<div><label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">${waveLabel}</label>${timeRangeInputsHtml(slot.value, stId, wave, t[wave])}</div>`;
+                    rowsHtml = `<div><label class="block text-xs font-medium settings-desc mb-0.5">${waveLabel}</label>${timeRangeInputsHtml(slot.value, stId, wave, t[wave])}</div>`;
                 } else {
                     rowsHtml = timeRangeInputsHtml(slot.value, stId, '', t);
                 }
@@ -7436,7 +7460,7 @@ body.dark-theme[data-palette="mint"] {
                 `).join('');
 
                 scheduleSectionHtml = `
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Other days don't follow the A/B bell schedule -- toggle on whichever periods run this day and set their own times.</p>
+                    <p class="text-xs settings-desc mb-2">Other days don't follow the A/B bell schedule -- toggle on whichever periods run this day and set their own times.</p>
                     <div class="overflow-y-auto mb-2" style="max-height:26rem;">
                         ${kindsHtml}
                         ${adHocHtml}
@@ -7465,7 +7489,7 @@ body.dark-theme[data-palette="mint"] {
                             </div>
                         `).join('')}
                     </div>`
-                    : `<p class="text-sm text-gray-500 dark:text-gray-400">No periods run under this schedule type yet -- set them up in the Schedule Type Editor first.</p>`;
+                    : `<p class="text-sm settings-desc">No periods run under this schedule type yet -- set them up in the Schedule Type Editor first.</p>`;
 
                 customSectionHtml = `
                     <label class="ui-setting-row mb-3" title="Override just this date's period times, without changing the shared schedule type">
@@ -9975,7 +9999,7 @@ body.dark-theme[data-palette="mint"] {
                     return `
                         <div class="shortcut-group">
                             <h5 class="text-lg font-semibold mb-1">${escapeHtml(g.name)}</h5>
-                            <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Fixed to the number row (0-8) so they can't collide with letter shortcuts above. ${escapeHtml(PERIOD_SHORTCUT_INFO.note)}</p>
+                            <p class="settings-desc text-sm mb-3">Fixed to the number row (0-8) so they can't collide with letter shortcuts above. ${escapeHtml(PERIOD_SHORTCUT_INFO.note)}</p>
                             <div class="shortcut-period-grid">
                                 ${Array.from({ length: 9 }, (_, n) => `
                                     <div class="shortcut-row">
@@ -11852,7 +11876,7 @@ body.dark-theme[data-palette="mint"] {
             const container = document.getElementById('external-feeds-list');
             if (!container) return;
             if (externalFeeds.length === 0) {
-                container.innerHTML = `<p class="text-xs text-gray-500 dark:text-gray-400">No external calendars added yet.</p>`;
+                container.innerHTML = `<p class="text-xs settings-desc">No external calendars added yet.</p>`;
                 return;
             }
             const cache = getExternalFeedCache();
@@ -11867,7 +11891,7 @@ body.dark-theme[data-palette="mint"] {
                     </p>
                 ` : '';
                 return `
-                <div class="grid grid-cols-[22px_40px_1fr_auto] items-center gap-3 text-sm py-2">
+                <div class="grid grid-cols-[22px_40px_1fr_auto] items-center gap-3 text-sm py-2 settings-list-row">
                     <div class="flex flex-col gap-0.5">
                         <button type="button" class="feed-reorder-btn" onclick="moveExternalFeed('${feed.id}', -1)" title="Move up" ${i === 0 ? 'disabled' : ''}>
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7"></path></svg>
@@ -12381,7 +12405,7 @@ body.dark-theme[data-palette="mint"] {
             const container = document.getElementById('calendar-categories-list');
             if (!container) return;
             container.innerHTML = calendarCategories.map((c, i) => `
-                <div class="grid grid-cols-[22px_36px_36px_1fr_auto] items-center gap-3 text-sm py-2">
+                <div class="grid grid-cols-[22px_36px_36px_1fr_auto] items-center gap-3 text-sm py-2 settings-list-row">
                     <div class="flex flex-col gap-0.5">
                         <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategory('${escapeJsAttr(c.id)}', -1)" title="Move up" ${i === 0 ? 'disabled' : ''}>
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7"></path></svg>
@@ -12524,7 +12548,7 @@ body.dark-theme[data-palette="mint"] {
             const container = document.getElementById('calendar-category-rules-list');
             if (!container) return;
             if (!calendarCategoryRules.length) {
-                container.innerHTML = `<p class="text-xs text-gray-500 dark:text-gray-400">No rules yet -- every non-assignment event will use its feed's default category.</p>`;
+                container.innerHTML = `<p class="text-xs settings-desc">No rules yet -- every non-assignment event will use its feed's default category.</p>`;
                 return;
             }
             const feedOptions = (selected) => `
@@ -12533,7 +12557,7 @@ body.dark-theme[data-palette="mint"] {
             `;
             const categoryOptions = (selected) => calendarCategories.map(c => `<option value="${escapeAttr(c.id)}" ${selected === c.id ? 'selected' : ''}>${escapeHtml(c.label)}</option>`).join('');
             container.innerHTML = calendarCategoryRules.map((r, i) => `
-                <div class="rule-row-wrap" style="border:1px solid var(--glass-border); border-radius:0.7rem; padding:0.6rem 0.75rem; margin-bottom:0.5rem;">
+                <div class="rule-row-wrap settings-list-row" style="border-radius:0.7rem; padding:0.6rem 0.75rem;">
                     <div class="flex items-start gap-2">
                         <div class="flex flex-col gap-0.5 flex-shrink-0" style="margin-top:0.15rem;">
                             <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategoryRule('${escapeJsAttr(r.id)}', -1)" title="Move up" ${i === 0 ? 'disabled' : ''}>

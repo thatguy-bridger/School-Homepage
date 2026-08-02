@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T10:00:00Z",
+  "title": "Settings area now picks up your theme's colors instead of flat gray",
+  "summary": [
+    "The Settings modal (and the schedule/digest/preview config rows it shares with other panels) used to be plain gray text on fully transparent boxes, regardless of which color palette was active -- it looked the same whether your theme was Crimson or Slate.",
+    "Description text now blends a slice of your active accent color into its usual gray (light/dark still respected), the dashed-outline info boxes got a tinted themed background and border instead of empty transparency, and every settings list row (Schedule Types, External Calendars, Categories, Auto-Categorization Rules, digest/preview toggle rows) got a subtle themed background fill instead of sitting invisibly on the modal. Switching palettes -- including a custom one you create -- now visibly changes the Settings area's colors, not just the accent buttons."
+  ]
+}
