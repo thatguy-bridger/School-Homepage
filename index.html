@@ -2105,7 +2105,111 @@ body.dark-theme[data-palette="mint"] {
         }
         .settings-tab-btn:hover { color: var(--text-primary); }
         .settings-tab-btn.active { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
+        .settings-tab-btn.is-home-tab { margin-right: 0.35rem; }
         .settings-category.hidden { display: none; }
+
+        /* ---- Settings search ---- */
+        .settings-search-wrap { position: relative; margin-bottom: 1rem; flex-shrink: 0; }
+        .settings-search-input {
+            width: 100%;
+            padding: 0.7rem 1rem 0.7rem 2.6rem;
+            border-radius: 9999px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-strong);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+        .settings-search-input:focus { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+        .settings-search-icon {
+            position: absolute; left: 0.95rem; top: 50%; transform: translateY(-50%);
+            width: 1.1rem; height: 1.1rem; color: var(--text-muted); pointer-events: none;
+        }
+        .settings-search-results {
+            position: absolute; top: calc(100% + 0.4rem); left: 0; right: 0;
+            background: var(--modal-bg, var(--glass-bg-strong));
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+            max-height: 60vh;
+            overflow-y: auto;
+            z-index: 20;
+        }
+        .settings-search-results.hidden { display: none; }
+        .settings-search-result-item {
+            display: flex; flex-direction: column; gap: 0.15rem;
+            width: 100%; text-align: left;
+            padding: 0.65rem 1rem;
+            border: none; background: transparent; cursor: pointer;
+            color: var(--text-primary);
+        }
+        .settings-search-result-item:hover, .settings-search-result-item.is-active { background: var(--glass-bg); }
+        .settings-search-result-title { font-size: 0.88rem; font-weight: 700; }
+        .settings-search-result-cat { font-size: 0.72rem; color: var(--text-muted); }
+        .settings-search-empty { padding: 0.9rem 1rem; font-size: 0.85rem; color: var(--text-muted); }
+
+        /* ---- Settings home grid ---- */
+        .settings-home-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.9rem;
+        }
+        .settings-home-card {
+            display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem;
+            padding: 1.1rem;
+            border-radius: 1.25rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-strong);
+            cursor: pointer;
+            text-align: left;
+            transition: transform 0.12s ease, border-color 0.12s ease;
+        }
+        .settings-home-card:hover { border-color: var(--accent-2); transform: translateY(-2px); }
+        .settings-home-card-icon {
+            width: 2.5rem; height: 2.5rem;
+            border-radius: 0.85rem;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--accent-2);
+            color: #fff;
+        }
+        .settings-home-card-icon svg { width: 1.3rem; height: 1.3rem; }
+        .settings-home-card-title { font-size: 1.02rem; font-weight: 700; color: var(--text-primary); }
+        .settings-home-card-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.35; }
+
+        /* ---- Keyboard shortcuts editor ---- */
+        .shortcut-group { margin-bottom: 1.75rem; }
+        .shortcut-rows, .shortcut-period-grid { display: flex; flex-direction: column; gap: 0.4rem; }
+        .shortcut-period-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.4rem; }
+        .shortcut-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+            padding: 0.55rem 0.9rem;
+            border-radius: 0.85rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg-strong);
+        }
+        .shortcut-row-label { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+        .shortcut-row-actions { display: flex; align-items: center; gap: 0.5rem; }
+        .shortcut-row kbd, .shortcut-kbd-btn kbd {
+            display: inline-block;
+            padding: 0.2rem 0.55rem;
+            border-radius: 0.4rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            font-family: ui-monospace, monospace;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+        .shortcut-kbd-btn {
+            border: none; background: transparent; cursor: pointer; padding: 0;
+            color: var(--text-primary);
+        }
+        .shortcut-kbd-btn.is-listening { font-size: 0.78rem; font-weight: 700; color: var(--accent-3); }
+        .shortcut-reset-btn, .shortcut-cancel-btn {
+            font-size: 0.72rem; font-weight: 700;
+            color: var(--text-muted);
+            background: transparent; border: none; cursor: pointer;
+            text-decoration: underline;
+        }
+        .shortcut-reset-btn:hover, .shortcut-cancel-btn:hover { color: var(--text-primary); }
 
         /* ===================== HOME SCREEN EDITOR (true 12-column square-cell grid,
            iOS/Android-launcher-style) ===================== */
@@ -3826,9 +3930,21 @@ body.dark-theme[data-palette="mint"] {
                 </button>
             </div>
 
+            <div class="settings-search-wrap">
+                <svg class="settings-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"></path></svg>
+                <input type="text" id="settings-search-input" class="settings-search-input" placeholder="Search settings…" autocomplete="off" oninput="handleSettingsSearchInput(this.value)" onkeydown="handleSettingsSearchKeydown(event)">
+                <div id="settings-search-results" class="settings-search-results hidden"></div>
+            </div>
+
             <div class="settings-tabs" id="settings-tabs" role="tablist"></div>
 
             <div class="flex-grow overflow-y-auto pr-4 -mr-4">
+                <div class="settings-category" data-settings-category="home">
+                    <h4 class="text-2xl font-semibold mb-3">Settings</h4>
+                    <p class="text-sm mb-4 text-gray-600 dark:text-gray-300">Pick a category below, or search above for a specific setting.</p>
+                    <div class="settings-home-grid" id="settings-home-grid"></div>
+                </div>
+
                 <div class="settings-category" data-settings-category="classes">
                     <h4 class="text-2xl font-semibold mb-3">Classes &amp; Schedule</h4>
                     <div id="all-settings-scheduling-slot" class="mb-4"></div>
@@ -3837,6 +3953,15 @@ body.dark-theme[data-palette="mint"] {
                 <div class="settings-category" data-settings-category="calendar">
                     <h4 class="text-2xl font-semibold mb-3">Calendar</h4>
                     <div id="all-settings-calendar-slot" class="mb-4"></div>
+                </div>
+
+                <div class="settings-category" data-settings-category="shortcuts">
+                    <h4 class="text-2xl font-semibold mb-3">Keyboard Shortcuts</h4>
+                    <p class="text-sm mb-4 text-gray-600 dark:text-gray-300">
+                        Click a shortcut's key to rebind it -- then press the new key combination. Shortcuts only fire when you're not typing in a field and no other dialog is open.
+                    </p>
+                    <div id="settings-shortcuts-list" class="mb-4"></div>
+                    <button type="button" class="modal-footer-button" onclick="resetAllShortcuts()">Reset All to Defaults</button>
                 </div>
 
                 <div class="settings-category" data-settings-category="help">
@@ -4098,28 +4223,105 @@ body.dark-theme[data-palette="mint"] {
         // ===================== MERGED SETTINGS MODAL (single entry point for every "Settings"
         // button in the app -- Classes/Calendar/hub dock all open this same modal, each just
         // passing which category should be showing when it opens) =====================
+        // Each category's `icon` is a bare <path>/<circle> set (no wrapping <svg>, filled in by
+        // renderSettingsHomeGrid) and `desc` is the one-line blurb shown on its home-grid card --
+        // both purely presentational, so adding a category here only requires an id/label to stay
+        // functional, icon/desc are just for the home hub's polish.
         const SETTINGS_CATEGORIES = [
-            { id: 'classes', label: 'Classes & Schedule' },
-            { id: 'calendar', label: 'Calendar' },
-            { id: 'help', label: 'Help' },
-            { id: 'data-sync', label: 'Data & Sync' },
-            { id: 'simulate-date', label: 'Simulate Date' }
+            { id: 'classes', label: 'Classes & Schedule', desc: 'Class cards, bell schedule, day types, lunch waves, custom periods.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s4.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>' },
+            { id: 'calendar', label: 'Calendar', desc: 'Categories, filters, external feeds, Google Calendar embed, view defaults.', icon: '<rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"></rect><path stroke-linecap="round" stroke-width="2" d="M16 2v4M8 2v4M3 10h18"></path>' },
+            { id: 'shortcuts', label: 'Keyboard Shortcuts', desc: 'View and rebind every shortcut key in the app.', icon: '<rect x="2" y="6" width="20" height="12" rx="2" stroke-width="2"></rect><path stroke-linecap="round" stroke-width="2" d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h12"></path>' },
+            { id: 'data-sync', label: 'Data & Sync', desc: 'Export/import a full backup, GitHub sync, Skyward portal sync.', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4.583 9A8 8 0 0119 8.001M19.417 15A8 8 0 015 15.999"></path>' },
+            { id: 'simulate-date', label: 'Simulate Date', desc: 'Preview the app as if it were a different date/time.', icon: '<circle cx="12" cy="12" r="9" stroke-width="2"></circle><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 7v5l3 3"></path>' },
+            { id: 'help', label: 'Help', desc: 'Replay the guided tour of the app.', icon: '<circle cx="12" cy="12" r="9" stroke-width="2"></circle><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 9a2.25 2.25 0 114.5 1.5c-.5.5-1.5.9-1.5 2.25M12 17h.01"></path>' }
+        ];
+        // Flat, curated index of individual settings/controls for the search box -- each entry
+        // jumps straight to its category (the modal doesn't scroll-to/highlight the exact control,
+        // just lands you in the right tab) when a label or one of its keywords matches.
+        const SETTINGS_SEARCH_INDEX = [
+            { label: 'Theme (Light/Dark/System)', category: 'classes', keywords: 'appearance dark mode light color palette' },
+            { label: 'Clock Format (12/24-hour)', category: 'classes', keywords: 'time format clock' },
+            { label: 'Day Type Calendar (A/B days)', category: 'classes', keywords: 'schedule a day b day rotation editor' },
+            { label: 'Lunch Wave', category: 'classes', keywords: 'lunch period wave' },
+            { label: 'Schedule Types', category: 'classes', keywords: 'bell schedule short assembly day type' },
+            { label: 'Custom Periods', category: 'classes', keywords: 'period add block' },
+            { label: 'A-Days / B-Days raw date lists', category: 'classes', keywords: 'advanced bulk dates' },
+            { label: 'Reset Classes to Default', category: 'classes', keywords: 'clear classes reset' },
+            { label: 'Reset Everything', category: 'classes', keywords: 'wipe factory reset clear all data' },
+            { label: 'Calendar View Default (Month/Week/etc)', category: 'calendar', keywords: 'default view day week month agenda' },
+            { label: 'Week Start Day', category: 'calendar', keywords: 'sunday monday first day of week' },
+            { label: 'Calendar Categories', category: 'calendar', keywords: 'category color icon label event type' },
+            { label: 'Category Auto-Assign Rules', category: 'calendar', keywords: 'rules keyword auto category' },
+            { label: 'External Calendar Feeds (.ics)', category: 'calendar', keywords: 'ics feed subscribe canvas import calendar url' },
+            { label: 'Google Calendar Embed', category: 'calendar', keywords: 'gcal embed google calendar url show' },
+            { label: 'ICS Export Options', category: 'calendar', keywords: 'export ics include day events class events' },
+            { label: 'GitHub Sync', category: 'data-sync', keywords: 'gist token sync devices backup cloud' },
+            { label: 'Export All Data', category: 'data-sync', keywords: 'backup download json' },
+            { label: 'Import All Data', category: 'data-sync', keywords: 'restore upload json' },
+            { label: 'Portal Sync (Skyward)', category: 'data-sync', keywords: 'skyward extension assignments import' },
+            { label: 'Keyboard Shortcuts List', category: 'shortcuts', keywords: 'hotkey key bind remap rebind edit' },
+            { label: 'Simulate Date/Time', category: 'simulate-date', keywords: 'fake test clock override date' },
+            { label: 'Take the Tour', category: 'help', keywords: 'tour walkthrough onboarding guide' }
         ];
         function renderSettingsTabs() {
             const tabs = document.getElementById('settings-tabs');
             if (!tabs || tabs.childElementCount) return; // static once built, no need to rebuild per open
-            tabs.innerHTML = SETTINGS_CATEGORIES.map(cat =>
+            tabs.innerHTML = `<button type="button" class="settings-tab-btn is-home-tab" data-settings-tab="home" onclick="showSettingsCategory('home')" title="Settings home">
+                <svg style="width:0.95rem;height:0.95rem;display:inline-block;vertical-align:-0.15rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"></path></svg>
+            </button>` + SETTINGS_CATEGORIES.map(cat =>
                 `<button type="button" class="settings-tab-btn" data-settings-tab="${cat.id}" onclick="showSettingsCategory('${cat.id}')">${escapeHtml(cat.label)}</button>`
             ).join('');
         }
+        function renderSettingsHomeGrid() {
+            const grid = document.getElementById('settings-home-grid');
+            if (!grid) return;
+            grid.innerHTML = SETTINGS_CATEGORIES.map(cat => `
+                <button type="button" class="settings-home-card" onclick="showSettingsCategory('${cat.id}')">
+                    <span class="settings-home-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">${cat.icon}</svg></span>
+                    <span class="settings-home-card-title">${escapeHtml(cat.label)}</span>
+                    <span class="settings-home-card-desc">${escapeHtml(cat.desc)}</span>
+                </button>
+            `).join('');
+        }
+        function handleSettingsSearchInput(value) {
+            const results = document.getElementById('settings-search-results');
+            if (!results) return;
+            const q = value.trim().toLowerCase();
+            if (!q) { results.classList.add('hidden'); results.innerHTML = ''; return; }
+            const matches = SETTINGS_SEARCH_INDEX.filter(entry =>
+                entry.label.toLowerCase().includes(q) || entry.keywords.includes(q)
+            );
+            results.innerHTML = matches.length ? matches.map((entry, i) => {
+                const cat = SETTINGS_CATEGORIES.find(c => c.id === entry.category);
+                return `<button type="button" class="settings-search-result-item ${i === 0 ? 'is-active' : ''}" onclick="jumpToSettingsSearchResult('${escapeJsAttr(entry.category)}')">
+                    <span class="settings-search-result-title">${escapeHtml(entry.label)}</span>
+                    <span class="settings-search-result-cat">${escapeHtml(cat ? cat.label : entry.category)}</span>
+                </button>`;
+            }).join('') : `<div class="settings-search-empty">No settings match "${escapeHtml(value.trim())}".</div>`;
+            results.classList.remove('hidden');
+        }
+        function jumpToSettingsSearchResult(category) {
+            const input = document.getElementById('settings-search-input');
+            const results = document.getElementById('settings-search-results');
+            if (input) input.value = '';
+            if (results) { results.classList.add('hidden'); results.innerHTML = ''; }
+            showSettingsCategory(category);
+        }
+        function handleSettingsSearchKeydown(e) {
+            if (e.key !== 'Enter') return;
+            const results = document.getElementById('settings-search-results');
+            const first = results && results.querySelector('.settings-search-result-item');
+            if (first) { e.preventDefault(); first.click(); }
+        }
         function showSettingsCategory(category) {
-            const valid = SETTINGS_CATEGORIES.some(c => c.id === category) ? category : 'classes';
+            const valid = category === 'home' || SETTINGS_CATEGORIES.some(c => c.id === category) ? category : 'home';
             document.querySelectorAll('.settings-category').forEach(el => {
                 el.classList.toggle('hidden', el.dataset.settingsCategory !== valid);
             });
             document.querySelectorAll('.settings-tab-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.settingsTab === valid);
             });
+            if (valid === 'shortcuts') renderShortcutsSettings();
             document.querySelector('#all-settings-modal .flex-grow.overflow-y-auto').scrollTop = 0;
         }
         function openAllSettingsModal(defaultCategory) {
@@ -4143,12 +4345,18 @@ body.dark-theme[data-palette="mint"] {
             updateGistSyncUI();
             renderPortalSyncUnmatchedList();
             refreshSimulateDateUI();
+            shortcutListeningId = null;
 
             document.getElementById('all-settings-scheduling-slot').appendChild(document.getElementById('scheduling-settings-body'));
             document.getElementById('all-settings-calendar-slot').appendChild(document.getElementById('calendar-settings-body'));
 
             renderSettingsTabs();
-            showSettingsCategory(defaultCategory || 'classes');
+            renderSettingsHomeGrid();
+            const searchInput = document.getElementById('settings-search-input');
+            if (searchInput) searchInput.value = '';
+            const searchResults = document.getElementById('settings-search-results');
+            if (searchResults) { searchResults.classList.add('hidden'); searchResults.innerHTML = ''; }
+            showSettingsCategory(defaultCategory || 'home');
 
             const modal = document.getElementById('all-settings-modal');
             modal.classList.remove('hidden');
@@ -4217,6 +4425,7 @@ body.dark-theme[data-palette="mint"] {
             // Portal Sync (Skyward) cached assignment data, and the "seen updates" watermark for
             // the Recent App Updates banner -- also previously missing.
             'portalSyncParsedV1', 'portalSyncUnparsedV1', 'lastSeenAppUpdateTs',
+            'keyboardShortcutOverridesV1',
             'githubGistToken', 'githubGistId', 'githubGistRawUrl'
         ];
 
@@ -9393,13 +9602,178 @@ body.dark-theme[data-palette="mint"] {
             openClassLink(classItem.url);
         }
         function showKeyboardShortcutsHelp() {
-            showConfirmationModal(
-                'H Home  ·  C Classes  ·  P Planner  ·  G Grades  ·  S Settings  ·  N Add reminder  ·  ' +
-                '0–8 open that period’s class link (0 = Advisory)  ·  Shift+0–8 open it even if there\'s no school today  ·  ' +
-                'D/W/M/A calendar day/week/month/agenda  ·  T jump to today  ·  ? this list',
-                [{ text: 'Got it', action: () => {} }],
-                { clickAnywhereConfirms: true }
-            );
+            openAllSettingsModal('shortcuts');
+        }
+
+        // ===================== KEYBOARD SHORTCUTS (data-driven, user-remappable) =====================
+        // Every non-period shortcut is described here once -- id, group (for the Settings list),
+        // label, default binding, and what it does -- instead of being hardcoded into a switch
+        // statement. A binding is {code, shift, ctrl, alt, meta}; `code` is the physical key
+        // (KeyboardEvent.code) rather than `.key` so remapping isn't layout-dependent (e.g. Shift+1
+        // is always "Digit1"+shift regardless of what character that produces).
+        // Period-opening shortcuts (0-8, see openClassForPeriodShortcut) are handled separately
+        // below since Shift is their own "force open" modifier rather than part of the binding.
+        const SHORTCUT_ACTIONS = [
+            { id: 'nav-home', group: 'Navigation', label: 'Go to Home', default: { code: 'KeyH' }, run: () => switchAppView('home') },
+            { id: 'nav-classes', group: 'Navigation', label: 'Go to Classes', default: { code: 'KeyC' }, run: () => switchAppView('classes') },
+            { id: 'nav-planner', group: 'Navigation', label: 'Go to Planner', default: { code: 'KeyP' }, run: () => switchAppView('reminders') },
+            { id: 'nav-grades', group: 'Navigation', label: 'Go to Grades', default: { code: 'KeyG' }, run: () => switchAppView('grades') },
+            { id: 'nav-settings', group: 'Navigation', label: 'Open Settings', default: { code: 'KeyS' }, preventDefault: true, run: () => openAllSettingsModal() },
+            { id: 'add-reminder', group: 'Actions', label: 'Add Reminder', default: { code: 'KeyN' }, preventDefault: true, run: () => openReminderModal() },
+            { id: 'show-help', group: 'Actions', label: 'Show This Shortcuts List', default: { code: 'Slash', shift: true }, run: () => showKeyboardShortcutsHelp() },
+            { id: 'cal-day', group: 'Calendar', label: 'Calendar: Day View', default: { code: 'KeyD' }, run: () => { switchAppView('calendar'); switchView('day'); } },
+            { id: 'cal-week', group: 'Calendar', label: 'Calendar: Week View', default: { code: 'KeyW' }, run: () => { switchAppView('calendar'); switchView('week'); } },
+            { id: 'cal-month', group: 'Calendar', label: 'Calendar: Month View', default: { code: 'KeyM' }, run: () => { switchAppView('calendar'); switchView('month'); } },
+            { id: 'cal-agenda', group: 'Calendar', label: 'Calendar: Agenda View', default: { code: 'KeyA' }, run: () => { switchAppView('calendar'); switchView('agenda'); } },
+            { id: 'cal-today', group: 'Calendar', label: 'Calendar: Jump to Today', default: { code: 'KeyT' }, run: () => { switchAppView('calendar'); goToday(); } },
+        ];
+        // Period-open rows shown in the Settings list alongside SHORTCUT_ACTIONS, but not truly
+        // remappable individually (they're a fixed 0-8 block on the number row) -- shown read-only
+        // with their Shift-to-force note, same info showKeyboardShortcutsHelp used to give as text.
+        const PERIOD_SHORTCUT_INFO = { group: 'Class Periods', label: n => n === 0 ? 'Open Advisory link' : `Open Period ${n} link`, note: 'Hold Shift to open even on a no-school day.' };
+
+        function loadShortcutOverrides() {
+            try {
+                const raw = JSON.parse(localStorage.getItem('keyboardShortcutOverridesV1') || '{}');
+                return (raw && typeof raw === 'object') ? raw : {};
+            } catch (e) { return {}; }
+        }
+        function saveShortcutOverrides(overrides) {
+            localStorage.setItem('keyboardShortcutOverridesV1', JSON.stringify(overrides));
+        }
+        function getShortcutBinding(id) {
+            const action = SHORTCUT_ACTIONS.find(a => a.id === id);
+            if (!action) return null;
+            const overrides = loadShortcutOverrides();
+            return overrides[id] || action.default;
+        }
+        function comboKey(combo) {
+            return `${combo.ctrl ? 1 : 0}${combo.shift ? 1 : 0}${combo.alt ? 1 : 0}${combo.meta ? 1 : 0}:${combo.code}`;
+        }
+        // Best-effort human label for a physical key code -- strips the KeyX/DigitX prefixes and
+        // falls back to the raw code for anything unusual (F-keys, arrows, etc).
+        function codeToLabel(code) {
+            if (!code) return '';
+            let m = /^Key([A-Z])$/.exec(code); if (m) return m[1];
+            m = /^Digit([0-9])$/.exec(code); if (m) return m[1];
+            const named = { Slash: '/', Comma: ',', Period: '.', Semicolon: ';', Quote: "'", BracketLeft: '[', BracketRight: ']', Backslash: '\\', Minus: '-', Equal: '=', Space: 'Space', Escape: 'Esc', Enter: 'Enter', Tab: 'Tab' };
+            return named[code] || code;
+        }
+        function comboLabel(combo) {
+            const parts = [];
+            if (combo.ctrl) parts.push('Ctrl');
+            if (combo.alt) parts.push('Alt');
+            if (combo.meta) parts.push('⌘');
+            if (combo.shift) parts.push('Shift');
+            parts.push(codeToLabel(combo.code));
+            return parts.join('+');
+        }
+        function comboFromEvent(e) {
+            return { code: e.code, shift: e.shiftKey, ctrl: e.ctrlKey, alt: e.altKey, meta: e.metaKey };
+        }
+        // Builds combo-string -> action lookup once per keydown pass rather than caching, since
+        // rebinding happens rarely and a fresh Map keeps this trivially correct after any edit.
+        function buildShortcutLookup() {
+            const overrides = loadShortcutOverrides();
+            const map = new Map();
+            SHORTCUT_ACTIONS.forEach(action => {
+                const combo = overrides[action.id] || action.default;
+                map.set(comboKey(combo), action);
+            });
+            return map;
+        }
+        function resetShortcutToDefault(id) {
+            const overrides = loadShortcutOverrides();
+            delete overrides[id];
+            saveShortcutOverrides(overrides);
+            renderShortcutsSettings();
+        }
+        function resetAllShortcuts() {
+            showConfirmationModal('Reset every keyboard shortcut back to its default key?', [
+                { text: 'Reset All', action: () => { saveShortcutOverrides({}); renderShortcutsSettings(); } },
+                { text: 'Cancel', action: () => {} }
+            ]);
+        }
+        let shortcutListeningId = null;
+        function startListeningForShortcut(id) {
+            shortcutListeningId = id;
+            renderShortcutsSettings();
+        }
+        function cancelListeningForShortcut() {
+            shortcutListeningId = null;
+            renderShortcutsSettings();
+        }
+        function handleShortcutRebindKeydown(e) {
+            if (!shortcutListeningId) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.key === 'Escape') { cancelListeningForShortcut(); return; }
+            // Modifier keys on their own aren't a usable binding -- keep listening for a real key.
+            if (['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return;
+            const combo = comboFromEvent(e);
+            const id = shortcutListeningId;
+            const overrides = loadShortcutOverrides();
+            const conflict = SHORTCUT_ACTIONS.find(a => a.id !== id && comboKey(overrides[a.id] || a.default) === comboKey(combo));
+            if (conflict) {
+                showActionToast(`"${comboLabel(combo)}" is already used by "${conflict.label}".`);
+                shortcutListeningId = null;
+                renderShortcutsSettings();
+                return;
+            }
+            overrides[id] = combo;
+            saveShortcutOverrides(overrides);
+            shortcutListeningId = null;
+            renderShortcutsSettings();
+        }
+        function renderShortcutsSettings() {
+            const container = document.getElementById('settings-shortcuts-list');
+            if (!container) return;
+            const groups = [];
+            SHORTCUT_ACTIONS.forEach(action => {
+                let g = groups.find(g => g.name === action.group);
+                if (!g) { g = { name: action.group, rows: [] }; groups.push(g); }
+                g.rows.push(action);
+            });
+            const periodGroup = { name: PERIOD_SHORTCUT_INFO.group, rows: [] };
+            groups.push(periodGroup);
+
+            const rowHtml = (action) => {
+                const binding = getShortcutBinding(action.id);
+                const isListening = shortcutListeningId === action.id;
+                return `
+                    <div class="shortcut-row">
+                        <span class="shortcut-row-label">${escapeHtml(action.label)}</span>
+                        <div class="shortcut-row-actions">
+                            <button type="button" class="shortcut-kbd-btn ${isListening ? 'is-listening' : ''}" onclick="startListeningForShortcut('${escapeJsAttr(action.id)}')">${isListening ? 'Press a key…' : `<kbd>${escapeHtml(comboLabel(binding))}</kbd>`}</button>
+                            ${isListening ? `<button type="button" class="shortcut-cancel-btn" onclick="cancelListeningForShortcut()" title="Cancel">Cancel</button>` : (comboKey(binding) !== comboKey(action.default) ? `<button type="button" class="shortcut-reset-btn" onclick="resetShortcutToDefault('${escapeJsAttr(action.id)}')" title="Reset to default">Reset</button>` : '')}
+                        </div>
+                    </div>
+                `;
+            };
+            container.innerHTML = groups.map(g => {
+                if (g.name === PERIOD_SHORTCUT_INFO.group) {
+                    return `
+                        <div class="shortcut-group">
+                            <h5 class="text-lg font-semibold mb-1">${escapeHtml(g.name)}</h5>
+                            <p class="text-gray-600 text-sm mb-3 dark:text-gray-300">Fixed to the number row (0-8) so they can't collide with letter shortcuts above. ${escapeHtml(PERIOD_SHORTCUT_INFO.note)}</p>
+                            <div class="shortcut-period-grid">
+                                ${Array.from({ length: 9 }, (_, n) => `
+                                    <div class="shortcut-row">
+                                        <span class="shortcut-row-label">${escapeHtml(PERIOD_SHORTCUT_INFO.label(n))}</span>
+                                        <kbd>${n}</kbd>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                return `
+                    <div class="shortcut-group">
+                        <h5 class="text-lg font-semibold mb-2">${escapeHtml(g.name)}</h5>
+                        <div class="shortcut-rows">${g.rows.map(rowHtml).join('')}</div>
+                    </div>
+                `;
+            }).join('');
         }
         // ===================== MODAL ESCAPE-TO-CLOSE / ENTER-TO-SAVE =====================
         // Generic, not per-modal: rather than hand-writing dirty tracking for every form, this
@@ -9471,35 +9845,30 @@ body.dark-theme[data-palette="mint"] {
         function setupKeyboardShortcuts() {
             document.addEventListener('keydown', handleGlobalModalKeys);
             document.addEventListener('keydown', (e) => {
-                if (e.metaKey || e.ctrlKey || e.altKey) return;
+                // The Settings > Keyboard Shortcuts rebind capture takes over the keyboard
+                // entirely while active, even inside the Settings modal itself.
+                if (shortcutListeningId) { handleShortcutRebindKeydown(e); return; }
                 if (isTypingTarget(e.target)) return;
                 // Any modal already open gets to keep the keyboard (e.g. Enter in the reminder
                 // modal) -- shortcuts shouldn't fire underneath it.
                 if (document.querySelector('.modal:not(.hidden)')) return;
 
-                // e.code (the physical key), not e.key -- Shift+1 produces "!" for e.key on a US
-                // layout, which would silently break the force-open-anyway variant of this
-                // shortcut. e.code stays "Digit1" regardless of Shift, so this works either way.
-                const digitMatch = /^Digit([0-8])$/.exec(e.code) || /^Numpad([0-8])$/.exec(e.code);
-                if (digitMatch) {
-                    e.preventDefault();
-                    openClassForPeriodShortcut(parseInt(digitMatch[1], 10), e.shiftKey);
-                    return;
+                // Period-open shortcuts (0-8) are fixed to the number row, not remappable, and
+                // never combine with Ctrl/Alt/Meta (Shift alone is their own "force open" flag) --
+                // e.code, not e.key, since Shift+1 produces "!" for e.key on a US layout, which
+                // would silently break the force-open-anyway variant.
+                if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+                    const digitMatch = /^Digit([0-8])$/.exec(e.code) || /^Numpad([0-8])$/.exec(e.code);
+                    if (digitMatch) {
+                        e.preventDefault();
+                        openClassForPeriodShortcut(parseInt(digitMatch[1], 10), e.shiftKey);
+                        return;
+                    }
                 }
-                if (e.key === '?') { showKeyboardShortcutsHelp(); return; }
-                switch (e.key.toLowerCase()) {
-                    case 'd': switchAppView('calendar'); switchView('day'); break;
-                    case 'w': switchAppView('calendar'); switchView('week'); break;
-                    case 'm': switchAppView('calendar'); switchView('month'); break;
-                    case 'a': switchAppView('calendar'); switchView('agenda'); break;
-                    case 't': switchAppView('calendar'); goToday(); break;
-                    case 'n': e.preventDefault(); openReminderModal(); break;
-                    case 'h': switchAppView('home'); break;
-                    case 'c': switchAppView('classes'); break;
-                    case 'p': switchAppView('reminders'); break;
-                    case 'g': switchAppView('grades'); break;
-                    case 's': e.preventDefault(); openAllSettingsModal(); break;
-                }
+                const action = buildShortcutLookup().get(comboKey(comboFromEvent(e)));
+                if (!action) return;
+                if (action.preventDefault) e.preventDefault();
+                action.run();
             });
         }
 

@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-01T09:30:00Z",
+  "title": "Rebindable keyboard shortcuts, and a searchable Settings home screen",
+  "summary": [
+    "Every keyboard shortcut (Home/Classes/Planner/Grades/Settings navigation, Add Reminder, calendar view switches, jump to Today, the shortcuts help itself) now lives in a new Settings > Keyboard Shortcuts tab, where clicking a shortcut's key lets you press a new one to rebind it. Conflicting rebinds are blocked with a toast instead of silently overwriting another shortcut, and each one can be reset back to its default individually or all at once. Class-period shortcuts (0-8) stay fixed to the number row by design, shown read-only for reference.",
+    "The Settings modal opens to a new home screen -- a grid of cards (Classes & Schedule, Calendar, Keyboard Shortcuts, Data & Sync, Simulate Date, Help) instead of always landing on Classes -- plus a search box at the top that matches individual settings by name and jumps straight to the right tab. Gear icons on the Classes/Calendar screens still deep-link directly into their tab, skipping the home screen, same as before."
+  ]
+}
