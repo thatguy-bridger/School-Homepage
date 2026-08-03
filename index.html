@@ -11960,7 +11960,10 @@ body.dark-theme[data-palette="mint"] {
                 html = `<p class="text-center text-gray-500 dark:text-gray-400 py-12">No A-Day or B-Day dates, imported notes, or external events configured yet.</p>`;
             }
 
-            return `<div class="max-h-[70vh] overflow-y-auto pr-2">${html}</div>`;
+            // No inner max-height/overflow here -- Agenda's list is meant to scroll as part of the
+            // actual page (same as Month/Week/Day already do), not be boxed into its own scrolling
+            // pane while the rest of the page sits static.
+            return `<div class="pr-2">${html}</div>`;
         }
 
         function exportNotes() {

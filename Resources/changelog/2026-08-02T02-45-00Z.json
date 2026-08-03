@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-02T02:45:00Z",
+  "title": "Agenda view scrolls with the page again, not in its own boxed-in pane",
+  "summary": [
+    "The Agenda list was wrapped in its own max-height:70vh scrolling box, so scrolling through it moved a small pane instead of the actual page -- unlike Month/Week/Day, which all scroll normally. Agenda now lets its content take up as much height as it needs and scrolls with the rest of the page."
+  ]
+}
