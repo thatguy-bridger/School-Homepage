@@ -2978,6 +2978,17 @@ body.dark-theme[data-palette="mint"] {
             /* Once spread, each card sits in its own lane -- the "there's more behind me"
                cascade shadow would just look like a stray border, so drop it. */
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+            /* A short time-slot's card can be shorter than its title needs -- let a spread card
+               grow downward (see fitSpreadStackCardHeights, which bumps its inline height/z-index)
+               instead of clipping the title, so every title is always fully readable once spread. */
+            overflow: visible;
+            z-index: 20 !important;
+        }
+        .day-grid-event-stacked.is-spread .day-grid-event-title {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: clip;
+            word-break: break-word;
         }
         .day-grid-stack-badge {
             position: absolute;
@@ -11458,6 +11469,24 @@ body.dark-theme[data-palette="mint"] {
         // transition since there'd be no continuous element to animate from/to. Column geometry
         // recomputes globally (not just for the toggled stack) since spreading one stack open
         // shrinks the shared class column for every block on the grid, not just that stack's cards.
+        // A spread card's inline height comes from its own time-slot duration, which can easily be
+        // shorter than a long title needs once it's allowed to wrap (see the .is-spread CSS, which
+        // switches the title to white-space:normal). Grow the card's own height to fit its content
+        // whenever that happens, so every title is fully readable instead of getting clipped by a
+        // box sized for a short event. Only ever grows spread cards -- collapsed ones keep their
+        // real time-slot height, and re-collapsing (toggleEventStack) resets the inline height via
+        // the same topMatch/heightMatch-based style rebuild used everywhere else in this file.
+        function fitSpreadStackCardHeights(grid) {
+            grid = grid || document.querySelector('.day-grid');
+            if (!grid) return;
+            grid.querySelectorAll('.day-grid-event-stacked.is-spread').forEach(card => {
+                const heightMatch = /height:\s*([\d.]+)px/.exec(card.getAttribute('style'));
+                const baseHeight = heightMatch ? parseFloat(heightMatch[1]) : 0;
+                if (card.scrollHeight > baseHeight) {
+                    card.style.height = card.scrollHeight + 'px';
+                }
+            });
+        }
         function toggleEventStack(stackId) {
             const isSpread = !spreadEventStacks.has(stackId);
             if (isSpread) spreadEventStacks.add(stackId); else spreadEventStacks.delete(stackId);
@@ -11507,6 +11536,11 @@ body.dark-theme[data-palette="mint"] {
                 if (titleEl) titleEl.style.opacity = textOpacity;
                 if (timeEl) timeEl.style.opacity = textOpacity;
             });
+            // Measured after the left/width transition finishes (see .day-grid-event-stacked's
+            // 0.38s transition) rather than immediately -- during the transition a card's width is
+            // still animating, so scrollHeight would reflect a mid-transition width and produce the
+            // wrong wrap/height.
+            setTimeout(() => fitSpreadStackCardHeights(grid), 400);
         }
         // Groups timed events into clusters of mutually-overlapping ones (transitively -- A/B
         // overlapping and B/C overlapping puts A/B/C in one cluster even if A/C don't directly
@@ -11756,6 +11790,7 @@ body.dark-theme[data-palette="mint"] {
             const clearBtn = document.getElementById('day-clear-btn');
             if (!titleInput || !notesInput || !saveBtn || !clearBtn) {
                 updateDayGridNowLine();
+                fitSpreadStackCardHeights();
                 return;
             }
 

@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-02T02:25:00Z",
+  "title": "Spread-out day-view event titles are never cut off anymore",
+  "summary": [
+    "Spreading a stack of overlapping events into their own lanes could still truncate a long title with an ellipsis, since each lane's card kept the same fixed height as its (possibly short) time slot. Spread cards now wrap their title instead of clipping it, and grow taller to fit -- so every title is always fully readable once you open the stack, no matter how long it is or how short the event's actual time slot is."
+  ]
+}
