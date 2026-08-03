@@ -2964,15 +2964,15 @@ body.dark-theme[data-palette="mint"] {
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
             z-index: 5;
         }
-        .day-grid-event-title { display: block; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .day-grid-event-time { display: block; font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; }
+        .day-grid-event-title { display: block; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity 0.25s ease-in-out; }
+        .day-grid-event-time { display: block; font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; transition: opacity 0.25s ease-in-out; }
         /* ---- Overlapping-event card stack (collapsed = cascaded/fanned, click to spread) ----
            left/width/z-index are patched in place by toggleEventStack rather than re-rendered, so
            they can actually transition smoothly here instead of snapping between layouts. */
         .day-grid-event-stacked {
             cursor: pointer;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), -3px 0 0 -1px var(--glass-bg-strong), -3px 0 0 0 var(--glass-border);
-            transition: left 0.38s cubic-bezier(0.34, 1.2, 0.4, 1), width 0.38s cubic-bezier(0.34, 1.2, 0.4, 1), box-shadow 0.25s ease-in-out, transform 0.15s ease-in-out;
+            transition: left 0.38s cubic-bezier(0.34, 1.2, 0.4, 1), width 0.38s cubic-bezier(0.34, 1.2, 0.4, 1), transform 0.38s cubic-bezier(0.34, 1.2, 0.4, 1), box-shadow 0.25s ease-in-out;
         }
         .day-grid-event-stacked.is-spread {
             /* Once spread, each card sits in its own lane -- the "there's more behind me"
@@ -11400,34 +11400,44 @@ body.dark-theme[data-palette="mint"] {
         // keyed by a stack id stable across re-renders (built from the cluster's own event
         // timestamps), reset per Day view visit since it's a transient view state, not data.
         let spreadEventStacks = new Set();
-        // The event column's footprint (65% of the grid width -> the right edge) -- module-level
-        // since stackedCardPosStyle needs it both at render time (renderDayViewGrid) and at toggle
-        // time (toggleEventStack, which patches existing DOM nodes in place rather than
-        // re-rendering, so left/width can transition smoothly instead of snapping).
-        const DAY_GRID_EVENT_COL_LEFT = '65%';
-        const DAY_GRID_EVENT_COL_WIDTH = 'calc(35% - 0.25rem)';
-        function stackedCardPosStyle(i, k, isSpread) {
-            return isSpread
-                ? `left:calc(${DAY_GRID_EVENT_COL_LEFT} + (${DAY_GRID_EVENT_COL_WIDTH}) * ${i} / ${k}); width:calc((${DAY_GRID_EVENT_COL_WIDTH}) / ${k} - 4px); z-index:${5 + i};`
-                : `left:calc(${DAY_GRID_EVENT_COL_LEFT} + ${i * 10}px); width:calc(${DAY_GRID_EVENT_COL_WIDTH} - ${(k - 1) * 10}px); z-index:${5 + i};`;
+        // Collapsed: every card in the cluster occupies the exact same box (colLeft/colWidth,
+        // untouched) and is fanned purely with transform/opacity/z-index -- a real "deck of cards"
+        // look (each behind card nudged up-right and shrunk slightly, dimmer the further back) that
+        // reads as obviously stacked with depth, instead of the old approach of nudging left/width
+        // by a few px per card (which just smeared each card's text into the next one's). Spread:
+        // unchanged -- each card gets its own equal-width lane across colWidth, real position, full
+        // opacity, no transform.
+        function stackedCardPosStyle(i, k, isSpread, colLeft, colWidth) {
+            if (isSpread) {
+                return `left:calc(${colLeft} + (${colWidth}) * ${i} / ${k}); width:calc((${colWidth}) / ${k} - 4px); z-index:${5 + (k - i)}; transform:none;`;
+            }
+            const depth = Math.min(i, 4); // cap the fan so a huge cluster doesn't run off the card
+            const dx = depth * 7, dy = depth * -6, scale = (1 - depth * 0.045).toFixed(3);
+            return `left:${colLeft}; width:${colWidth}; z-index:${5 + (k - i)}; transform:translate(${dx}px, ${dy}px) scale(${scale});`;
         }
-        // Patches the stack's existing DOM nodes in place (left/width/z-index + the badge/class
-        // toggle) instead of a full renderCalendar() re-render -- re-rendering would destroy and
-        // recreate the elements, which skips right past any CSS transition since there'd be no
-        // continuous element to animate from/to. Patching the same nodes lets .day-grid-event-
-        // stacked's left/width transition (see CSS) actually animate the spread/collapse.
+        // Patches the stack's existing DOM nodes in place (position/transform/z-index + the badge
+        // and per-card text) instead of a full renderCalendar() re-render -- re-rendering would
+        // destroy and recreate the elements, which skips right past any CSS transition since
+        // there'd be no continuous element to animate from/to. Column geometry is read back off the
+        // .day-grid container's own data attributes (set at render time -- see renderDayViewGrid)
+        // rather than a hardcoded constant, since the event column's width is now content-dependent.
         function toggleEventStack(stackId) {
             const isSpread = !spreadEventStacks.has(stackId);
             if (isSpread) spreadEventStacks.add(stackId); else spreadEventStacks.delete(stackId);
+
+            const grid = document.querySelector('.day-grid');
+            const colLeft = (grid && grid.dataset.eventColLeft) || '65%';
+            const colWidth = (grid && grid.dataset.eventColWidth) || 'calc(35% - 0.25rem)';
 
             const cards = document.querySelectorAll(`.day-grid-event-stacked[data-stack-id="${CSS.escape(stackId)}"]`);
             cards.forEach(card => {
                 const i = Number(card.dataset.stackIndex);
                 const k = Number(card.dataset.stackSize);
-                const posStyle = stackedCardPosStyle(i, k, isSpread);
-                // Only touch left/width/z-index -- top/height/background/border are per-event and
-                // already correct, re-setting them would be redundant (and cssText would need to
-                // preserve them anyway).
+                const isFront = i === 0;
+                const posStyle = stackedCardPosStyle(i, k, isSpread, colLeft, colWidth);
+                // Only touch left/width/z-index/transform -- top/height/background/border are
+                // per-event and already correct, re-setting them would be redundant (and cssText
+                // would need to preserve them anyway).
                 const topMatch = /top:[^;]+;/.exec(card.getAttribute('style'));
                 const heightMatch = /height:[^;]+;/.exec(card.getAttribute('style'));
                 const bgMatch = /background:[^;]+;/.exec(card.getAttribute('style'));
@@ -11435,7 +11445,12 @@ body.dark-theme[data-palette="mint"] {
                 card.setAttribute('style', `${topMatch ? topMatch[0] : ''} ${heightMatch ? heightMatch[0] : ''} ${posStyle} ${bgMatch ? bgMatch[0] : ''} ${borderMatch ? borderMatch[0] : ''}`);
                 card.classList.toggle('is-spread', isSpread);
                 const badge = card.querySelector('.day-grid-stack-badge');
-                if (badge) badge.classList.toggle('is-badge-hidden', !(i === 0 && !isSpread));
+                if (badge) badge.classList.toggle('is-badge-hidden', !(isFront && !isSpread));
+                const textOpacity = isSpread || isFront ? '1' : '0';
+                const titleEl = card.querySelector('.day-grid-event-title');
+                const timeEl = card.querySelector('.day-grid-event-time');
+                if (titleEl) titleEl.style.opacity = textOpacity;
+                if (timeEl) timeEl.style.opacity = textOpacity;
             });
         }
         // Groups timed events into clusters of mutually-overlapping ones (transitively -- A/B
@@ -11520,26 +11535,10 @@ body.dark-theme[data-palette="mint"] {
                 `;
             }
 
-            const classBlocksHtml = classesToday.filter(c => c.timeRange).map(c => {
-                const [s, e] = c.timeRange.split(' - ');
-                const sm = parseTime(s), em = parseTime(e);
-                const sMin = sm.hour * 60 + sm.minute, eMin = em.hour * 60 + em.minute;
-                const top = (sMin - gridStart) * pxPerMin;
-                const height = Math.max(20, (eMin - sMin) * pxPerMin);
-                const color = c.classItem.color || 'var(--accent-2)';
-                return `
-                    <a class="day-grid-event" style="top:${top}px; height:${height}px; left:0.25rem; right:36%; background:color-mix(in srgb, ${color} 20%, var(--glass-bg-strong)); border-left: 3px solid ${escapeAttr(color)};"
-                       href="${escapeAttr(normalizeExternalUrl(c.classItem.url) || '#')}" target="_blank" rel="noopener"${classPopupAttr(c.classItem)} onclick="${c.classItem.url ? 'recordClassOpened();' : 'return false;'}">
-                        <span class="day-grid-event-title">${classNameHtml(c.classItem)}</span>
-                        <span class="day-grid-event-time">${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>
-                    </a>
-                `;
-            }).join('');
-
-            // Each timed event's real top/height, plus its column footprint (65% -> right edge)
-            // expressed as CSS calc() so clustered events can subdivide it -- computed up front so
-            // clusterOverlappingRanges (a plain interval-overlap grouping, no positioning opinions
-            // of its own) has sMin/eMin to work with.
+            // Each timed event's real top/height, computed up front (before column widths, below)
+            // so clusterOverlappingRanges (a plain interval-overlap grouping, no positioning
+            // opinions of its own) has sMin/eMin to work with, and so the widest cluster's size can
+            // inform how much room the event column actually needs.
             const timedEventGeoms = timedEvents.map(ev => {
                 const d = new Date(ev.timestamp);
                 const m = d.getHours() * 60 + d.getMinutes();
@@ -11552,13 +11551,48 @@ body.dark-theme[data-palette="mint"] {
                 return { ev, sMin: m, eMin: endM };
             });
             const eventClusters = clusterOverlappingRanges(timedEventGeoms);
+
+            // The class/event column split used to be a fixed 64/36 regardless of what either side
+            // actually had in it -- classes sat in a 64%-wide column even on a day with zero
+            // external events (leaving the other 36% dead), and events were stuck in a 35% column
+            // even when 3+ of them overlapped and badly needed more room to spread into. Instead:
+            // no events at all -> classes get the full width; events exist -> events get a share
+            // that grows with the busiest overlapping cluster instead of a flat number.
+            const maxClusterSize = eventClusters.reduce((max, c) => Math.max(max, c.length), 1);
+            let classColRight, eventColLeftPct;
+            if (!timedEvents.length) {
+                classColRight = '0.25rem';
+                eventColLeftPct = 100; // unused (no events), kept defined for the data attribute below
+            } else {
+                eventColLeftPct = Math.max(55, 76 - maxClusterSize * 6); // more overlap -> more room
+                classColRight = (100 - eventColLeftPct) + '%';
+            }
+            const eventColLeft = timedEvents.length ? eventColLeftPct + '%' : '100%';
+            const eventColWidth = timedEvents.length ? `calc(${100 - eventColLeftPct}% - 0.25rem)` : '0px';
+
+            const classBlocksHtml = classesToday.filter(c => c.timeRange).map(c => {
+                const [s, e] = c.timeRange.split(' - ');
+                const sm = parseTime(s), em = parseTime(e);
+                const sMin = sm.hour * 60 + sm.minute, eMin = em.hour * 60 + em.minute;
+                const top = (sMin - gridStart) * pxPerMin;
+                const height = Math.max(20, (eMin - sMin) * pxPerMin);
+                const color = c.classItem.color || 'var(--accent-2)';
+                return `
+                    <a class="day-grid-event" style="top:${top}px; height:${height}px; left:0.25rem; right:${classColRight}; background:color-mix(in srgb, ${color} 20%, var(--glass-bg-strong)); border-left: 3px solid ${escapeAttr(color)};"
+                       href="${escapeAttr(normalizeExternalUrl(c.classItem.url) || '#')}" target="_blank" rel="noopener"${classPopupAttr(c.classItem)} onclick="${c.classItem.url ? 'recordClassOpened();' : 'return false;'}">
+                        <span class="day-grid-event-title">${classNameHtml(c.classItem)}</span>
+                        <span class="day-grid-event-time">${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>
+                    </a>
+                `;
+            }).join('');
+
             const eventBlocksHtml = eventClusters.map(cluster => {
                 const top = (item) => (item.sMin - gridStart) * pxPerMin;
                 const height = (item) => Math.max(20, (item.eMin - item.sMin) * pxPerMin);
                 if (cluster.length === 1) {
                     const item = cluster[0], ev = item.ev;
                     return `
-                        <div class="day-grid-event day-grid-event-ext" style="top:${top(item)}px; height:${height(item)}px; left:${DAY_GRID_EVENT_COL_LEFT}; width:${DAY_GRID_EVENT_COL_WIDTH}; background:${ev.color}33; border-left: 3px solid ${ev.color};"${eventPopupAttr(ev)}>
+                        <div class="day-grid-event day-grid-event-ext" style="top:${top(item)}px; height:${height(item)}px; left:${eventColLeft}; width:${eventColWidth}; background:${ev.color}33; border-left: 3px solid ${ev.color};"${eventPopupAttr(ev)}>
                             <span class="day-grid-event-title">${escapeHtml(ev.title)}</span>
                             <span class="day-grid-event-time">${escapeHtml(formatEventTimestamp(ev.timestamp))}</span>
                         </div>
@@ -11571,12 +11605,19 @@ body.dark-theme[data-palette="mint"] {
                 const k = cluster.length;
                 return cluster.map((item, i) => {
                     const ev = item.ev;
-                    const posStyle = stackedCardPosStyle(i, k, isSpread);
+                    const posStyle = stackedCardPosStyle(i, k, isSpread, eventColLeft, eventColWidth);
+                    // Collapsed: every card in the cluster shares the exact same box (no left/width
+                    // spread at all) and is fanned purely via transform+opacity, so it reads as a
+                    // real deck of cards with depth -- only the front (i=0) card's text is legible,
+                    // the rest are dimmed, scaled-down slivers peeking out from behind it. Spread:
+                    // full opacity/scale and its own lane, same as before.
+                    const isFront = i === 0;
+                    const textOpacity = isSpread || isFront ? 1 : 0;
                     return `
                         <div class="day-grid-event day-grid-event-ext day-grid-event-stacked ${isSpread ? 'is-spread' : ''}" data-stack-id="${escapeAttr(stackId)}" data-stack-index="${i}" data-stack-size="${k}" style="top:${top(item)}px; height:${height(item)}px; ${posStyle} background:${ev.color}33; border-left: 3px solid ${ev.color};"${eventPopupAttr(ev)} onclick="toggleEventStack('${stackId}')">
-                            <span class="day-grid-stack-badge ${(!isSpread && i === 0) ? '' : 'is-badge-hidden'}" title="${k} overlapping events -- click to spread them out">${k}</span>
-                            <span class="day-grid-event-title">${escapeHtml(ev.title)}</span>
-                            <span class="day-grid-event-time">${escapeHtml(formatEventTimestamp(ev.timestamp))}</span>
+                            <span class="day-grid-stack-badge ${(!isSpread && isFront) ? '' : 'is-badge-hidden'}" title="${k} overlapping events -- click to spread them out">${k}</span>
+                            <span class="day-grid-event-title" style="opacity:${textOpacity};">${escapeHtml(ev.title)}</span>
+                            <span class="day-grid-event-time" style="opacity:${textOpacity};">${escapeHtml(formatEventTimestamp(ev.timestamp))}</span>
                         </div>
                     `;
                 }).join('');
@@ -11591,7 +11632,7 @@ body.dark-theme[data-palette="mint"] {
                 const height = Math.max(20, (b.eMin - b.sMin) * pxPerMin);
                 const timeLabel = formatTimeRangeLabel(b.timeRange);
                 return `
-                    <div class="day-grid-event" style="top:${top}px; height:${height}px; left:0.25rem; right:36%; background:color-mix(in srgb, ${OTHER_PERIOD_COLOR} 20%, var(--glass-bg-strong)); border-left: 3px solid ${OTHER_PERIOD_COLOR};" title="${escapeAttr(b.label)} — ${escapeAttr(timeLabel)}">
+                    <div class="day-grid-event" style="top:${top}px; height:${height}px; left:0.25rem; right:${classColRight}; background:color-mix(in srgb, ${OTHER_PERIOD_COLOR} 20%, var(--glass-bg-strong)); border-left: 3px solid ${OTHER_PERIOD_COLOR};" title="${escapeAttr(b.label)} — ${escapeAttr(timeLabel)}">
                         <span class="day-grid-event-title">${escapeHtml(b.label)}</span>
                         <span class="day-grid-event-time">${escapeHtml(timeLabel)}</span>
                     </div>
@@ -11608,7 +11649,7 @@ body.dark-theme[data-palette="mint"] {
                         <button type="button" class="modal-footer-button is-secondary" onclick="toggleDayViewEditMode()">Edit Day</button>
                     </div>
                     ${topRowHtml}
-                    <div class="day-grid" style="height:${totalMin * pxPerMin}px;">
+                    <div class="day-grid" style="height:${totalMin * pxPerMin}px;" data-event-col-left="${escapeAttr(eventColLeft)}" data-event-col-width="${escapeAttr(eventColWidth)}">
                         ${hoursHtml}
                         ${classBlocksHtml}
                         ${otherBlocksHtml}

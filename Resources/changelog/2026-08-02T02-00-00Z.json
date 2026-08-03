@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-02T02:00:00Z",
+  "title": "Stacked day-view events now show real depth instead of jumbled text",
+  "summary": [
+    "Overlapping events in Day view used to nudge apart slightly, which still left their titles and times overlapping and hard to read. Collapsed cards now fan out with a clear layered look (each card behind the front one is scaled down and offset diagonally, like a stack of cards), and only the front card's text is shown until you click to spread them out.",
+    "The class column no longer eats up a fixed chunk of the screen. If there are no events that day, classes now use the full width; if there are events, the event column only takes as much room as the busiest overlapping cluster actually needs, leaving more space for classes."
+  ]
+}
