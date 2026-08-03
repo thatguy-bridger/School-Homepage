@@ -9461,7 +9461,7 @@ body.dark-theme[data-palette="mint"] {
                 const desc = (event.description || '').trim();
                 return `
                     ${dayHeaderHtml}
-                    <div class="home-list-item">
+                    <div class="home-list-item"${eventPopupAttr(event)}>
                         <span class="home-dot" style="background:${event.color || 'var(--accent-2)'}; width:0.9rem; height:0.9rem;">${categoryIconSvg(event.category, 12)}</span>
                         <div>
                             <p class="home-item-title">${escapeHtml(event.title)}</p>
@@ -10129,8 +10129,27 @@ body.dark-theme[data-palette="mint"] {
         function eventPopupAttr(ev) {
             return ` data-event-popup-key="${registerEventPopup(ev)}"`;
         }
+        // Full "when" label for the hover popup -- an all-day event just says so, a genuinely
+        // multi-day event (endTimestamp on a later calendar day than the start) spells out both
+        // full dates so it's clear this isn't a same-day time range, and a normal timed event
+        // shows a real start-to-end range when an end time is known, or just its start time
+        // otherwise (the same single-time fallback this already had).
+        function buildEventPopupTimeLabel(ev) {
+            if (ev.allDay) return 'All day';
+            if (typeof ev.timestamp !== 'number') return '';
+            const start = new Date(ev.timestamp);
+            if (typeof ev.endTimestamp === 'number' && ev.endTimestamp > ev.timestamp) {
+                const end = new Date(ev.endTimestamp);
+                if (!isSameDay(start, end)) {
+                    const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + formatEventTimestamp(d.getTime());
+                    return `${fmt(start)} — ${fmt(end)}`;
+                }
+                return `${formatEventTimestamp(ev.timestamp)} — ${formatEventTimestamp(ev.endTimestamp)}`;
+            }
+            return formatEventTimestamp(ev.timestamp);
+        }
         function buildEventPopupHtml(ev) {
-            const timeLabel = ev.allDay ? 'All day' : (typeof ev.timestamp === 'number' ? formatEventTimestamp(ev.timestamp) : '');
+            const timeLabel = buildEventPopupTimeLabel(ev);
             return `
                 <p class="day-hover-tooltip-date">
                     <span class="home-dot" style="background:${ev.color}; width:0.9rem; height:0.9rem;">${categoryIconSvg(ev.category, 9)}</span>
@@ -10841,12 +10860,12 @@ body.dark-theme[data-palette="mint"] {
                                 <span class="home-dot" style="width:0.75rem; height:0.75rem; background:${items[0].color};">${categoryIconSvg(cat, 12)}</span>
                                 ${escapeHtml(categoryLabel(cat))}
                             </p>
-                            ${(opts.showAllEvents ? items : items.slice(0, 3)).map(e => `<p class="mini-upcoming-sub truncate">${escapeHtml(e.title)}</p>`).join('')}
+                            ${(opts.showAllEvents ? items : items.slice(0, 3)).map(e => `<p class="mini-upcoming-sub truncate"${eventPopupAttr(e)}>${escapeHtml(e.title)}</p>`).join('')}
                         </div>
                     `).join('')}</div>`;
                 } else if (externalEvents.length) {
                     externalHtml = `<div class="mt-1 space-y-1">${(opts.showAllEvents ? externalEvents : externalEvents.slice(0, 2)).map(event => `
-                        <p class="mini-upcoming-sub truncate flex items-center gap-1.5">
+                        <p class="mini-upcoming-sub truncate flex items-center gap-1.5"${eventPopupAttr(event)}>
                             <span class="home-dot" style="width:0.7rem; height:0.7rem; background:${event.color};">${categoryIconSvg(event.category, 11)}</span>
                             <span class="truncate">${escapeHtml(event.title)}</span>
                         </p>
@@ -11135,7 +11154,7 @@ body.dark-theme[data-palette="mint"] {
             const timedEvents = dayEvents.filter(e => !e.allDay);
 
             const allDayLinesHtml = allDayEvents.slice(0, MONTH_ALLDAY_LINE_CAP).map(e => `
-                <div class="month-allday-line" style="background:${e.color};" title="${escapeAttr(e.title)} — ${escapeAttr(categoryLabel(e.category))} — ${escapeAttr(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, ${useFilter})">
+                <div class="month-allday-line" style="background:${e.color};" title="${escapeAttr(e.title)} — ${escapeAttr(categoryLabel(e.category))} — ${escapeAttr(e.feedLabel)}"${eventPopupAttr(e)} onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, ${useFilter})">
                     <span class="month-allday-dot">${categoryIconSvg(e.category, 9)}</span>
                     <span class="month-allday-title">${escapeHtml(e.title)}</span>
                 </div>
@@ -11153,7 +11172,7 @@ body.dark-theme[data-palette="mint"] {
             const barsHtml = barsShown.length ? `
                 <div class="month-event-bars">
                     ${barsShown.map(e => `
-                        <div class="month-event-bar" style="--ev-color:${e.color};" title="${escapeAttr(e.title)} — ${escapeAttr(categoryLabel(e.category))} — ${escapeAttr(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, ${useFilter})">
+                        <div class="month-event-bar" style="--ev-color:${e.color};" title="${escapeAttr(e.title)} — ${escapeAttr(categoryLabel(e.category))} — ${escapeAttr(e.feedLabel)}"${eventPopupAttr(e)} onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, ${useFilter})">
                             <span class="month-event-dot-inner" style="background:${e.color};">${categoryIconSvg(e.category, 9)}</span>
                             <span class="month-event-bar-title">${escapeHtml(e.title)}</span>
                         </div>
@@ -11164,7 +11183,7 @@ body.dark-theme[data-palette="mint"] {
                 <div class="flex items-end flex-wrap gap-1.5 mt-1">
                     ${dotsShown.slice(0, MONTH_EVENT_DOT_CAP).map(e => {
                         const size = (7 + eventUrgencyT(e.category, cursor, today) * 5).toFixed(1);
-                        return `<span class="rounded-full flex-shrink-0 flex items-center justify-center calendar-event-dot" style="width:${size}px;height:${size}px;background:${e.color};cursor:pointer;overflow:hidden;" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}" onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, ${useFilter})">${categoryIconSvg(e.category, size)}</span>`;
+                        return `<span class="rounded-full flex-shrink-0 flex items-center justify-center calendar-event-dot" style="width:${size}px;height:${size}px;background:${e.color};cursor:pointer;overflow:hidden;" title="${escapeHtml(e.title)} — ${escapeHtml(categoryLabel(e.category))} — ${escapeHtml(e.feedLabel)}"${eventPopupAttr(e)} onclick="event.stopPropagation(); openEventDetailModal('${dateKey(cursor)}', ${dayEvents.indexOf(e)}, ${useFilter})">${categoryIconSvg(e.category, size)}</span>`;
                     }).join('')}
                     ${dotsShown.length > MONTH_EVENT_DOT_CAP ? `<span class="month-event-more">+${dotsShown.length - MONTH_EVENT_DOT_CAP}</span>` : ''}
                 </div>
@@ -11247,7 +11266,7 @@ body.dark-theme[data-palette="mint"] {
                 const notesHtml = note && note.notes ? `<p class="text-xs mt-1 text-gray-500 dark:text-gray-400 line-clamp-4">${escapeHtml(note.notes)}</p>` : '';
                 const externalHtml = externalEvents.length ? `
                     <div class="mt-2 space-y-0.5">
-                        ${externalEvents.slice(0, 3).map(e => `<p class="text-xs truncate flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:${e.color}"></span><span class="truncate">${escapeHtml(e.title)}</span></p>`).join('')}
+                        ${externalEvents.slice(0, 3).map(e => `<p class="text-xs truncate flex items-center gap-1"${eventPopupAttr(e)}><span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:${e.color}"></span><span class="truncate">${escapeHtml(e.title)}</span></p>`).join('')}
                     </div>
                 ` : '';
                 const classesHtml = classesToday.length ? `
@@ -11349,7 +11368,7 @@ body.dark-theme[data-palette="mint"] {
                     <p class="text-sm font-semibold mb-2">Other Events Today</p>
                     <div class="space-y-1">
                         ${externalEvents.map(e => `
-                            <div class="flex items-center gap-2 text-sm">
+                            <div class="flex items-center gap-2 text-sm"${eventPopupAttr(e)}>
                                 <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${e.color}"></span>
                                 <span>${escapeHtml(e.title)}</span>
                                 <span class="category-badge" style="background:${e.color}33; color:${e.color};">${escapeHtml(categoryLabel(e.category))}</span>
@@ -11950,7 +11969,7 @@ body.dark-theme[data-palette="mint"] {
                 const externalHtml = externalEvents.length ? `
                     <div class="mt-2 space-y-1">
                         ${externalEvents.map(e => `
-                            <div class="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300">
+                            <div class="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300"${eventPopupAttr(e)}>
                                 <span class="w-2 h-2 rounded-full flex-shrink-0 mt-1" style="background:${e.color}"></span>
                                 <div class="min-w-0">
                                     <p class="font-medium flex items-center gap-1.5 flex-wrap">${escapeHtml(e.title)}<span class="category-badge" style="background:${e.color}33; color:${e.color};">${escapeHtml(categoryLabel(e.category))}</span></p>
@@ -15599,7 +15618,7 @@ body.dark-theme[data-palette="mint"] {
                 <div class="day-hover-tooltip-section">
                     <p class="day-hover-tooltip-section-title">Events &amp; Assignments</p>
                     ${events.map(e => `
-                        <div class="day-hover-tooltip-item">
+                        <div class="day-hover-tooltip-item"${eventPopupAttr(e)}>
                             <span class="home-dot" style="background:${e.color}; width:0.9rem; height:0.9rem;">${categoryIconSvg(e.category, 12)}</span>
                             <span class="min-w-0">
                                 <span style="font-weight:700;">${escapeHtml(e.title)}</span>

@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-03T00:45:00Z",
+  "title": "Every calendar event now gets a hover preview, with full multi-day/time-range info",
+  "summary": [
+    "The rich hover popup (category, time, calendar/feed source, description) already existed for classes and a few event views, but a lot of event displays -- Month view's bars/dots/all-day lines, Week view's event list, the Day view edit-mode 'Other Events Today' list, Agenda rows, and the Home widget/mini-calendar-preview event lines -- had no hover preview at all. All of them now trigger the same popup.",
+    "The popup's time display got smarter too: a genuinely multi-day event (like a field trip spanning several days) now shows a full 'from date/time to date/time' range instead of just its start time, and a same-day timed event now shows its actual start-to-end range when an end time is known, instead of just the start."
+  ]
+}
