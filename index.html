@@ -1032,6 +1032,11 @@ body.dark-theme[data-palette="mint"] {
         .home-due-group + .home-due-group {
             margin-top: 1rem;
         }
+        /* Upcoming Events' day headers sit inline in one flat .home-list (not their own group
+           wrapper like Due Soon's), so the "new day" gap comes from margin-top on the heading
+           itself instead -- skip it on the very first one so the list doesn't start with a gap. */
+        .home-upcoming-day-heading { margin-top: 1rem; }
+        .home-upcoming-day-heading:first-child { margin-top: 0; }
         .home-due-date-header {
             font-size: 0.78rem;
             font-weight: 800;
@@ -2386,7 +2391,11 @@ body.dark-theme[data-palette="mint"] {
            list-based widgets keep their list top-aligned (a centered *list* would look broken)
            but the list itself still grows via the fluid font sizes above. */
         .home-widget { display: flex; flex-direction: column; }
-        .home-widget-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+        /* overflow-y:auto so a widget whose content outgrows its grid cell (e.g. Upcoming Events
+           with a high "Show up to" count, or just a long Due Soon/Reminders list) scrolls inside
+           its own box instead of being silently clipped by .home-widget's overflow:hidden -- the
+           widget itself stays whatever size it was resized to; only its content scrolls. */
+        .home-widget-body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; }
         .home-widget-body.is-fill-center { justify-content: center; }
         .home-widget-body .home-list { flex: 1; }
         /* ---- Progressive disclosure: extra detail (exact class time, notes, assignment/event
@@ -9302,15 +9311,29 @@ body.dark-theme[data-palette="mint"] {
                 container.innerHTML = classesRowHtml || `<p class="home-widget-empty">No upcoming events.</p>`;
                 return;
             }
+            // Grouped by day with its own subtitle header instead of repeating the date on every
+            // single item -- makes the boundary between one day's events and the next obvious at a
+            // glance, especially once a day has more than one event in it.
+            let lastDateKey = null;
             const eventsListHtml = `<div class="home-list">${trimmed.map(({ date, event }) => {
-                const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                const today0 = appNow(); today0.setHours(0, 0, 0, 0);
+                const isToday = isSameDay(date, today0);
+                const dayHeaderHtml = (() => {
+                    const key = dateKey(date);
+                    if (key === lastDateKey) return '';
+                    lastDateKey = key;
+                    const label = isToday ? 'Today' : date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+                    return `<p class="home-due-date-header home-upcoming-day-heading">${escapeHtml(label)}</p>`;
+                })();
+                const timeStr = event.allDay ? '' : formatEventTimestamp(event.timestamp);
                 const desc = (event.description || '').trim();
                 return `
+                    ${dayHeaderHtml}
                     <div class="home-list-item">
                         <span class="home-dot" style="background:${event.color || 'var(--accent-2)'};"></span>
                         <div>
                             <p class="home-item-title">${escapeHtml(event.title)}</p>
-                            <p class="home-item-sub">${dateStr}${event.feedLabel ? ' · ' + `<span style="color:${event.feedSourceColor || event.color || 'var(--accent-2)'};">${escapeHtml(event.feedLabel)}</span>` : ''}</p>
+                            <p class="home-item-sub">${timeStr ? escapeHtml(timeStr) : 'All day'}${event.feedLabel ? ' · ' + `<span style="color:${event.feedSourceColor || event.color || 'var(--accent-2)'};">${escapeHtml(event.feedLabel)}</span>` : ''}</p>
                             ${desc ? `<p class="home-item-sub home-widget-extra-desc">${escapeHtml(desc.slice(0, 200))}</p>` : ''}
                         </div>
                     </div>

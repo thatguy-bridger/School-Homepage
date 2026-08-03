@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-02T00:40:00Z",
+  "title": "Home widgets scroll instead of clipping, Upcoming Events grouped by day",
+  "summary": [
+    "Every Home widget's body now scrolls internally when its content outgrows the widget's size, instead of silently getting cut off at the bottom -- matters most for Upcoming Events now that it can show up to 50 (or unlimited) items.",
+    "Upcoming Events now groups its list under a bold day heading (\"Today\", \"Wednesday, Aug 5\", etc.) instead of repeating the date on every single item, so it's obvious at a glance where one day's events end and the next day's begin. Timed events now show their actual time instead of just the date; all-day events show \"All day\"."
+  ]
+}
