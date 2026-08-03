@@ -9933,6 +9933,15 @@ body.dark-theme[data-palette="mint"] {
             const dayType = getDayType(date);
             if (!dayType) return [];
             const items = [];
+            // A period only actually runs once a day -- but nothing stops the user from creating
+            // TWO class cards assigned to the exact same scheduleSlot (most commonly: an "Advisory"
+            // divider card added under the A Day category AND a separate one under the B Day
+            // category, since Advisory is a universal/day-type-independent period). Both cards
+            // pass the isUniversal check below on every single day, so without this guard every
+            // day showed Advisory twice -- once per card. First one encountered (in classData's own
+            // order) wins; every later class card sharing that same slot is silently skipped here
+            // rather than producing a second, redundant entry.
+            const seenSlots = new Set();
             classData.forEach(category => {
                 category.classes.forEach(classItem => {
                     if (!classItem.scheduleSlot) return;
@@ -9941,8 +9950,10 @@ body.dark-theme[data-palette="mint"] {
                     const slotDayType = classItem.scheduleSlot.split('_')[0];
                     const isUniversal = classItem.scheduleSlot === 'ADVISORY' || classItem.scheduleSlot === 'ASSEMBLY' || (slot.custom && slot.scope === 'any');
                     if (!isUniversal && slotDayType !== dayType) return;
+                    if (seenSlots.has(classItem.scheduleSlot)) return;
                     const timeRange = getSlotTimeForDate(slot, date);
                     if (!timeRange) return; // e.g. Advisory doesn't run under today's schedule type
+                    seenSlots.add(classItem.scheduleSlot);
                     items.push({ classItem, timeRange, sortKey: timeRange.split(' - ')[0] });
                 });
             });

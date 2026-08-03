@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-03T00:30:00Z",
+  "title": "Actually fixed the double Advisory (it was two class cards, not a calendar duplicate)",
+  "summary": [
+    "Root cause found: Advisory is a universal period (it runs regardless of A/B day), so a separate Advisory divider card under both the A Day category and the B Day category both passed that check on every single day -- one card, then the other, showing Advisory twice in Upcoming Events, the Home widgets, and Day/Week view. getClassesForDate now only lets the first class card for any given period through per day, so a duplicate card assigned to the same period (Advisory or otherwise) no longer produces a second entry."
+  ]
+}
