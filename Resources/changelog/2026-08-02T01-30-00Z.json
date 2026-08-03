@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-02T01:30:00Z",
+  "title": "Tripled the emoji library, more than doubled the icon library",
+  "summary": [
+    "The icon/emoji picker (class cards + calendar categories) went from 154 emoji to 466, and from 54 icons to 124 -- covering science/tech, tools, more sports, music, food, animals, faces, weather, travel, symbols, and office supplies.",
+    "Every new concept got both an icon and matching emoji sharing the same search keyword, so picking whichever style you prefer (\"rocket\" now finds both a rocket icon and 🚀🛰️🛸) works seamlessly instead of one option being available and not the other."
+  ]
+}
