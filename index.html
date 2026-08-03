@@ -4534,7 +4534,7 @@ body.dark-theme[data-palette="mint"] {
                 { term: 'Next Class widget', desc: 'Show/hide the room and teacher chips, and whether the widget tints itself with the current class\'s own color.' },
                 { term: 'Due Soon widget', desc: 'How many days ahead to include assignments due, and whether to still show ones you already dismissed.' },
                 { term: 'Countdowns / Reminders widgets', desc: 'Sort order for the list (soonest/newest/oldest/alphabetical).' },
-                { term: 'Upcoming Events widget', desc: 'How many days ahead to look, whether to include weekends, and which calendar categories to include. Showing every category caps the list at 5 so it doesn\'t take over the screen -- narrow it to specific categories via the filter chips to see everything that matches instead of just the first 5.' },
+                { term: 'Upcoming Events widget', desc: 'How many days ahead to look, how many events to show at once (5 up to Unlimited), whether to include weekends, and which calendar categories to include via the filter chips.' },
                 { term: 'Home layout / presets', desc: 'Drag widgets to reposition or resize them (Edit Home Layout), and save your own named layout presets or pick a built-in one from the preset dropdown.' }
             ] },
             { section: 'Calendar Page', items: [
@@ -9025,8 +9025,9 @@ body.dark-theme[data-palette="mint"] {
             reminders: { sortBy: 'newest' },
             // categories: {catId: false} for hidden ones; absent/true = shown. An empty object
             // means "show every category" -- see renderHomeUpcoming for how that also controls
-            // whether the widget caps its list at 5 or shows everything that matches.
-            upcoming: { daysAhead: 14, showWeekends: true, categories: {} }
+            // whether the widget uses maxItems as a real cap or shows everything that matches.
+            // maxItems: 0 means unlimited.
+            upcoming: { daysAhead: 14, showWeekends: true, categories: {}, maxItems: 10 }
         };
         function loadHomeWidgetSettings(id) {
             let all;
@@ -9101,11 +9102,11 @@ body.dark-theme[data-palette="mint"] {
                     const active = catFilter[c.id] !== false;
                     return `<button type="button" class="category-filter-chip ${active ? 'active' : ''}" style="--chip-color:${escapeAttr(c.color)};" onclick="toggleHomeUpcomingCategoryFilter('${escapeJsAttr(c.id)}')"><span class="filter-chip-dot" style="background:${escapeAttr(c.color)};"></span>${escapeHtml(c.label)}</button>`;
                 }).join('');
-                const hasActiveFilter = Object.values(catFilter).some(v => v === false);
                 rows = uiSelectRow(s.daysAhead, 'Look ahead', [{ value: 7, label: '7 days' }, { value: 14, label: '14 days' }, { value: 30, label: '30 days' }], `saveHomeWidgetSetting('upcoming','daysAhead',Number(this.value))`, 'How far ahead to look for upcoming events')
+                    + uiSelectRow(s.maxItems, 'Show up to', [{ value: 5, label: '5 items' }, { value: 10, label: '10 items' }, { value: 20, label: '20 items' }, { value: 50, label: '50 items' }, { value: 0, label: 'Unlimited' }], `saveHomeWidgetSetting('upcoming','maxItems',Number(this.value))`, 'How many upcoming events this widget lists at once')
                     + uiToggleRow(s.showWeekends, 'Include weekends', `saveHomeWidgetSetting('upcoming','showWeekends',this.checked)`, 'Include Saturday/Sunday events in the list')
                     + `<div class="mini-cal-config-row" style="margin-top:0.5rem;">
-                        <p class="text-xs mb-1.5" style="color:var(--text-muted);">Categories shown${hasActiveFilter ? ' -- showing every matching event, not just the first 5' : ' (showing every category caps the list at 5)'}</p>
+                        <p class="text-xs mb-1.5" style="color:var(--text-muted);">Categories shown</p>
                         <div class="flex flex-wrap gap-1.5">${chipsHtml}</div>
                     </div>`;
             }
@@ -9280,13 +9281,12 @@ body.dark-theme[data-palette="mint"] {
                 `).join('')}</div>
             ` : '';
 
-            // Showing every category by default would be overwhelming on a busy school calendar,
-            // so that case stays capped at 5 like before -- but once the user has actually narrowed
-            // it down via the category filter chips (widget settings), the whole point was to see
-            // everything in those categories, so the cap comes off entirely.
+            // maxItems is a real user-set cap now (see widget settings), not a hardcoded 5 --
+            // 0 means unlimited. Setting a longer "Look ahead" window (daysAhead) is supposed to
+            // actually surface more events, which a silent hardcoded cap used to defeat entirely.
             const catFilter = settings.categories || {};
-            const hasActiveFilter = Object.values(catFilter).some(v => v === false);
-            const cap = hasActiveFilter ? Infinity : 5;
+            const maxItems = Number(settings.maxItems);
+            const cap = maxItems > 0 ? maxItems : Infinity;
 
             const items = [];
             for (let i = 0; i < daysAhead && items.length < cap; i++) {

@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-02T00:30:00Z",
+  "title": "Fixed Upcoming Events silently capping at 5 regardless of Look Ahead setting",
+  "summary": [
+    "The category filter update from last time only lifted the widget's hidden 5-item cap once you'd actually filtered to specific categories -- with every category shown (the default), it stayed capped at 5 no matter what the Look Ahead window was set to, which made a 30-day window look broken when there were clearly way more than 5 events in range.",
+    "Replaced the hardcoded cap with a real setting: Upcoming Events now has a 'Show up to' option (5/10/20/50/Unlimited) in its widget settings, independent of category filtering. Default raised from 5 to 10."
+  ]
+}
