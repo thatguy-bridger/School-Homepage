@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-03T01:00:00Z",
+  "title": "Day view stacks now shrink the class column a lot more; Home widgets reflow around a resize",
+  "summary": [
+    "Opening an overlapping event stack in Day view previously only nudged the class column over a little (up to 68%, then 80% of the width for events). It now shrinks the class column down to a small fixed sliver the moment any stack is open, handing the vast majority of the width to the spread-out events, then springs back the instant every stack is collapsed again.",
+    "Resizing a widget on the Home screen used to just stop dead the moment it would touch a neighboring widget below or beside it. Growing a widget now pushes whatever's in its way further down, and shrinking one lets whatever's below slide up to close the gap -- both live as you drag, not just after you let go."
+  ]
+}

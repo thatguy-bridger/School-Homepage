@@ -2387,6 +2387,14 @@ body.dark-theme[data-palette="mint"] {
             container-type: size;
             container-name: homewidget;
         }
+        /* Any widget being live-pushed out of the way while a SIBLING is being resized (see
+           compactHomeWidgetsVertically) -- grid-row itself can't be smoothly transitioned (it's a
+           discrete CSS value, not an interpolable one), so this is a lighter-weight visual cue
+           that something's reacting to the drag, rather than it just silently teleporting. */
+        .home-widget.is-reflowing {
+            transition: opacity 0.12s ease-in-out;
+            opacity: 0.7;
+        }
         /* ---- Content scaling: tiers keyed off the widget's own width, matched to what fits
            without wrapping/clipping at each size (checked against the tightest real content --
            "No classes scheduled right now.", a countdown row's day count, etc). ---- */
@@ -9016,6 +9024,25 @@ body.dark-theme[data-palette="mint"] {
             return a.row < b.row + b.rowSpan && a.row + a.rowSpan > b.row &&
                    a.col < b.col + b.colSpan && a.col + a.colSpan > b.col;
         }
+        // "Gravity" pass used after a resize: keeps every widget's own column where it is, and
+        // just pulls each one up to the lowest row that doesn't overlap anything already placed
+        // (processed in top-to-bottom, left-to-right order). This is what makes shrinking a
+        // widget let whatever's below it slide up to close the gap, and growing one push
+        // whatever's in its way further down -- instead of resizing just being capped the moment
+        // it would touch a neighbor. `fixed` (the widget actually being resized) is placed first,
+        // at its own row, so the widget under your cursor never itself jumps around.
+        function compactHomeWidgetsVertically(fixed, others) {
+            const placed = [fixed];
+            const result = new Map();
+            others.slice().sort((a, b) => a.row - b.row || a.col - b.col).forEach(other => {
+                let row = 1;
+                while (placed.some(p => homeCellsOverlap({ col: other.col, row, colSpan: other.colSpan, rowSpan: other.rowSpan }, p))) row++;
+                const positioned = { col: other.col, row, colSpan: other.colSpan, rowSpan: other.rowSpan };
+                placed.push(positioned);
+                result.set(other.id, row);
+            });
+            return result;
+        }
         function startHomeWidgetMove(e, el) {
             e.preventDefault();
             const { grid, gapPx, cellPx, stridePx } = homeGridMetrics();
@@ -9078,8 +9105,11 @@ body.dark-theme[data-palette="mint"] {
         }
 
         // --- DRAG TO RESIZE (corner grip, hard grid-cell snapping -- colSpan/rowSpan only ever
-        // change by whole cells, and growing stops dead at the edge of the next occupied cell in
-        // that direction, exactly like resizing a widget on an Android launcher.) ---
+        // change by whole cells). Growing no longer just stops dead at the next occupied cell --
+        // every other widget live-reflows out of the way (compactHomeWidgetsVertically), sliding
+        // down to make room while growing and sliding back up to close the gap while shrinking,
+        // instead of capping the resize at whatever the neighboring widget's position happened to
+        // allow. ---
         function startHomeWidgetResize(e, el) {
             e.preventDefault();
             e.stopPropagation();
@@ -9089,6 +9119,10 @@ body.dark-theme[data-palette="mint"] {
             const entry = def && layout.find(en => en.id === def.id);
             if (!entry) return;
             const others = layout.filter(en => en.id !== entry.id && en.visible);
+            const otherEls = new Map(others.map(o => {
+                const oDef = HOME_WIDGET_DEFS.find(w => w.id === o.id);
+                return [o.id, oDef ? document.getElementById(oDef.el) : null];
+            }));
             const col = entry.col, row = entry.row;
             const startColSpan = entry.colSpan, startRowSpan = entry.rowSpan;
             const startClientX = e.clientX, startClientY = e.clientY;
@@ -9096,8 +9130,10 @@ body.dark-theme[data-palette="mint"] {
             const skeleton = document.createElement('div');
             skeleton.className = 'home-widget-resize-skeleton';
             grid.appendChild(skeleton);
+            others.forEach(o => { const oEl = otherEls.get(o.id); if (oEl) oEl.classList.add('is-reflowing'); });
 
             const sizePx = (span) => span * cellPx + (span - 1) * gapPx;
+            let lastReflow = new Map();
             function paint(colSpan, rowSpan) {
                 skeleton.style.left = ((col - 1) * stridePx) + 'px';
                 skeleton.style.top = ((row - 1) * stridePx) + 'px';
@@ -9105,32 +9141,25 @@ body.dark-theme[data-palette="mint"] {
                 skeleton.style.height = sizePx(rowSpan) + 'px';
                 el.style.gridColumn = `${col} / span ${colSpan}`;
                 el.style.gridRow = `${row} / span ${rowSpan}`;
+                // Live-preview every other widget sliding to the row compaction would settle it
+                // at with THIS tentative size, without touching the real layout data yet -- only
+                // committed on drop (onUp).
+                lastReflow = compactHomeWidgetsVertically({ col, row, colSpan, rowSpan }, others);
+                others.forEach(o => {
+                    const oEl = otherEls.get(o.id);
+                    if (!oEl) return;
+                    oEl.style.gridRow = `${lastReflow.get(o.id)} / span ${o.rowSpan}`;
+                });
             }
             paint(startColSpan, startRowSpan);
 
-            function collides(colSpan, rowSpan) {
-                return others.some(other => homeCellsOverlap({ col, row, colSpan, rowSpan }, other));
-            }
             let lastValid = { colSpan: startColSpan, rowSpan: startRowSpan };
             function target(ev) {
                 const dCol = Math.round((ev.clientX - startClientX) / stridePx);
                 const dRow = Math.round((ev.clientY - startClientY) / stridePx);
                 const maxColSpan = HOME_GRID_COLS - col + 1;
-                let colSpan = Math.max(1, Math.min(maxColSpan, startColSpan + dCol));
-                let rowSpan = Math.max(1, startRowSpan + dRow);
-                // Each axis is checked against the OTHER axis's starting size, not its tentative
-                // one -- a diagonal drag that only really collides on the row axis must not also
-                // eat into the column axis's headroom (and vice versa); testing against a moving
-                // target on both sides at once conflates the two collisions into one.
-                while (colSpan > 1 && collides(colSpan, startRowSpan)) colSpan--;
-                while (rowSpan > 1 && collides(startColSpan, rowSpan)) rowSpan--;
-                // Belt-and-suspenders: the two independent checks above can't catch a widget that
-                // only overlaps the *combined* grown box (e.g. sitting exactly in the new corner),
-                // so do one final joint check and shrink alternately until the actual committed
-                // box is guaranteed collision-free.
-                while ((colSpan > 1 || rowSpan > 1) && collides(colSpan, rowSpan)) {
-                    if (colSpan > 1) colSpan--; else rowSpan--;
-                }
+                const colSpan = Math.max(1, Math.min(maxColSpan, startColSpan + dCol));
+                const rowSpan = Math.max(1, startRowSpan + dRow);
                 return { colSpan, rowSpan };
             }
             function onMove(ev) {
@@ -9144,7 +9173,11 @@ body.dark-theme[data-palette="mint"] {
                 skeleton.remove();
                 entry.colSpan = lastValid.colSpan;
                 entry.rowSpan = lastValid.rowSpan;
-                paint(entry.colSpan, entry.rowSpan);
+                others.forEach(o => {
+                    o.row = lastReflow.get(o.id);
+                    const oEl = otherEls.get(o.id);
+                    if (oEl) oEl.classList.remove('is-reflowing');
+                });
                 saveHomeWidgetLayout(layout);
                 applyHomeWidgetLayout();
                 markHomeLayoutCustom();
@@ -11474,26 +11507,21 @@ body.dark-theme[data-palette="mint"] {
             const dx = depth * 7, dy = depth * -6, scale = (1 - depth * 0.045).toFixed(3);
             return `left:${colLeft}; width:${colWidth}; z-index:${5 + (k - i)}; transform:translate(${dx}px, ${dy}px) scale(${scale});`;
         }
-        // How much of the grid's width the event column gets, given the "base" share computed at
-        // render time (see renderDayViewGrid) plus however much extra room the largest CURRENTLY
-        // SPREAD stack needs. Opening a 3-way stack should visibly steal more width from the class
-        // column than just sitting collapsed does -- each spread lane is otherwise cramped into a
-        // sliver of the already-small base share. Capped at 80% (not 100%) so the class column
-        // still keeps a usable sliver even with a huge cluster spread open, but titles otherwise
-        // get to spread as wide as the grid can reasonably give them.
-        const DAY_GRID_EVENT_COL_MAX_PCT = 80;
+        // Opening ANY stack means the class column should get out of the way, full stop -- not
+        // just nudge over a little. While a stack is spread, the class column shrinks down to a
+        // small fixed sliver (100 - DAY_GRID_EVENT_COL_SPREAD_PCT) so the event column gets the
+        // vast majority of the width to actually spread its lanes into, then springs back to its
+        // normal share the moment every stack is collapsed again.
+        const DAY_GRID_EVENT_COL_SPREAD_PCT = 85;
         function computeDayGridEventColLeftPct(grid) {
             const hasEvents = grid.dataset.hasEvents === '1';
             if (!hasEvents) return 100;
             const basePct = Number(grid.dataset.baseEventColLeftPct) || 65;
-            let maxSpreadSize = 0;
+            let anySpread = false;
             grid.querySelectorAll('.day-grid-event-stacked').forEach(card => {
-                if (spreadEventStacks.has(card.dataset.stackId)) {
-                    maxSpreadSize = Math.max(maxSpreadSize, Number(card.dataset.stackSize) || 0);
-                }
+                if (spreadEventStacks.has(card.dataset.stackId)) anySpread = true;
             });
-            if (maxSpreadSize <= 1) return basePct;
-            return Math.min(DAY_GRID_EVENT_COL_MAX_PCT, basePct + (maxSpreadSize - 1) * 9);
+            return anySpread ? Math.max(basePct, DAY_GRID_EVENT_COL_SPREAD_PCT) : basePct;
         }
         // Patches the grid's existing DOM nodes in place (column geometry + every stack's
         // position/transform/z-index + badge/text) instead of a full renderCalendar() re-render --
@@ -11706,17 +11734,17 @@ body.dark-theme[data-palette="mint"] {
             } else {
                 basePct = Math.max(55, 76 - maxClusterSize * 6); // more overlap -> more room
                 // A re-render (external feed refresh, resize, view revisit, ...) must not silently
-                // undo the extra room a currently-spread stack claimed via toggleEventStack -- find
-                // the largest already-spread cluster (spreadEventStacks persists across renders) and
-                // widen the base share the exact same way toggleEventStack's own formula does, so a
-                // stray re-render mid-spread doesn't snap the layout back to its collapsed width.
-                let maxSpreadSize = 0;
+                // undo the extra room a currently-spread stack claimed via toggleEventStack -- check
+                // for any already-spread cluster (spreadEventStacks persists across renders) and
+                // shrink the class column the exact same way toggleEventStack's own formula does, so
+                // a stray re-render mid-spread doesn't snap the layout back to its collapsed width.
+                let anySpread = false;
                 eventClusters.forEach(cluster => {
                     if (cluster.length < 2) return;
                     const stackId = 'stk_' + cluster.map(c => c.ev.timestamp).join('_');
-                    if (spreadEventStacks.has(stackId)) maxSpreadSize = Math.max(maxSpreadSize, cluster.length);
+                    if (spreadEventStacks.has(stackId)) anySpread = true;
                 });
-                eventColLeftPct = maxSpreadSize > 1 ? Math.min(DAY_GRID_EVENT_COL_MAX_PCT, basePct + (maxSpreadSize - 1) * 9) : basePct;
+                eventColLeftPct = anySpread ? Math.max(basePct, DAY_GRID_EVENT_COL_SPREAD_PCT) : basePct;
                 classColRight = (100 - eventColLeftPct) + '%';
             }
             const eventColLeft = timedEvents.length ? eventColLeftPct + '%' : '100%';
