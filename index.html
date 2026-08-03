@@ -11556,9 +11556,24 @@ body.dark-theme[data-palette="mint"] {
             return clusters;
         }
 
+        // How much of a calendar day a timed event has to span before it stops making sense as a
+        // "long block on the hour grid" and reads better as a plain all-day banner instead -- both
+        // a genuinely marathon same-day event (6am-10pm, etc.) and anything that literally spans
+        // past midnight into another calendar day (which used to render as one giant block
+        // covering the entire rest of the grid, clipped at whatever the grid's bounds happened to
+        // be) qualify. Not "real" all-day data (allDay is still false), just a display decision.
+        const DAY_VIEW_ALLDAY_DURATION_THRESHOLD = 0.7 * 24 * 60; // minutes
+        function isEffectivelyAllDayInDayView(ev) {
+            if (typeof ev.endTimestamp !== 'number' || ev.endTimestamp <= ev.timestamp) return false;
+            const start = new Date(ev.timestamp);
+            const end = new Date(ev.endTimestamp);
+            if (!isSameDay(start, end)) return true; // spans into (or past) another calendar day
+            return (ev.endTimestamp - ev.timestamp) / 60000 >= DAY_VIEW_ALLDAY_DURATION_THRESHOLD;
+        }
+
         function renderDayViewGrid(badgeHtml, classesToday, remindersToday, externalEvents) {
-            const allDayEvents = externalEvents.filter(e => e.allDay);
-            const timedEvents = externalEvents.filter(e => !e.allDay);
+            const allDayEvents = externalEvents.filter(e => e.allDay || isEffectivelyAllDayInDayView(e));
+            const timedEvents = externalEvents.filter(e => !e.allDay && !isEffectivelyAllDayInDayView(e));
             const otherPeriodBlocks = getOtherDayPeriodBlocks(currentDate, classesToday);
 
             let minMin = null, maxMin = null;

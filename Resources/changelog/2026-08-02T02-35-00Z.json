@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-02T02:35:00Z",
+  "title": "Very long or multi-day events now show as all-day banners in Day view",
+  "summary": [
+    "An event spanning most of the day (roughly 70%+ of it, e.g. 6am-10pm) or one that literally continues into a later calendar day used to render as one giant block on the hour grid -- for a multi-day event, that meant a banner effectively covering the entire rest of the day, every day it ran. Both cases now display like a real all-day event (a banner up top, not a block on the grid), even though they're still technically timed events under the hood -- just a display change, not a data change."
+  ]
+}
