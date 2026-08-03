@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-08-02T01:00:00Z",
+  "title": "Divider cards for Lunch/Advisory/Assembly, time frames on every class, icons everywhere, and a real save bug fixed",
+  "summary": [
+    "Fixed a real save bug: reordering classes by drag-and-drop (or dragging a whole category) rebuilds each class from the editor form, and that rebuild was silently dropping the new icon/emoji and Divider fields back to blank every time -- found while investigating a report that class colors weren't saving. Colors themselves tested correctly saved/persisted/reloaded in every path tried; if they're still disappearing after this, the drag-reorder path is the most likely remaining suspect and worth a closer look with exact repro steps.",
+    "New 'Divider' toggle on each class in Edit mode -- for entries like Lunch, Advisory, or Assembly that aren't really a class you click through to. A divider entry renders as small centered text (icon + title + time) instead of a full card: no link, notes, color background, or extra fields.",
+    "Every class card now shows its period's time frame (e.g. '11:40 AM - 1:00 PM'), pulled from the Regular schedule type's time for that slot -- not tied to any specific date, since the Classes page lists classes generically.",
+    "A class's icon/emoji now shows up everywhere its name is rendered, not just its own card -- Week/Day/Month calendar views, Home widgets, and the Today/Weekly digest banners. Calendar category icons got the same treatment in a few spots that were still showing a bare color dot with no icon (Upcoming Events widget, the day-hover tooltip, and both digest banner previews)."
+  ]
+}

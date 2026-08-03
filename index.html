@@ -1243,6 +1243,18 @@ body.dark-theme[data-palette="mint"] {
             flex-shrink: 0;
         }
         .class-card-icon svg { color: var(--class-color, var(--accent-2)); }
+        /* The compact inline version of .class-card-icon -- wherever a class name is rendered via
+           classNameHtml() outside its own card (Week/Day/Month views, Home widgets, digest
+           banners), so a class's icon/emoji shows up everywhere its name does, not just on the
+           Classes page. */
+        .class-name-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.3rem;
+            vertical-align: -0.15em;
+        }
+        .class-name-icon svg { color: var(--class-color, var(--accent-2)); }
 
         .class-card p {
             color: var(--text-secondary);
@@ -1271,6 +1283,35 @@ body.dark-theme[data-palette="mint"] {
         }
         .class-card[data-has-color] .class-meta-chip {
             border-color: color-mix(in srgb, var(--class-color) 35%, var(--glass-border));
+        }
+        .class-meta-chip-time {
+            background: color-mix(in srgb, var(--class-color, var(--accent-2)) 16%, var(--glass-bg-strong));
+            color: var(--class-color, var(--accent-2));
+            font-weight: 700;
+        }
+
+        /* ---- Divider "card" (Lunch/Advisory/Assembly, isDivider:true) -- a labeled break in the
+           day rather than a clickable class, so it's deliberately minimal: no border/background
+           chrome, no click target, just centered text and its time frame. ---- */
+        .class-card-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+            text-align: center;
+        }
+        .class-card-divider-title {
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .class-card-divider-time {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-muted);
         }
 
         .new-tab-button {
@@ -1563,6 +1604,16 @@ body.dark-theme[data-palette="mint"] {
             border-radius: 0.75rem;
             border: 1px solid;
         }
+        .divider-toggle-btn.active { background: var(--accent-2) !important; color: #fff !important; border-color: var(--accent-2) !important; }
+        /* Divider entries (Lunch/Advisory/Assembly) don't use teacher/room/Canvas code/URL/extra
+           links, so dim those fields instead of hiding them outright -- keeps the row's layout
+           stable and the data recoverable (still editable/still saved) if the toggle gets flipped
+           back off later. */
+        .is-divider-row .class-teacher-input,
+        .is-divider-row .class-room-input,
+        .is-divider-row .class-canvas-code-input,
+        .is-divider-row .class-url-input,
+        .is-divider-row .class-extra-links-editor { opacity: 0.35; }
 
         .class-color-swatch-btn {
             flex-shrink: 0;
@@ -6047,6 +6098,19 @@ body.dark-theme[data-palette="mint"] {
             return /^\d/.test(trimmed) ? `Room ${trimmed}` : trimmed;
         }
 
+        // A representative time range for a class's assigned period, independent of any specific
+        // date -- the Classes page lists classes generically (not "today"), so this always reads
+        // off the Regular schedule type's time rather than resolving what today's actual schedule
+        // type happens to be. A wave-dependent slot (3rd/7th period, Lunch) has no single "the"
+        // time -- picks 1st wave as the representative one shown, same as a plain label would.
+        function classSlotTimeLabel(classItem) {
+            const slot = userScheduleSlotOptions.find(o => o.value === classItem.scheduleSlot);
+            if (!slot || !slot.times) return '';
+            let t = slot.times.regular;
+            if (t && typeof t === 'object') t = t['1st'] || t['2nd'] || Object.values(t)[0];
+            return t ? formatTimeRangeLabel(t) : '';
+        }
+
         function getClassMetaChips(classItem) {
             const slotOption = userScheduleSlotOptions.find(o => o.value === classItem.scheduleSlot);
             const chips = [];
@@ -6068,6 +6132,21 @@ body.dark-theme[data-palette="mint"] {
             const hasNote = !!noteValue;
             const extraLinks = (classItem.links || []).filter(l => l.url);
             const hasIcon = isValidGlyphValue(classItem.icon);
+            const timeLabel = classSlotTimeLabel(classItem);
+
+            // Divider mode -- for non-class entries like Lunch/Advisory/Assembly that are really
+            // just a labeled break in the day, not something you click through to. Small, centered,
+            // just the title + time frame -- no links, notes, color background, or click-through.
+            if (classItem.isDivider) {
+                return `
+                    <div class="class-card-divider" data-schedule-slot="${classItem.scheduleSlot || ''}">
+                        ${hasIcon ? `<span class="class-name-icon">${glyphSvgOrEmojiHtml(classItem.icon, 14)}</span>` : ''}
+                        <span class="class-card-divider-title" ${classItem.color ? `style="color:${escapeAttr(classItem.color)}"` : ''}>${escapeHtml(classItem.title)}</span>
+                        ${timeLabel ? `<span class="class-card-divider-time">${escapeHtml(timeLabel)}</span>` : ''}
+                    </div>
+                `;
+            }
+
             return `
                 <div class="class-card p-4 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}
                      onclick="openClassLink('${escapeJsAttr(classItem.url)}')">
@@ -6078,6 +6157,7 @@ body.dark-theme[data-palette="mint"] {
                         </div>
                     </div>
                     <div class="class-meta-row">
+                        ${timeLabel ? `<span class="class-meta-chip class-meta-chip-time">${escapeHtml(timeLabel)}</span>` : ''}
                         ${getClassMetaChips(classItem).map(c => `<span class="class-meta-chip">${escapeHtml(c)}</span>`).join('')}
                         ${extraLinks.length ? `<span class="class-meta-chip class-links-badge" onclick="event.stopPropagation(); toggleClassLinksDropdown(this, event)" title="More links">${classItemTypeIconSvg('link')}${extraLinks.length}</span>` : ''}
                     </div>
@@ -6333,7 +6413,7 @@ body.dark-theme[data-palette="mint"] {
             `).join('');
 
             return `
-                <div class="class-input-group"
+                <div class="class-input-group ${classItem.isDivider ? 'is-divider-row' : ''}"
                      data-category-index="${categoryIndex}"
                      data-class-index="${classIndex}">
                     <span class="drag-handle-class mr-3 p-1 rounded-md transition" title="Drag to reorder class"
@@ -6347,6 +6427,7 @@ body.dark-theme[data-palette="mint"] {
                     </span>
                     <button type="button" class="class-color-swatch-btn ${classItem.color ? '' : 'is-empty'}" data-category-index="${categoryIndex}" data-class-index="${classIndex}" style="background:${classItem.color || 'transparent'}" title="Class color" onclick="event.stopPropagation(); openClassColorPicker(this, ${categoryIndex}, ${classIndex})"></button>
                     <button type="button" class="class-icon-swatch-btn" data-category-index="${categoryIndex}" data-class-index="${classIndex}" style="width:2rem; height:2rem; border-radius:9999px; background:var(--glass-bg-strong); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer;" title="Class icon or emoji" onclick="event.stopPropagation(); pickClassIcon(${categoryIndex}, ${classIndex})">${isValidGlyphValue(classItem.icon) ? glyphSvgOrEmojiHtml(classItem.icon, 16) : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>'}</button>
+                    <button type="button" class="modal-footer-button is-secondary divider-toggle-btn ${classItem.isDivider ? 'active' : ''}" style="padding:0.35rem 0.7rem; font-size:0.72rem; flex-shrink:0;" title="Show this as a small centered text divider (Lunch/Advisory/Assembly) instead of a full class card -- no link, notes, or extra fields shown" onclick="event.stopPropagation(); toggleClassDivider(${categoryIndex}, ${classIndex}, this)">${classItem.isDivider ? 'Divider ✓' : 'Divider'}</button>
                     <input type="text" value="${escapeAttr(classItem.title)}" placeholder="Class Title" class="class-title-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'title', this.value)">
                     <input type="text" value="${escapeAttr(classItem.teacher || '')}" placeholder="Teacher" class="class-teacher-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'teacher', this.value)">
                     <input type="text" value="${escapeAttr(classItem.room || '')}" placeholder="Room" class="class-room-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'room', this.value)">
@@ -6555,6 +6636,16 @@ body.dark-theme[data-palette="mint"] {
             }, { title: 'Choose an icon or emoji for this class', allowNone: true });
         }
 
+        function toggleClassDivider(categoryIndex, classIndex, btn) {
+            const classItem = classData[categoryIndex].classes[classIndex];
+            classItem.isDivider = !classItem.isDivider;
+            saveToLocalStorage();
+            btn.classList.toggle('active', classItem.isDivider);
+            btn.textContent = classItem.isDivider ? 'Divider ✓' : 'Divider';
+            const row = btn.closest('.class-input-group');
+            if (row) row.classList.toggle('is-divider-row', classItem.isDivider);
+        }
+
         document.addEventListener('click', (e) => {
             const popover = document.getElementById('class-color-popover');
             if (popover.classList.contains('hidden')) return;
@@ -6614,6 +6705,8 @@ body.dark-theme[data-palette="mint"] {
                         updatedCategory.classes.push({
                             title, url, scheduleSlot, teacher, room, canvasCourseCode,
                             color: orig.color || '',
+                            icon: orig.icon || '',
+                            isDivider: !!orig.isDivider,
                             noteId: orig.noteId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)),
                             links: Array.isArray(orig.links) ? orig.links : []
                         });
@@ -9330,7 +9423,7 @@ body.dark-theme[data-palette="mint"] {
                 return `
                     ${dayHeaderHtml}
                     <div class="home-list-item">
-                        <span class="home-dot" style="background:${event.color || 'var(--accent-2)'};"></span>
+                        <span class="home-dot" style="background:${event.color || 'var(--accent-2)'}; width:0.9rem; height:0.9rem;">${categoryIconSvg(event.category, 12)}</span>
                         <div>
                             <p class="home-item-title">${escapeHtml(event.title)}</p>
                             <p class="home-item-sub">${timeStr ? escapeHtml(timeStr) : 'All day'}${event.feedLabel ? ' · ' + `<span style="color:${event.feedSourceColor || event.color || 'var(--accent-2)'};">${escapeHtml(event.feedLabel)}</span>` : ''}</p>
@@ -9856,7 +9949,9 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function classNameHtml(classItem) {
-            return classItem.color ? `<span style="color:${escapeAttr(classItem.color)}">${escapeHtml(classItem.title)}</span>` : escapeHtml(classItem.title);
+            const iconHtml = isValidGlyphValue(classItem.icon) ? `<span class="class-name-icon">${glyphSvgOrEmojiHtml(classItem.icon, 13)}</span>` : '';
+            const titleHtml = classItem.color ? `<span style="color:${escapeAttr(classItem.color)}">${escapeHtml(classItem.title)}</span>` : escapeHtml(classItem.title);
+            return iconHtml + titleHtml;
         }
         function classDotHtml(classItem) {
             return classItem.color ? `<span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:${escapeAttr(classItem.color)}"></span>` : '';
@@ -15011,7 +15106,7 @@ body.dark-theme[data-palette="mint"] {
                     <p class="day-hover-tooltip-section-title">Events &amp; Assignments</p>
                     ${events.map(e => `
                         <div class="day-hover-tooltip-item">
-                            <span class="home-dot" style="background:${e.color};"></span>
+                            <span class="home-dot" style="background:${e.color}; width:0.9rem; height:0.9rem;">${categoryIconSvg(e.category, 12)}</span>
                             <span class="min-w-0">
                                 <span style="font-weight:700;">${escapeHtml(e.title)}</span>
                                 <span class="category-badge" style="background:${e.color}33; color:${e.color}; margin-left:0.3rem;">${escapeHtml(categoryLabel(e.category))}</span>
@@ -15533,7 +15628,7 @@ body.dark-theme[data-palette="mint"] {
                 const { dueCount, eventCount, items, countdownsThisWeek } = buildWeeklyDigestData();
                 const preview = items.slice(0, 4).map(({ date, event }) => `
                     <div class="digest-item"${eventPopupAttr(event)}>
-                        <span class="home-dot" style="background:${event.color};"></span>
+                        <span class="home-dot" style="background:${event.color}; width:0.9rem; height:0.9rem;">${categoryIconSvg(event.category, 12)}</span>
                         <span>${escapeHtml(event.title)} <span style="color:var(--text-muted);">— ${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span></span>
                     </div>
                 `).join('');
@@ -15614,7 +15709,7 @@ body.dark-theme[data-palette="mint"] {
                     const timeStr = ev.allDay ? 'All day' : formatEventTimestamp(ev.timestamp);
                     return `
                         <div class="digest-item"${eventPopupAttr(ev)}>
-                            <span class="home-dot" style="background:${ev.color};"></span>
+                            <span class="home-dot" style="background:${ev.color}; width:0.9rem; height:0.9rem;">${categoryIconSvg(ev.category, 12)}</span>
                             <span class="min-w-0">
                                 <span>${escapeHtml(ev.title)} <span style="color:var(--text-muted);">— ${timeStr}</span></span>
                                 ${ev.description ? `<span class="note-preview-line" title="${escapeAttr(ev.description)}">${escapeHtml(ev.description)}</span>` : ''}
