@@ -11448,8 +11448,10 @@ body.dark-theme[data-palette="mint"] {
         // render time (see renderDayViewGrid) plus however much extra room the largest CURRENTLY
         // SPREAD stack needs. Opening a 3-way stack should visibly steal more width from the class
         // column than just sitting collapsed does -- each spread lane is otherwise cramped into a
-        // sliver of the already-small base share. Capped at 68% so classes never get squeezed to
-        // nothing even with a huge cluster spread open.
+        // sliver of the already-small base share. Capped at 80% (not 100%) so the class column
+        // still keeps a usable sliver even with a huge cluster spread open, but titles otherwise
+        // get to spread as wide as the grid can reasonably give them.
+        const DAY_GRID_EVENT_COL_MAX_PCT = 80;
         function computeDayGridEventColLeftPct(grid) {
             const hasEvents = grid.dataset.hasEvents === '1';
             if (!hasEvents) return 100;
@@ -11461,7 +11463,7 @@ body.dark-theme[data-palette="mint"] {
                 }
             });
             if (maxSpreadSize <= 1) return basePct;
-            return Math.min(68, basePct + (maxSpreadSize - 1) * 7);
+            return Math.min(DAY_GRID_EVENT_COL_MAX_PCT, basePct + (maxSpreadSize - 1) * 9);
         }
         // Patches the grid's existing DOM nodes in place (column geometry + every stack's
         // position/transform/z-index + badge/text) instead of a full renderCalendar() re-render --
@@ -11681,7 +11683,7 @@ body.dark-theme[data-palette="mint"] {
                     const stackId = 'stk_' + cluster.map(c => c.ev.timestamp).join('_');
                     if (spreadEventStacks.has(stackId)) maxSpreadSize = Math.max(maxSpreadSize, cluster.length);
                 });
-                eventColLeftPct = maxSpreadSize > 1 ? Math.min(68, basePct + (maxSpreadSize - 1) * 7) : basePct;
+                eventColLeftPct = maxSpreadSize > 1 ? Math.min(DAY_GRID_EVENT_COL_MAX_PCT, basePct + (maxSpreadSize - 1) * 9) : basePct;
                 classColRight = (100 - eventColLeftPct) + '%';
             }
             const eventColLeft = timedEvents.length ? eventColLeftPct + '%' : '100%';

@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-02T02:55:00Z",
+  "title": "Day view: spread event stacks can now claim up to 80% of the width",
+  "summary": [
+    "Spreading a busy overlapping-event stack open used to cap the event column at 68% of the grid's width, which could still leave long titles cramped. It can now grow to 80%, giving spread-out titles noticeably more room to breathe -- the class column still keeps a usable sliver rather than being squeezed to nothing."
+  ]
+}
