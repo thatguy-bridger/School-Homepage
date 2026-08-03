@@ -2957,7 +2957,7 @@ body.dark-theme[data-palette="mint"] {
             color: var(--text-primary);
             font-size: 0.75rem;
             line-height: 1.25;
-            transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out, left 0.38s cubic-bezier(0.34, 1.2, 0.4, 1), right 0.38s cubic-bezier(0.34, 1.2, 0.4, 1), width 0.38s cubic-bezier(0.34, 1.2, 0.4, 1);
         }
         .day-grid-event:hover {
             transform: translateY(-1px);
@@ -6026,6 +6026,10 @@ body.dark-theme[data-palette="mint"] {
             // groups in threes, and a per-row change (or a perRow:1 category) always starts a
             // fresh row rather than silently merging different widths together.
             classData.forEach(category => {
+                // Skip a category entirely on a day where none of its classes are actually
+                // scheduled (e.g. an Advisory-only category on a Short Day with no Advisory
+                // period) rather than leaving behind an empty heading with no cards under it.
+                if (!category.classes.some(isClassScheduledToday)) return;
                 if (category.perRow > 1) {
                     if (currentSideStackedGroup.length > 0 && currentSideStackedGroup[0].perRow !== category.perRow) {
                         htmlOutput += renderSideStackedGroupHTML(currentSideStackedGroup);
@@ -6059,7 +6063,7 @@ body.dark-theme[data-palette="mint"] {
             if (group.length === 1) return renderFullWidthCategoryHTML(group[0]);
             const widthClass = group[0].perRow === 3 ? 'stacked-three' : 'stacked-two';
             const groupItemsHTML = group.map(category => {
-                const classCardsHTML = category.classes.map(createClassCardHTML).join('');
+                const classCardsHTML = category.classes.filter(isClassScheduledToday).map(createClassCardHTML).join('');
                 return `
                     <div class="main-category-item ${widthClass}">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 text-center">${escapeHtml(category.categoryName)}</h2>
@@ -6073,7 +6077,7 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function renderFullWidthCategoryHTML(category) {
-            const classCardsHTML = category.classes.map(createClassCardHTML).join('');
+            const classCardsHTML = category.classes.filter(isClassScheduledToday).map(createClassCardHTML).join('');
             return `
                 <div class="main-category-item full-width">
                     <h2 class="text-3xl sm:text-4xl font-bold mb-6 text-center">${escapeHtml(category.categoryName)}</h2>
@@ -7519,6 +7523,20 @@ body.dark-theme[data-palette="mint"] {
             const slotDayType = slot.value.split('_')[0];
             const isUniversal = slot.value === 'ADVISORY' || slot.value === 'ASSEMBLY' || (slot.custom && slot.scope === 'any');
             return isUniversal || slotDayType === dayType;
+        }
+        // Whether a class card should show on the (read-only) Classes page right now -- a class
+        // with no period assigned isn't date-gated at all, but one that IS assigned only counts
+        // as "today" if its period actually resolves a time today (same rule getClassesForDate
+        // uses), so e.g. Advisory correctly disappears on a Short Day that has no Advisory time.
+        function isClassScheduledToday(classItem) {
+            if (!classItem.scheduleSlot) return true;
+            const today = appNow();
+            const dayType = getDayType(today);
+            if (!dayType) return false;
+            const slot = userScheduleSlotOptions.find(o => o.value === classItem.scheduleSlot);
+            if (!slot) return true;
+            if (!slotAppliesToDayType(slot, dayType)) return false;
+            return !!getSlotTimeForDate(slot, today);
         }
 
         // =====================================================================================
@@ -11415,26 +11433,63 @@ body.dark-theme[data-palette="mint"] {
             const dx = depth * 7, dy = depth * -6, scale = (1 - depth * 0.045).toFixed(3);
             return `left:${colLeft}; width:${colWidth}; z-index:${5 + (k - i)}; transform:translate(${dx}px, ${dy}px) scale(${scale});`;
         }
-        // Patches the stack's existing DOM nodes in place (position/transform/z-index + the badge
-        // and per-card text) instead of a full renderCalendar() re-render -- re-rendering would
-        // destroy and recreate the elements, which skips right past any CSS transition since
-        // there'd be no continuous element to animate from/to. Column geometry is read back off the
-        // .day-grid container's own data attributes (set at render time -- see renderDayViewGrid)
-        // rather than a hardcoded constant, since the event column's width is now content-dependent.
+        // How much of the grid's width the event column gets, given the "base" share computed at
+        // render time (see renderDayViewGrid) plus however much extra room the largest CURRENTLY
+        // SPREAD stack needs. Opening a 3-way stack should visibly steal more width from the class
+        // column than just sitting collapsed does -- each spread lane is otherwise cramped into a
+        // sliver of the already-small base share. Capped at 68% so classes never get squeezed to
+        // nothing even with a huge cluster spread open.
+        function computeDayGridEventColLeftPct(grid) {
+            const hasEvents = grid.dataset.hasEvents === '1';
+            if (!hasEvents) return 100;
+            const basePct = Number(grid.dataset.baseEventColLeftPct) || 65;
+            let maxSpreadSize = 0;
+            grid.querySelectorAll('.day-grid-event-stacked').forEach(card => {
+                if (spreadEventStacks.has(card.dataset.stackId)) {
+                    maxSpreadSize = Math.max(maxSpreadSize, Number(card.dataset.stackSize) || 0);
+                }
+            });
+            if (maxSpreadSize <= 1) return basePct;
+            return Math.min(68, basePct + (maxSpreadSize - 1) * 7);
+        }
+        // Patches the grid's existing DOM nodes in place (column geometry + every stack's
+        // position/transform/z-index + badge/text) instead of a full renderCalendar() re-render --
+        // re-rendering would destroy and recreate the elements, which skips right past any CSS
+        // transition since there'd be no continuous element to animate from/to. Column geometry
+        // recomputes globally (not just for the toggled stack) since spreading one stack open
+        // shrinks the shared class column for every block on the grid, not just that stack's cards.
         function toggleEventStack(stackId) {
             const isSpread = !spreadEventStacks.has(stackId);
             if (isSpread) spreadEventStacks.add(stackId); else spreadEventStacks.delete(stackId);
 
             const grid = document.querySelector('.day-grid');
-            const colLeft = (grid && grid.dataset.eventColLeft) || '65%';
-            const colWidth = (grid && grid.dataset.eventColWidth) || 'calc(35% - 0.25rem)';
+            if (!grid) return;
 
-            const cards = document.querySelectorAll(`.day-grid-event-stacked[data-stack-id="${CSS.escape(stackId)}"]`);
-            cards.forEach(card => {
+            const eventColLeftPct = computeDayGridEventColLeftPct(grid);
+            const colLeft = eventColLeftPct + '%';
+            const colWidth = `calc(${100 - eventColLeftPct}% - 0.25rem)`;
+            const classColRight = (100 - eventColLeftPct) + '%';
+            grid.dataset.eventColLeft = colLeft;
+            grid.dataset.eventColWidth = colWidth;
+
+            // Class cards + "other period" blocks share the class column's right edge -- only
+            // that one value needs patching, everything else about them is per-event and static.
+            grid.querySelectorAll('.day-grid-class-block').forEach(el => {
+                el.style.right = classColRight;
+            });
+            // A lone (non-overlapping) event block just occupies the whole event column.
+            grid.querySelectorAll('.day-grid-event-single').forEach(el => {
+                el.style.left = colLeft;
+                el.style.width = colWidth;
+            });
+            // Every stacked card on the grid (not just this stack's) needs repositioning, since
+            // they all share the same colLeft/colWidth that just changed.
+            grid.querySelectorAll('.day-grid-event-stacked').forEach(card => {
                 const i = Number(card.dataset.stackIndex);
                 const k = Number(card.dataset.stackSize);
+                const cardIsSpread = spreadEventStacks.has(card.dataset.stackId);
                 const isFront = i === 0;
-                const posStyle = stackedCardPosStyle(i, k, isSpread, colLeft, colWidth);
+                const posStyle = stackedCardPosStyle(i, k, cardIsSpread, colLeft, colWidth);
                 // Only touch left/width/z-index/transform -- top/height/background/border are
                 // per-event and already correct, re-setting them would be redundant (and cssText
                 // would need to preserve them anyway).
@@ -11443,10 +11498,10 @@ body.dark-theme[data-palette="mint"] {
                 const bgMatch = /background:[^;]+;/.exec(card.getAttribute('style'));
                 const borderMatch = /border-left:[^;]+;/.exec(card.getAttribute('style'));
                 card.setAttribute('style', `${topMatch ? topMatch[0] : ''} ${heightMatch ? heightMatch[0] : ''} ${posStyle} ${bgMatch ? bgMatch[0] : ''} ${borderMatch ? borderMatch[0] : ''}`);
-                card.classList.toggle('is-spread', isSpread);
+                card.classList.toggle('is-spread', cardIsSpread);
                 const badge = card.querySelector('.day-grid-stack-badge');
-                if (badge) badge.classList.toggle('is-badge-hidden', !(isFront && !isSpread));
-                const textOpacity = isSpread || isFront ? '1' : '0';
+                if (badge) badge.classList.toggle('is-badge-hidden', !(isFront && !cardIsSpread));
+                const textOpacity = cardIsSpread || isFront ? '1' : '0';
                 const titleEl = card.querySelector('.day-grid-event-title');
                 const timeEl = card.querySelector('.day-grid-event-time');
                 if (titleEl) titleEl.style.opacity = textOpacity;
@@ -11559,12 +11614,25 @@ body.dark-theme[data-palette="mint"] {
             // no events at all -> classes get the full width; events exist -> events get a share
             // that grows with the busiest overlapping cluster instead of a flat number.
             const maxClusterSize = eventClusters.reduce((max, c) => Math.max(max, c.length), 1);
-            let classColRight, eventColLeftPct;
+            let classColRight, eventColLeftPct, basePct;
             if (!timedEvents.length) {
                 classColRight = '0.25rem';
                 eventColLeftPct = 100; // unused (no events), kept defined for the data attribute below
+                basePct = 100;
             } else {
-                eventColLeftPct = Math.max(55, 76 - maxClusterSize * 6); // more overlap -> more room
+                basePct = Math.max(55, 76 - maxClusterSize * 6); // more overlap -> more room
+                // A re-render (external feed refresh, resize, view revisit, ...) must not silently
+                // undo the extra room a currently-spread stack claimed via toggleEventStack -- find
+                // the largest already-spread cluster (spreadEventStacks persists across renders) and
+                // widen the base share the exact same way toggleEventStack's own formula does, so a
+                // stray re-render mid-spread doesn't snap the layout back to its collapsed width.
+                let maxSpreadSize = 0;
+                eventClusters.forEach(cluster => {
+                    if (cluster.length < 2) return;
+                    const stackId = 'stk_' + cluster.map(c => c.ev.timestamp).join('_');
+                    if (spreadEventStacks.has(stackId)) maxSpreadSize = Math.max(maxSpreadSize, cluster.length);
+                });
+                eventColLeftPct = maxSpreadSize > 1 ? Math.min(68, basePct + (maxSpreadSize - 1) * 7) : basePct;
                 classColRight = (100 - eventColLeftPct) + '%';
             }
             const eventColLeft = timedEvents.length ? eventColLeftPct + '%' : '100%';
@@ -11578,7 +11646,7 @@ body.dark-theme[data-palette="mint"] {
                 const height = Math.max(20, (eMin - sMin) * pxPerMin);
                 const color = c.classItem.color || 'var(--accent-2)';
                 return `
-                    <a class="day-grid-event" style="top:${top}px; height:${height}px; left:0.25rem; right:${classColRight}; background:color-mix(in srgb, ${color} 20%, var(--glass-bg-strong)); border-left: 3px solid ${escapeAttr(color)};"
+                    <a class="day-grid-event day-grid-class-block" style="top:${top}px; height:${height}px; left:0.25rem; right:${classColRight}; background:color-mix(in srgb, ${color} 20%, var(--glass-bg-strong)); border-left: 3px solid ${escapeAttr(color)};"
                        href="${escapeAttr(normalizeExternalUrl(c.classItem.url) || '#')}" target="_blank" rel="noopener"${classPopupAttr(c.classItem)} onclick="${c.classItem.url ? 'recordClassOpened();' : 'return false;'}">
                         <span class="day-grid-event-title">${classNameHtml(c.classItem)}</span>
                         <span class="day-grid-event-time">${escapeHtml(formatTimeRangeLabel(c.timeRange))}</span>
@@ -11592,7 +11660,7 @@ body.dark-theme[data-palette="mint"] {
                 if (cluster.length === 1) {
                     const item = cluster[0], ev = item.ev;
                     return `
-                        <div class="day-grid-event day-grid-event-ext" style="top:${top(item)}px; height:${height(item)}px; left:${eventColLeft}; width:${eventColWidth}; background:${ev.color}33; border-left: 3px solid ${ev.color};"${eventPopupAttr(ev)}>
+                        <div class="day-grid-event day-grid-event-ext day-grid-event-single" style="top:${top(item)}px; height:${height(item)}px; left:${eventColLeft}; width:${eventColWidth}; background:${ev.color}33; border-left: 3px solid ${ev.color};"${eventPopupAttr(ev)}>
                             <span class="day-grid-event-title">${escapeHtml(ev.title)}</span>
                             <span class="day-grid-event-time">${escapeHtml(formatEventTimestamp(ev.timestamp))}</span>
                         </div>
@@ -11632,7 +11700,7 @@ body.dark-theme[data-palette="mint"] {
                 const height = Math.max(20, (b.eMin - b.sMin) * pxPerMin);
                 const timeLabel = formatTimeRangeLabel(b.timeRange);
                 return `
-                    <div class="day-grid-event" style="top:${top}px; height:${height}px; left:0.25rem; right:${classColRight}; background:color-mix(in srgb, ${OTHER_PERIOD_COLOR} 20%, var(--glass-bg-strong)); border-left: 3px solid ${OTHER_PERIOD_COLOR};" title="${escapeAttr(b.label)} — ${escapeAttr(timeLabel)}">
+                    <div class="day-grid-event day-grid-class-block" style="top:${top}px; height:${height}px; left:0.25rem; right:${classColRight}; background:color-mix(in srgb, ${OTHER_PERIOD_COLOR} 20%, var(--glass-bg-strong)); border-left: 3px solid ${OTHER_PERIOD_COLOR};" title="${escapeAttr(b.label)} — ${escapeAttr(timeLabel)}">
                         <span class="day-grid-event-title">${escapeHtml(b.label)}</span>
                         <span class="day-grid-event-time">${escapeHtml(timeLabel)}</span>
                     </div>
@@ -11649,7 +11717,7 @@ body.dark-theme[data-palette="mint"] {
                         <button type="button" class="modal-footer-button is-secondary" onclick="toggleDayViewEditMode()">Edit Day</button>
                     </div>
                     ${topRowHtml}
-                    <div class="day-grid" style="height:${totalMin * pxPerMin}px;" data-event-col-left="${escapeAttr(eventColLeft)}" data-event-col-width="${escapeAttr(eventColWidth)}">
+                    <div class="day-grid" style="height:${totalMin * pxPerMin}px;" data-event-col-left="${escapeAttr(eventColLeft)}" data-event-col-width="${escapeAttr(eventColWidth)}" data-base-event-col-left-pct="${basePct}" data-has-events="${timedEvents.length ? '1' : '0'}">
                         ${hoursHtml}
                         ${classBlocksHtml}
                         ${otherBlocksHtml}

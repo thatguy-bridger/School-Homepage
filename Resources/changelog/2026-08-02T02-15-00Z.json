@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-02T02:15:00Z",
+  "title": "Classes page hides periods that don't run today, and spreading a day-view stack now actually shrinks the class column",
+  "summary": [
+    "The Classes page used to always show every class regardless of the day's schedule -- an Advisory card stayed visible even on a Short Day with no Advisory period. It now hides any class whose period has no time under today's schedule type (and hides a whole category if none of its classes are scheduled today), matching the same rule Home's widgets and the Calendar already used.",
+    "Spreading open an overlapping event stack in Day view claimed extra width for its own cards, but the class column next to it never actually got narrower to make room -- it does now, and shrinks back the moment the stack collapses again. This also fixes a bug where an unrelated re-render (an external calendar feed finishing its refresh, a window resize, etc.) could silently snap a spread-open stack's layout back to its collapsed width."
+  ]
+}
