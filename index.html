@@ -2918,6 +2918,17 @@ body.dark-theme[data-palette="mint"] {
             border-top: 1px solid var(--glass-border);
             margin-left: 4.2rem;
         }
+        /* Holds every timed external event (single or stacked) -- see renderDayViewGrid. Cards
+           inside position themselves relative to THIS box (left:0 for a lone event, lane math for
+           a spread stack), not the grid itself, so a spread stack that genuinely needs more width
+           than the column has (a big overlapping cluster on a narrow screen) can scroll
+           horizontally within its own column instead of crushing every lane down to unreadable
+           text or spilling into the class column next to it. */
+        .day-grid-event-col {
+            position: absolute;
+            overflow-x: auto;
+            overflow-y: visible;
+        }
         .day-grid-hour-row {
             position: absolute;
             left: 0;
@@ -11410,16 +11421,24 @@ body.dark-theme[data-palette="mint"] {
         // keyed by a stack id stable across re-renders (built from the cluster's own event
         // timestamps), reset per Day view visit since it's a transient view state, not data.
         let spreadEventStacks = new Set();
+        // A spread lane dividing colWidth evenly by a big k (a 5-way overlapping-games cluster on
+        // a narrow/mobile screen, for instance) can shrink to a sliver so thin every word breaks
+        // letter-by-letter -- completely unreadable, and defeats the point of spreading at all.
+        // Lanes never get narrower than this; if k lanes at this width would add up to more than
+        // colWidth, the event column's own overflow-x:auto (see the .day-grid-event-col wrapper in
+        // renderDayViewGrid) lets the extra lanes scroll into view instead of being crushed.
+        const DAY_GRID_MIN_LANE_PX = 110;
         // Collapsed: every card in the cluster occupies the exact same box (colLeft/colWidth,
         // untouched) and is fanned purely with transform/opacity/z-index -- a real "deck of cards"
         // look (each behind card nudged up-right and shrunk slightly, dimmer the further back) that
         // reads as obviously stacked with depth, instead of the old approach of nudging left/width
         // by a few px per card (which just smeared each card's text into the next one's). Spread:
-        // unchanged -- each card gets its own equal-width lane across colWidth, real position, full
-        // opacity, no transform.
+        // each card gets its own lane across colWidth (or DAY_GRID_MIN_LANE_PX, whichever is
+        // wider), real position, full opacity, no transform.
         function stackedCardPosStyle(i, k, isSpread, colLeft, colWidth) {
             if (isSpread) {
-                return `left:calc(${colLeft} + (${colWidth}) * ${i} / ${k}); width:calc((${colWidth}) / ${k} - 4px); z-index:${5 + (k - i)}; transform:none;`;
+                const lane = `max(${DAY_GRID_MIN_LANE_PX}px, calc((${colWidth}) / ${k}))`;
+                return `left:calc(${colLeft} + (${lane}) * ${i}); width:calc((${lane}) - 4px); z-index:${5 + (k - i)}; transform:none;`;
             }
             const depth = Math.min(i, 4); // cap the fan so a huge cluster doesn't run off the card
             const dx = depth * 7, dy = depth * -6, scale = (1 - depth * 0.045).toFixed(3);
@@ -11489,19 +11508,22 @@ body.dark-theme[data-palette="mint"] {
             grid.querySelectorAll('.day-grid-class-block').forEach(el => {
                 el.style.right = classColRight;
             });
-            // A lone (non-overlapping) event block just occupies the whole event column.
-            grid.querySelectorAll('.day-grid-event-single').forEach(el => {
-                el.style.left = colLeft;
-                el.style.width = colWidth;
-            });
+            // The event column wrapper (see renderDayViewGrid) is what actually carries
+            // left/width now -- individual single/stacked cards inside it position themselves
+            // relative to its box (left:0 / lane math), not the grid directly.
+            const eventCol = grid.querySelector('.day-grid-event-col');
+            if (eventCol) {
+                eventCol.style.left = colLeft;
+                eventCol.style.width = colWidth;
+            }
             // Every stacked card on the grid (not just this stack's) needs repositioning, since
-            // they all share the same colLeft/colWidth that just changed.
+            // they all share the same colWidth that just changed.
             grid.querySelectorAll('.day-grid-event-stacked').forEach(card => {
                 const i = Number(card.dataset.stackIndex);
                 const k = Number(card.dataset.stackSize);
                 const cardIsSpread = spreadEventStacks.has(card.dataset.stackId);
                 const isFront = i === 0;
-                const posStyle = stackedCardPosStyle(i, k, cardIsSpread, colLeft, colWidth);
+                const posStyle = stackedCardPosStyle(i, k, cardIsSpread, '0px', colWidth);
                 // Only touch left/width/z-index/transform -- top/height/background/border are
                 // per-event and already correct, re-setting them would be redundant (and cssText
                 // would need to preserve them anyway).
@@ -11692,7 +11714,7 @@ body.dark-theme[data-palette="mint"] {
                 if (cluster.length === 1) {
                     const item = cluster[0], ev = item.ev;
                     return `
-                        <div class="day-grid-event day-grid-event-ext day-grid-event-single" style="top:${top(item)}px; height:${height(item)}px; left:${eventColLeft}; width:${eventColWidth}; background:${ev.color}33; border-left: 3px solid ${ev.color};"${eventPopupAttr(ev)}>
+                        <div class="day-grid-event day-grid-event-ext day-grid-event-single" style="top:${top(item)}px; height:${height(item)}px; left:0; width:100%; background:${ev.color}33; border-left: 3px solid ${ev.color};"${eventPopupAttr(ev)}>
                             <span class="day-grid-event-title">${escapeHtml(ev.title)}</span>
                             <span class="day-grid-event-time">${escapeHtml(formatEventTimestamp(ev.timestamp))}</span>
                         </div>
@@ -11705,7 +11727,7 @@ body.dark-theme[data-palette="mint"] {
                 const k = cluster.length;
                 return cluster.map((item, i) => {
                     const ev = item.ev;
-                    const posStyle = stackedCardPosStyle(i, k, isSpread, eventColLeft, eventColWidth);
+                    const posStyle = stackedCardPosStyle(i, k, isSpread, '0px', eventColWidth);
                     // Collapsed: every card in the cluster shares the exact same box (no left/width
                     // spread at all) and is fanned purely via transform+opacity, so it reads as a
                     // real deck of cards with depth -- only the front (i=0) card's text is legible,
@@ -11742,6 +11764,19 @@ body.dark-theme[data-palette="mint"] {
             const isToday = isSameDay(currentDate, appNow());
             const nowLineHtml = isToday ? `<div class="day-grid-now-line" id="day-grid-now-line"><span class="day-grid-now-dot"></span></div>` : '';
 
+            // All event blocks (single + stacked) live inside their own column wrapper, positioned
+            // at the event column's left/width, instead of being placed directly against .day-grid
+            // with that left/width baked into each card. A spread stack's lanes are never allowed
+            // to shrink below DAY_GRID_MIN_LANE_PX (see stackedCardPosStyle), so a big enough
+            // cluster can genuinely need more width than the column has -- this wrapper's own
+            // overflow-x:auto lets that excess scroll into view within the event column instead of
+            // either crushing lane text unreadably thin or spilling visually into the class column.
+            const eventColHtml = timedEvents.length ? `
+                <div class="day-grid-event-col" style="top:0; height:${totalMin * pxPerMin}px; left:${eventColLeft}; width:${eventColWidth};">
+                    ${eventBlocksHtml}
+                </div>
+            ` : '';
+
             return `
                 <div class="w-full" data-day-grid-start="${gridStart}" data-day-grid-end="${gridEnd}" data-day-grid-is-today="${isToday}">
                     <div class="flex justify-between items-center mb-6">
@@ -11753,7 +11788,7 @@ body.dark-theme[data-palette="mint"] {
                         ${hoursHtml}
                         ${classBlocksHtml}
                         ${otherBlocksHtml}
-                        ${eventBlocksHtml}
+                        ${eventColHtml}
                         ${nowLineHtml}
                     </div>
                 </div>

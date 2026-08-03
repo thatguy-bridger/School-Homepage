@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-03T00:20:00Z",
+  "title": "Day view: spread event lanes never shrink below readable width",
+  "summary": [
+    "On a narrow screen, spreading a busy stack of overlapping events (several games all starting around the same time, for example) could divide the event column into so many equal lanes that every title crushed down to a sliver only a few pixels wide -- letters wrapping one per line, completely unreadable.",
+    "Spread lanes now have a minimum width, and the event column got its own horizontal scroll area: if a cluster genuinely needs more room than the column has, the extra events scroll into view instead of being squeezed into illegible slivers or spilling into the class column next to them."
+  ]
+}
