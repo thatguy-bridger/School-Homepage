@@ -1300,7 +1300,11 @@ body.dark-theme[data-palette="mint"] {
             gap: 0.5rem;
             padding: 0.5rem 0;
             text-align: center;
+            text-decoration: none;
         }
+        .class-card-divider.is-linked { cursor: pointer; border-radius: 0.6rem; transition: background-color 0.2s ease-in-out; }
+        .class-card-divider.is-linked:hover { background: var(--glass-bg-strong); }
+        .class-card-divider.is-linked:hover .class-card-divider-title { color: var(--accent-2); }
         .class-card-divider-title {
             font-size: 0.82rem;
             font-weight: 800;
@@ -1605,14 +1609,14 @@ body.dark-theme[data-palette="mint"] {
             border: 1px solid;
         }
         .divider-toggle-btn.active { background: var(--accent-2) !important; color: #fff !important; border-color: var(--accent-2) !important; }
-        /* Divider entries (Lunch/Advisory/Assembly) don't use teacher/room/Canvas code/URL/extra
+        /* Divider entries (Lunch/Advisory/Assembly) don't use teacher/room/Canvas code/extra
            links, so dim those fields instead of hiding them outright -- keeps the row's layout
            stable and the data recoverable (still editable/still saved) if the toggle gets flipped
-           back off later. */
+           back off later. The URL field stays active -- a divider can still optionally link
+           somewhere (e.g. a lunch menu page) even though it otherwise shows no other class info. */
         .is-divider-row .class-teacher-input,
         .is-divider-row .class-room-input,
         .is-divider-row .class-canvas-code-input,
-        .is-divider-row .class-url-input,
         .is-divider-row .class-extra-links-editor { opacity: 0.35; }
 
         .class-color-swatch-btn {
@@ -6135,15 +6139,22 @@ body.dark-theme[data-palette="mint"] {
             const timeLabel = classSlotTimeLabel(classItem);
 
             // Divider mode -- for non-class entries like Lunch/Advisory/Assembly that are really
-            // just a labeled break in the day, not something you click through to. Small, centered,
-            // just the title + time frame -- no links, notes, color background, or click-through.
+            // just a labeled break in the day, not a full class. Small, centered, just the title +
+            // time frame -- no notes, color background, or extra links -- but it can still
+            // optionally link somewhere (e.g. a lunch menu page) via the one URL field, same as a
+            // regular class card, if one's set.
             if (classItem.isDivider) {
+                const hasUrl = !!(classItem.url && classItem.url.trim());
+                const tag = hasUrl ? 'a' : 'div';
+                const linkAttrs = hasUrl
+                    ? ` href="${escapeAttr(normalizeExternalUrl(classItem.url) || '#')}" target="_blank" rel="noopener" onclick="recordClassOpened();"`
+                    : '';
                 return `
-                    <div class="class-card-divider" data-schedule-slot="${classItem.scheduleSlot || ''}">
+                    <${tag} class="class-card-divider ${hasUrl ? 'is-linked' : ''}" data-schedule-slot="${classItem.scheduleSlot || ''}"${linkAttrs}>
                         ${hasIcon ? `<span class="class-name-icon">${glyphSvgOrEmojiHtml(classItem.icon, 14)}</span>` : ''}
                         <span class="class-card-divider-title" ${classItem.color ? `style="color:${escapeAttr(classItem.color)}"` : ''}>${escapeHtml(classItem.title)}</span>
                         ${timeLabel ? `<span class="class-card-divider-time">${escapeHtml(timeLabel)}</span>` : ''}
-                    </div>
+                    </${tag}>
                 `;
             }
 

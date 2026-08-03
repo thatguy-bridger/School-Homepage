@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-02T01:10:00Z",
+  "title": "Divider cards can still link somewhere",
+  "summary": [
+    "A Divider entry (Lunch/Advisory/Assembly) still has its URL field usable in Edit mode -- the other class-specific fields (teacher/room/Canvas code/extra links) stay dimmed since a divider doesn't use them, but the URL doesn't. Setting one makes the divider clickable (e.g. link to a lunch menu page) while staying otherwise minimal; leaving it blank keeps it as plain non-clickable text like before."
+  ]
+}
