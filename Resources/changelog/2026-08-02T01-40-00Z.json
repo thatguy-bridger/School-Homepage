@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-02T01:40:00Z",
+  "title": "Day view now uses the full screen width, and stacked events unstack smoothly",
+  "summary": [
+    "The Calendar page's Day view was capped at a narrow centered column (max-w-2xl -- about 672px) regardless of screen size, leaving roughly half the screen empty on anything wider than a laptop. It now uses the full width, same as Month/Week/Agenda already do.",
+    "Clicking a stack of overlapping events used to snap instantly into its spread-out layout (a full page re-render, which can't animate). It now smoothly slides the cards apart -- and back together -- with a spring-like transition, since the same card elements are patched in place instead of being destroyed and rebuilt on every click."
+  ]
+}

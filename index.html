@@ -2966,10 +2966,13 @@ body.dark-theme[data-palette="mint"] {
         }
         .day-grid-event-title { display: block; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .day-grid-event-time { display: block; font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; }
-        /* ---- Overlapping-event card stack (collapsed = cascaded/fanned, click to spread) ---- */
+        /* ---- Overlapping-event card stack (collapsed = cascaded/fanned, click to spread) ----
+           left/width/z-index are patched in place by toggleEventStack rather than re-rendered, so
+           they can actually transition smoothly here instead of snapping between layouts. */
         .day-grid-event-stacked {
             cursor: pointer;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), -3px 0 0 -1px var(--glass-bg-strong), -3px 0 0 0 var(--glass-border);
+            transition: left 0.38s cubic-bezier(0.34, 1.2, 0.4, 1), width 0.38s cubic-bezier(0.34, 1.2, 0.4, 1), box-shadow 0.25s ease-in-out, transform 0.15s ease-in-out;
         }
         .day-grid-event-stacked.is-spread {
             /* Once spread, each card sits in its own lane -- the "there's more behind me"
@@ -2990,7 +2993,11 @@ body.dark-theme[data-palette="mint"] {
             text-align: center;
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
             pointer-events: none;
+            transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
         }
+        /* Not Tailwind's .hidden (display:none) -- opacity/scale only, so it can actually fade
+           out/in smoothly rather than popping instantly, in step with the card's own animation. */
+        .day-grid-stack-badge.is-badge-hidden { opacity: 0; transform: scale(0.5); pointer-events: none; }
         .day-grid-now-line {
             position: absolute;
             left: 0;
@@ -11335,7 +11342,7 @@ body.dark-theme[data-palette="mint"] {
             ` : '';
 
             return `
-                <div class="max-w-2xl mx-auto">
+                <div class="w-full">
                     <div class="flex justify-between items-center mb-6">
                         ${badgeHtml}
                         <button type="button" class="modal-footer-button is-secondary" onclick="toggleDayViewEditMode()">View Schedule</button>
@@ -11393,10 +11400,43 @@ body.dark-theme[data-palette="mint"] {
         // keyed by a stack id stable across re-renders (built from the cluster's own event
         // timestamps), reset per Day view visit since it's a transient view state, not data.
         let spreadEventStacks = new Set();
+        // The event column's footprint (65% of the grid width -> the right edge) -- module-level
+        // since stackedCardPosStyle needs it both at render time (renderDayViewGrid) and at toggle
+        // time (toggleEventStack, which patches existing DOM nodes in place rather than
+        // re-rendering, so left/width can transition smoothly instead of snapping).
+        const DAY_GRID_EVENT_COL_LEFT = '65%';
+        const DAY_GRID_EVENT_COL_WIDTH = 'calc(35% - 0.25rem)';
+        function stackedCardPosStyle(i, k, isSpread) {
+            return isSpread
+                ? `left:calc(${DAY_GRID_EVENT_COL_LEFT} + (${DAY_GRID_EVENT_COL_WIDTH}) * ${i} / ${k}); width:calc((${DAY_GRID_EVENT_COL_WIDTH}) / ${k} - 4px); z-index:${5 + i};`
+                : `left:calc(${DAY_GRID_EVENT_COL_LEFT} + ${i * 10}px); width:calc(${DAY_GRID_EVENT_COL_WIDTH} - ${(k - 1) * 10}px); z-index:${5 + i};`;
+        }
+        // Patches the stack's existing DOM nodes in place (left/width/z-index + the badge/class
+        // toggle) instead of a full renderCalendar() re-render -- re-rendering would destroy and
+        // recreate the elements, which skips right past any CSS transition since there'd be no
+        // continuous element to animate from/to. Patching the same nodes lets .day-grid-event-
+        // stacked's left/width transition (see CSS) actually animate the spread/collapse.
         function toggleEventStack(stackId) {
-            if (spreadEventStacks.has(stackId)) spreadEventStacks.delete(stackId);
-            else spreadEventStacks.add(stackId);
-            renderCalendar();
+            const isSpread = !spreadEventStacks.has(stackId);
+            if (isSpread) spreadEventStacks.add(stackId); else spreadEventStacks.delete(stackId);
+
+            const cards = document.querySelectorAll(`.day-grid-event-stacked[data-stack-id="${CSS.escape(stackId)}"]`);
+            cards.forEach(card => {
+                const i = Number(card.dataset.stackIndex);
+                const k = Number(card.dataset.stackSize);
+                const posStyle = stackedCardPosStyle(i, k, isSpread);
+                // Only touch left/width/z-index -- top/height/background/border are per-event and
+                // already correct, re-setting them would be redundant (and cssText would need to
+                // preserve them anyway).
+                const topMatch = /top:[^;]+;/.exec(card.getAttribute('style'));
+                const heightMatch = /height:[^;]+;/.exec(card.getAttribute('style'));
+                const bgMatch = /background:[^;]+;/.exec(card.getAttribute('style'));
+                const borderMatch = /border-left:[^;]+;/.exec(card.getAttribute('style'));
+                card.setAttribute('style', `${topMatch ? topMatch[0] : ''} ${heightMatch ? heightMatch[0] : ''} ${posStyle} ${bgMatch ? bgMatch[0] : ''} ${borderMatch ? borderMatch[0] : ''}`);
+                card.classList.toggle('is-spread', isSpread);
+                const badge = card.querySelector('.day-grid-stack-badge');
+                if (badge) badge.classList.toggle('is-badge-hidden', !(i === 0 && !isSpread));
+            });
         }
         // Groups timed events into clusters of mutually-overlapping ones (transitively -- A/B
         // overlapping and B/C overlapping puts A/B/C in one cluster even if A/C don't directly
@@ -11454,7 +11494,7 @@ body.dark-theme[data-palette="mint"] {
 
             if (minMin === null) {
                 return `
-                    <div class="max-w-2xl mx-auto">
+                    <div class="w-full">
                         <div class="flex justify-between items-center mb-6">
                             ${badgeHtml}
                             <button type="button" class="modal-footer-button is-secondary" onclick="toggleDayViewEditMode()">Edit Day</button>
@@ -11500,8 +11540,6 @@ body.dark-theme[data-palette="mint"] {
             // expressed as CSS calc() so clustered events can subdivide it -- computed up front so
             // clusterOverlappingRanges (a plain interval-overlap grouping, no positioning opinions
             // of its own) has sMin/eMin to work with.
-            const EVENT_COL_LEFT = '65%';
-            const EVENT_COL_WIDTH = 'calc(35% - 0.25rem)';
             const timedEventGeoms = timedEvents.map(ev => {
                 const d = new Date(ev.timestamp);
                 const m = d.getHours() * 60 + d.getMinutes();
@@ -11520,7 +11558,7 @@ body.dark-theme[data-palette="mint"] {
                 if (cluster.length === 1) {
                     const item = cluster[0], ev = item.ev;
                     return `
-                        <div class="day-grid-event day-grid-event-ext" style="top:${top(item)}px; height:${height(item)}px; left:${EVENT_COL_LEFT}; width:${EVENT_COL_WIDTH}; background:${ev.color}33; border-left: 3px solid ${ev.color};"${eventPopupAttr(ev)}>
+                        <div class="day-grid-event day-grid-event-ext" style="top:${top(item)}px; height:${height(item)}px; left:${DAY_GRID_EVENT_COL_LEFT}; width:${DAY_GRID_EVENT_COL_WIDTH}; background:${ev.color}33; border-left: 3px solid ${ev.color};"${eventPopupAttr(ev)}>
                             <span class="day-grid-event-title">${escapeHtml(ev.title)}</span>
                             <span class="day-grid-event-time">${escapeHtml(formatEventTimestamp(ev.timestamp))}</span>
                         </div>
@@ -11533,12 +11571,10 @@ body.dark-theme[data-palette="mint"] {
                 const k = cluster.length;
                 return cluster.map((item, i) => {
                     const ev = item.ev;
-                    const posStyle = isSpread
-                        ? `left:calc(${EVENT_COL_LEFT} + (${EVENT_COL_WIDTH}) * ${i} / ${k}); width:calc((${EVENT_COL_WIDTH}) / ${k} - 4px); z-index:${5 + i};`
-                        : `left:calc(${EVENT_COL_LEFT} + ${i * 10}px); width:calc(${EVENT_COL_WIDTH} - ${(k - 1) * 10}px); z-index:${5 + i};`;
+                    const posStyle = stackedCardPosStyle(i, k, isSpread);
                     return `
-                        <div class="day-grid-event day-grid-event-ext day-grid-event-stacked ${isSpread ? 'is-spread' : ''}" style="top:${top(item)}px; height:${height(item)}px; ${posStyle} background:${ev.color}33; border-left: 3px solid ${ev.color};"${eventPopupAttr(ev)} onclick="toggleEventStack('${stackId}')">
-                            ${(!isSpread && i === 0) ? `<span class="day-grid-stack-badge" title="${k} overlapping events -- click to spread them out">${k}</span>` : ''}
+                        <div class="day-grid-event day-grid-event-ext day-grid-event-stacked ${isSpread ? 'is-spread' : ''}" data-stack-id="${escapeAttr(stackId)}" data-stack-index="${i}" data-stack-size="${k}" style="top:${top(item)}px; height:${height(item)}px; ${posStyle} background:${ev.color}33; border-left: 3px solid ${ev.color};"${eventPopupAttr(ev)} onclick="toggleEventStack('${stackId}')">
+                            <span class="day-grid-stack-badge ${(!isSpread && i === 0) ? '' : 'is-badge-hidden'}" title="${k} overlapping events -- click to spread them out">${k}</span>
                             <span class="day-grid-event-title">${escapeHtml(ev.title)}</span>
                             <span class="day-grid-event-time">${escapeHtml(formatEventTimestamp(ev.timestamp))}</span>
                         </div>
@@ -11566,7 +11602,7 @@ body.dark-theme[data-palette="mint"] {
             const nowLineHtml = isToday ? `<div class="day-grid-now-line" id="day-grid-now-line"><span class="day-grid-now-dot"></span></div>` : '';
 
             return `
-                <div class="max-w-2xl mx-auto" data-day-grid-start="${gridStart}" data-day-grid-end="${gridEnd}" data-day-grid-is-today="${isToday}">
+                <div class="w-full" data-day-grid-start="${gridStart}" data-day-grid-end="${gridEnd}" data-day-grid-is-today="${isToday}">
                     <div class="flex justify-between items-center mb-6">
                         ${badgeHtml}
                         <button type="button" class="modal-footer-button is-secondary" onclick="toggleDayViewEditMode()">Edit Day</button>
