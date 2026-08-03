@@ -1,101 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alta High Events to ICS</title>
-    <style>
-        body { font-family: system-ui, sans-serif; padding: 2rem; max-width: 600px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #a81813; color: white; border: none; border-radius: 4px; font-weight: bold; }
-        button:disabled { background: #ccc; }
-        #status { margin-top: 15px; color: #555; }
-    </style>
-</head>
-<body>
+const API_URL = "https://api.vegaevents.com/public/v2/events/organization/ittDkE5rnVVQv7UtANIr/public?q=*&limit=100000&offset=0&from=2026-01-01T02%3A16%3A51.106Z";
 
-    <h2>Alta High Events to ICS Converter</h2>
-    <button id="downloadBtn">Fetch Events & Download .ics</button>
-    <p id="status"></p>
+function doGet(e) {
+  // Fetch the live data from the Vega API
+  const response = UrlFetchApp.fetch(API_URL);
+  const data = JSON.parse(response.getContentText());
+  const eventsArray = data.items || [];
+  
+  // Build the ICS content
+  let icsContent = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//AltaHighEvents//CustomExport//EN\r\n";
+  
+  eventsArray.forEach(event => {
+    const summary = event.name || "Untitled Event";
+    const start = formatICSDate(event.startTime);
+    const end = formatICSDate(event.endTime);
+    const description = event.description || "";
+    
+    if (start) {
+      icsContent += "BEGIN:VEVENT\r\n";
+      icsContent += `DTSTART:${start}\r\n`;
+      if (end) icsContent += `DTEND:${end}\r\n`;
+      icsContent += `SUMMARY:${summary.replace(/,/g, '\\,')}\r\n`;
+      if (description) {
+        icsContent += `DESCRIPTION:${description.replace(/\n/g, '\\n').replace(/,/g, '\\,')}\r\n`;
+      }
+      icsContent += "END:VEVENT\r\n";
+    }
+  });
+  
+  icsContent += "END:VCALENDAR";
+  
+  // Serve the response as an official ICAL endpoint
+  return ContentService.createTextOutput(icsContent)
+    .setMimeType(ContentService.MimeType.ICAL);
+}
 
-    <script>
-        // Your exact API URL
-        const API_URL = "https://api.vegaevents.com/public/v2/events/organization/ittDkE5rnVVQv7UtANIr/public?q=*&limit=100000&offset=0&from=2026-01-01T02%3A16%3A51.106Z";
-
-        // Converts standard ISO dates to ICS format (e.g., 20260117T040000Z)
-        function formatICSDate(dateString) {
-            if (!dateString) return '';
-            const d = new Date(dateString);
-            return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-        }
-
-        document.getElementById('downloadBtn').addEventListener('click', async () => {
-            const btn = document.getElementById('downloadBtn');
-            const status = document.getElementById('status');
-            
-            btn.disabled = true;
-            status.innerText = "Fetching data...";
-
-            try {
-                const response = await fetch(API_URL);
-                const data = await response.json();
-                
-                // The data you provided stores the events inside an "items" array
-                const eventsArray = data.items || []; 
-
-                if (eventsArray.length === 0) {
-                    status.innerText = "No events found.";
-                    btn.disabled = false;
-                    return;
-                }
-
-                status.innerText = `Found ${eventsArray.length} events. Building ICS file...`;
-
-                // ICS Header
-                let icsContent = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//AltaHighEvents//CustomExport//EN\r\n";
-
-                // Loop through and build each event using your specific data structure
-                eventsArray.forEach(event => {
-                    const summary = event.name || "Untitled Event";
-                    const start = formatICSDate(event.startTime);
-                    const end = formatICSDate(event.endTime);
-                    const description = event.description || "";
-
-                    if (start) {
-                        icsContent += "BEGIN:VEVENT\r\n";
-                        icsContent += `DTSTART:${start}\r\n`;
-                        if (end) icsContent += `DTEND:${end}\r\n`;
-                        icsContent += `SUMMARY:${summary.replace(/,/g, '\\,')}\r\n`;
-                        
-                        if (description) {
-                            icsContent += `DESCRIPTION:${description.replace(/\n/g, '\\n').replace(/,/g, '\\,')}\r\n`;
-                        }
-                        
-                        icsContent += "END:VEVENT\r\n";
-                    }
-                });
-
-                // ICS Footer
-                icsContent += "END:VCALENDAR";
-
-                // Create a downloadable file in the browser
-                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'alta_events.ics';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                status.innerText = "Download complete! Check your downloads folder.";
-            } catch (error) {
-                console.error(error);
-                status.innerText = "Error: " + error.message + " (Check the console. If it says 'Failed to fetch', the server might be blocking direct browser access via CORS.)";
-            } finally {
-                btn.disabled = false;
-            }
-        });
-    </script>
-</body>
-</html>
+// Helper to convert the standard ISO strings into ICS format
+function formatICSDate(dateString) {
+  if (!dateString) return '';
+  const d = new Date(dateString);
+  return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+}
