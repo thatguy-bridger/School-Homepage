@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-03T00:05:00Z",
+  "title": "Reverted Classes page schedule-hiding; de-duped exact-copy calendar events",
+  "summary": [
+    "Undid the recent change that hid a class on the Classes page when its period wasn't scheduled that day (e.g. Advisory on a Short Day) -- the Classes page now always shows every class again, regardless of today's schedule.",
+    "Fixed a double Advisory (and any other exact-copy event) showing up in the calendar: rebuildExternalEventsIndex now collapses events on the same day that share the exact same title, start time, end time, and all-day-ness down to one, instead of showing every copy a feed (or overlapping feeds) happened to publish."
+  ]
+}

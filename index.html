@@ -6037,10 +6037,6 @@ body.dark-theme[data-palette="mint"] {
             // groups in threes, and a per-row change (or a perRow:1 category) always starts a
             // fresh row rather than silently merging different widths together.
             classData.forEach(category => {
-                // Skip a category entirely on a day where none of its classes are actually
-                // scheduled (e.g. an Advisory-only category on a Short Day with no Advisory
-                // period) rather than leaving behind an empty heading with no cards under it.
-                if (!category.classes.some(isClassScheduledToday)) return;
                 if (category.perRow > 1) {
                     if (currentSideStackedGroup.length > 0 && currentSideStackedGroup[0].perRow !== category.perRow) {
                         htmlOutput += renderSideStackedGroupHTML(currentSideStackedGroup);
@@ -6074,7 +6070,7 @@ body.dark-theme[data-palette="mint"] {
             if (group.length === 1) return renderFullWidthCategoryHTML(group[0]);
             const widthClass = group[0].perRow === 3 ? 'stacked-three' : 'stacked-two';
             const groupItemsHTML = group.map(category => {
-                const classCardsHTML = category.classes.filter(isClassScheduledToday).map(createClassCardHTML).join('');
+                const classCardsHTML = category.classes.map(createClassCardHTML).join('');
                 return `
                     <div class="main-category-item ${widthClass}">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 text-center">${escapeHtml(category.categoryName)}</h2>
@@ -6088,7 +6084,7 @@ body.dark-theme[data-palette="mint"] {
         }
 
         function renderFullWidthCategoryHTML(category) {
-            const classCardsHTML = category.classes.filter(isClassScheduledToday).map(createClassCardHTML).join('');
+            const classCardsHTML = category.classes.map(createClassCardHTML).join('');
             return `
                 <div class="main-category-item full-width">
                     <h2 class="text-3xl sm:text-4xl font-bold mb-6 text-center">${escapeHtml(category.categoryName)}</h2>
@@ -7535,21 +7531,6 @@ body.dark-theme[data-palette="mint"] {
             const isUniversal = slot.value === 'ADVISORY' || slot.value === 'ASSEMBLY' || (slot.custom && slot.scope === 'any');
             return isUniversal || slotDayType === dayType;
         }
-        // Whether a class card should show on the (read-only) Classes page right now -- a class
-        // with no period assigned isn't date-gated at all, but one that IS assigned only counts
-        // as "today" if its period actually resolves a time today (same rule getClassesForDate
-        // uses), so e.g. Advisory correctly disappears on a Short Day that has no Advisory time.
-        function isClassScheduledToday(classItem) {
-            if (!classItem.scheduleSlot) return true;
-            const today = appNow();
-            const dayType = getDayType(today);
-            if (!dayType) return false;
-            const slot = userScheduleSlotOptions.find(o => o.value === classItem.scheduleSlot);
-            if (!slot) return true;
-            if (!slotAppliesToDayType(slot, dayType)) return false;
-            return !!getSlotTimeForDate(slot, today);
-        }
-
         // =====================================================================================
         // ===================== DAY VIEW: single-date type/schedule/custom-times picker =====
         // =====================================================================================
@@ -13736,6 +13717,23 @@ body.dark-theme[data-palette="mint"] {
                     const categoryColor = findCategory(categoryGroup(category));
                     const feedSourceColor = feed.color || feedColor(feed, i);
                     externalEventsByDate[ev.date].push({ title: ev.title, feedId: feed.id, feedLabel: feed.label, feedSourceColor, color: (categoryColor && categoryColor.color) || feedSourceColor, category, description: ev.description, timestamp: ev.timestamp, endTimestamp: (typeof ev.endTimestamp === 'number') ? ev.endTimestamp : null, allDay: !!ev.allDay });
+                });
+            });
+            // An exact-duplicate event (same title, same start/end, same all-day-ness) showing up
+            // twice on the same day is never something the user actually wants displayed twice --
+            // it happens e.g. when a single ICS feed's RRULE expansion and its own base VEVENT
+            // occurrence overlap, or when two feeds independently publish the identical entry
+            // (Advisory being a recurring "every school day" event was the reported case). Rather
+            // than chase down every feed's own reason for double-publishing, just collapse true
+            // duplicates here -- keep the first, drop the rest. Deliberately NOT keyed by feedId,
+            // so a duplicate that crosses feeds is still caught.
+            Object.keys(externalEventsByDate).forEach(dateStr => {
+                const seen = new Set();
+                externalEventsByDate[dateStr] = externalEventsByDate[dateStr].filter(ev => {
+                    const key = `${ev.title}|${ev.timestamp}|${ev.endTimestamp}|${ev.allDay}`;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
                 });
             });
             // Pass the cache along rather than having rebuildCanvasAssignmentsIndex re-read and
