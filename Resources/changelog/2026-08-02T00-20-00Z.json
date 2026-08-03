@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-02T00:20:00Z",
+  "title": "Help tab now explains every setting in the app",
+  "summary": [
+    "Settings > Help has a new 'What Does Everything Do?' section: every user-changeable item in the app (45 of them, across 13 groups matching the Settings tabs plus Classes, Home widgets, Calendar page, and Reminders/Countdowns) explained in a collapsible dropdown, so you don't have to guess what a setting does before trying it."
+  ]
+}

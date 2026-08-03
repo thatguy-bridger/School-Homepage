@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-02T00:10:00Z",
+  "title": "Smaller class cards, plus icon/emoji picker for classes and categories",
+  "summary": [
+    "Class cards on the Classes page are noticeably shorter (tighter padding, smaller gaps) and a bit narrower (cards fit down to 230px instead of 280px before wrapping to a new row), so they read less oversized and empty relative to their actual content. The footer note button now pins to the bottom of the card instead of leaving a gap under short cards.",
+    "New icon/emoji picker: click the new icon swatch next to a class's color swatch (in Edit mode) to give it a small icon or emoji shown next to its title. One search box filters both icons and emoji at the same time -- no need to switch tabs. The exact same picker now also powers the calendar category customizer's icon button, so categories can use an emoji instead of (or alongside) the existing icon library too."
+  ]
+}

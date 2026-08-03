@@ -1187,6 +1187,11 @@ body.dark-theme[data-palette="mint"] {
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
             cursor: pointer;
             position: relative;
+            /* Flex column so .class-card-footer can sit pinned to the bottom (margin-top:auto)
+               instead of leaving a gap under a short card's content -- "reactive fill" so a class
+               with no note/extra links doesn't look emptier than one that has them. */
+            display: flex;
+            flex-direction: column;
         }
         body.dark-theme .class-card {
             box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3) !important;
@@ -1223,6 +1228,16 @@ body.dark-theme[data-palette="mint"] {
             font-weight: 700;
             transition: color 0.5s ease-in-out;
         }
+        .class-card-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.85rem;
+            height: 1.85rem;
+            border-radius: 0.6rem;
+            flex-shrink: 0;
+        }
+        .class-card-icon svg { color: var(--class-color, var(--accent-2)); }
 
         .class-card p {
             color: var(--text-secondary);
@@ -1235,7 +1250,7 @@ body.dark-theme[data-palette="mint"] {
             display: flex;
             flex-wrap: wrap;
             gap: 0.4rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.6rem;
         }
         .class-meta-chip {
             display: inline-flex;
@@ -1371,7 +1386,8 @@ body.dark-theme[data-palette="mint"] {
         .class-card-footer {
             display: flex;
             justify-content: flex-end;
-            margin-top: 0.5rem;
+            margin-top: auto;
+            padding-top: 0.5rem;
         }
         .class-note-box { margin: -0.25rem 0 0.75rem; }
         .class-note-box.hidden { display: none; }
@@ -2255,6 +2271,34 @@ body.dark-theme[data-palette="mint"] {
         }
         .shortcut-reset-btn:hover, .shortcut-cancel-btn:hover { color: var(--text-primary); }
 
+        /* ---- Help glossary (Settings > Help) ---- */
+        .help-glossary-group {
+            border-radius: 0.85rem;
+            border: 1px solid color-mix(in srgb, var(--accent-2) 16%, var(--glass-border));
+            background: color-mix(in srgb, var(--accent-2) 5%, var(--glass-bg-strong));
+            margin-bottom: 0.6rem;
+            overflow: hidden;
+        }
+        .help-glossary-summary {
+            cursor: pointer;
+            padding: 0.7rem 1rem;
+            font-weight: 700;
+            font-size: 0.92rem;
+            color: var(--text-primary);
+            list-style: none;
+        }
+        .help-glossary-summary::-webkit-details-marker { display: none; }
+        .help-glossary-summary::before { content: '▸ '; color: var(--accent-2); }
+        .help-glossary-group[open] .help-glossary-summary::before { content: '▾ '; }
+        .help-glossary-items {
+            padding: 0 1rem 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .help-glossary-term { font-weight: 700; font-size: 0.82rem; color: var(--text-primary); margin-bottom: 0.15rem; }
+        .help-glossary-desc { font-size: 0.8rem; line-height: 1.4; color: color-mix(in srgb, var(--accent-2) 12%, var(--text-secondary)); }
+
         /* ===================== HOME SCREEN EDITOR (true 12-column square-cell grid,
            iOS/Android-launcher-style) ===================== */
         /* Always exactly 12 columns, at every viewport width -- deliberately not responsive,
@@ -2858,6 +2902,31 @@ body.dark-theme[data-palette="mint"] {
         }
         .day-grid-event-title { display: block; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .day-grid-event-time { display: block; font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; }
+        /* ---- Overlapping-event card stack (collapsed = cascaded/fanned, click to spread) ---- */
+        .day-grid-event-stacked {
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), -3px 0 0 -1px var(--glass-bg-strong), -3px 0 0 0 var(--glass-border);
+        }
+        .day-grid-event-stacked.is-spread {
+            /* Once spread, each card sits in its own lane -- the "there's more behind me"
+               cascade shadow would just look like a stray border, so drop it. */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+        }
+        .day-grid-stack-badge {
+            position: absolute;
+            top: -0.35rem; right: -0.35rem;
+            min-width: 1.1rem; height: 1.1rem;
+            padding: 0 0.25rem;
+            border-radius: 9999px;
+            background: var(--accent-2);
+            color: #fff;
+            font-size: 0.62rem;
+            font-weight: 800;
+            line-height: 1.1rem;
+            text-align: center;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+            pointer-events: none;
+        }
         .day-grid-now-line {
             position: absolute;
             left: 0;
@@ -4133,12 +4202,17 @@ body.dark-theme[data-palette="mint"] {
                 </div>
 
                 <div class="settings-category" data-settings-category="help">
-                    <div class="mb-4">
+                    <div class="mb-6">
                         <h4 class="text-2xl font-semibold mb-3">Help</h4>
                         <p class="text-sm mb-3 settings-desc">
                             Replay the guided walkthrough of the app's main screens and widgets.
                         </p>
                         <button type="button" class="modal-footer-button bg-indigo-600" onclick="closeAllSettingsModal(); startOnboardingTour();">Take the Tour</button>
+                    </div>
+                    <div>
+                        <h5 class="text-lg font-semibold mb-1">What Does Everything Do?</h5>
+                        <p class="text-sm mb-3 settings-desc">Every user-changeable item in the app, grouped by where you find it. Click a section to expand it.</p>
+                        <div id="help-glossary"></div>
                     </div>
                 </div>
             </div>
@@ -4393,8 +4467,104 @@ body.dark-theme[data-palette="mint"] {
             { label: 'Clear All Notes', category: 'danger-zone', keywords: 'delete wipe day notes' },
             { label: 'Reset Classes to Default', category: 'danger-zone', keywords: 'clear classes reset' },
             { label: 'Reset Everything', category: 'danger-zone', keywords: 'wipe factory reset clear all data' },
-            { label: 'Take the Tour', category: 'help', keywords: 'tour walkthrough onboarding guide' }
+            { label: 'Take the Tour', category: 'help', keywords: 'tour walkthrough onboarding guide' },
+            { label: 'What Does Everything Do? (Glossary)', category: 'help', keywords: 'explain explanation faq help glossary what does this do' }
         ];
+        // ===================== HELP GLOSSARY (every user-changeable item, explained) =====================
+        // Grouped to match where each item actually lives -- the Settings tabs first, then the
+        // things you change outside Settings entirely (class cards, calendar page controls,
+        // reminders/countdowns, Home widgets, Day view). Rendered as collapsible <details> so the
+        // whole list doesn't dump hundreds of lines of text into view at once.
+        const HELP_GLOSSARY = [
+            { section: 'Appearance', items: [
+                { term: 'Theme (Light/Dark/System)', desc: 'Switches the whole app between a light and dark color scheme, or follows your device/browser\'s own setting.' },
+                { term: 'Clock Format', desc: 'Whether times throughout the app show as 12-hour (2:30 PM) or 24-hour (14:30).' },
+                { term: 'Color Palette', desc: 'The accent color gradient used for buttons, highlights, and glows across the whole app. Pick a built-in palette, or scroll down to create your own from any 3 colors.' },
+                { term: 'Create a Theme', desc: 'Name a color combination and pick 3 colors for its gradient -- it\'s applied immediately and saved alongside the built-in palettes. Hover a custom theme\'s swatch to delete it.' },
+                { term: 'Motion (theme popover)', desc: 'Auto/Full/Reduced -- controls how much animation the app uses (card hover lifts, transitions, etc). "Auto" follows your system\'s reduced-motion accessibility setting.' }
+            ] },
+            { section: 'Bell Schedule', items: [
+                { term: 'Day Type Calendar', desc: 'A month-by-month calendar where you click a date to assign it A Day, B Day, mark a range No School, or tag it as a Short/Assembly/custom schedule type.' },
+                { term: 'Lunch Wave', desc: 'Which lunch wave (1st or 2nd) A Days and B Days each use -- controls which 3rd/7th period and Lunch time applies on schedules with two lunch waves.' },
+                { term: 'Schedule Types', desc: 'The different bell schedules your school uses (Regular, Short Day, Assembly Day, and any custom ones you add). Each type has its own period start/end times.' },
+                { term: 'Custom Periods', desc: 'Add a period beyond the standard 1st-8th/Lunch/Advisory/Assembly set -- for a club period, assembly rehearsal, makeup exam slot, etc. Shows up in every class\'s period picker and every schedule type\'s time editor afterward.' },
+                { term: 'Advanced: raw date lists', desc: 'Bulk-edit A-Day/B-Day/No-School dates as comma-separated text (e.g. 8.18.2025, 8.20.2025) instead of clicking through the calendar one day at a time -- useful for pasting in a whole semester at once.' }
+            ] },
+            { section: 'Calendar', items: [
+                { term: 'Default View', desc: 'Which Calendar page layout (Month/Week/Day/Agenda) opens by default.' },
+                { term: 'Week Starts On', desc: 'Whether Sunday or Monday is the first column in Week and Month views.' },
+                { term: 'External Calendars', desc: 'Read-only .ics feeds (sports schedules, district calendars, a school events feed, etc.) shown alongside your own notes and classes. Each one gets its own color and can be toggled on/off without removing it.' }
+            ] },
+            { section: 'Categories & Rules', items: [
+                { term: 'Calendar Categories', desc: 'The categories used for every calendar dot, filter chip, legend entry, and reminder/countdown tag. Each has its own label, color, and icon (or emoji) -- click a category\'s icon to open the picker. "Assignment" can\'t be deleted since it\'s tied to Canvas/CVA, but its color/icon/label are still yours to change.' },
+                { term: 'Auto-Categorization Rules', desc: 'Decides which category a calendar event (that isn\'t an assignment) gets, based on which feed it came from and/or keywords in its title. Checked top to bottom -- the first matching rule wins. An event matching nothing falls back to that feed\'s default category.' }
+            ] },
+            { section: 'Keyboard Shortcuts', items: [
+                { term: 'Rebinding a shortcut', desc: 'Click a shortcut\'s key in the list, then press the new key you want -- it\'s saved immediately. A key already used by another shortcut is rejected with a toast instead of silently taking over.' },
+                { term: 'Class Period shortcuts (0-8)', desc: 'Fixed to the number row and not individually rebindable, since they\'re a matched set. Press the number for that period\'s class link; hold Shift to open it even on a day with no school.' }
+            ] },
+            { section: 'Backup & Sync', items: [
+                { term: 'Export All Data', desc: 'Downloads everything the app stores -- classes, schedule, notes, reminders, calendar feeds, Home layout, preferences, custom themes, keyboard shortcuts -- as one JSON file you can keep or move to another device via Import.' },
+                { term: 'Import All Data', desc: 'Loads a previously exported JSON file, overwriting the matching data on this device after you confirm.' },
+                { term: 'Google Calendar Sync', desc: 'Publishes a live .ics feed of your classes/schedule via a private GitHub Gist, which Google Calendar (or any calendar app) can subscribe to and auto-refresh from. Requires a GitHub token with Gist access.' },
+                { term: 'GitHub Token', desc: 'A GitHub personal access token (Gist read/write scope) that both the Google Calendar feed and the cross-device App Data Sync below share. Treat it like a password -- anyone with it can read/write your synced data.' },
+                { term: 'App Data Sync', desc: 'Pushes everything this app stores into the same private Gist as a second file, so entering the same token on another device restores it there too. Auto-syncs a few seconds after any change once a token is set. On reload, if the Gist has newer data than this device has seen, you\'ll be asked before it\'s applied.' }
+            ] },
+            { section: 'Portal Sync', items: [
+                { term: 'Import Portal Sync JSON', desc: 'For schools (like Skyward) with no direct API: install the companion browser extension, browse your assignments page while logged in, export the JSON from the extension, and import it here. Assignments with a recognizable date get folded into Due Soon automatically.' }
+            ] },
+            { section: 'Developer Tools', items: [
+                { term: 'Simulate Date', desc: 'Makes the app behave as if it were a different date/time -- schedules, countdowns, and "no school today" logic all use this instead of the real clock while active. Keeps ticking forward in real time from whatever moment you pick. Only affects this browser tab, never synced anywhere.' },
+                { term: 'Set as Site Defaults', desc: 'Password-protected, for the app\'s maintainer only. Commits your current classes/schedule/theme/reminders/feeds straight to the live source file as the new starting point for every fresh install.' }
+            ] },
+            { section: 'Danger Zone', items: [
+                { term: 'Clear All Notes', desc: 'Deletes every day note and class quick-note. Cannot be undone.' },
+                { term: 'Reset Classes to Default', desc: 'Wipes your class cards back to empty. Cannot be undone.' },
+                { term: 'Reset Everything', desc: 'Wipes every piece of data this app stores on this device -- classes, schedule, notes, reminders, feeds, preferences, everything. Cannot be undone.' }
+            ] },
+            { section: 'Classes Page', items: [
+                { term: 'Class card fields', desc: 'Title, Teacher, Room, Canvas Course Code (matches Canvas assignment due-date tags like "[BIO-101]" to this class), Period (which bell-schedule slot this class meets in), and URL (what opening the card takes you to).' },
+                { term: 'Class color', desc: 'Click the color swatch on a class (in Edit mode) to tint that class\'s card, its Home widget appearances, and its calendar/day-view blocks with a color of your choice.' },
+                { term: 'Class icon/emoji', desc: 'Click the icon swatch next to the color swatch (in Edit mode) to give a class a small icon or emoji shown next to its title -- purely visual, search across both icons and emoji from the same box.' },
+                { term: 'Extra links', desc: 'Add additional items beyond the main URL -- a Zoom link, a syllabus doc, a video, a meeting, a contact -- each with its own icon based on type. Shown as a small badge on the card; click it to see the dropdown.' },
+                { term: 'Quick Note', desc: 'A short per-class note (the notepad icon in a card\'s corner) that also appears anywhere that class is referenced elsewhere in the app via hover.' },
+                { term: 'Category layout (1/2/3 per row)', desc: 'In Edit mode, each category can be set to sit alone (full width) or share a row with 1-2 other categories set to the same count.' }
+            ] },
+            { section: 'Home Widgets', items: [
+                { term: 'Next Class widget', desc: 'Show/hide the room and teacher chips, and whether the widget tints itself with the current class\'s own color.' },
+                { term: 'Due Soon widget', desc: 'How many days ahead to include assignments due, and whether to still show ones you already dismissed.' },
+                { term: 'Countdowns / Reminders widgets', desc: 'Sort order for the list (soonest/newest/oldest/alphabetical).' },
+                { term: 'Upcoming Events widget', desc: 'How many days ahead to look, whether to include weekends, and which calendar categories to include. Showing every category caps the list at 5 so it doesn\'t take over the screen -- narrow it to specific categories via the filter chips to see everything that matches instead of just the first 5.' },
+                { term: 'Home layout / presets', desc: 'Drag widgets to reposition or resize them (Edit Home Layout), and save your own named layout presets or pick a built-in one from the preset dropdown.' }
+            ] },
+            { section: 'Calendar Page', items: [
+                { term: 'View tabs (Month/Week/Day/Agenda)', desc: 'Switch how the calendar is laid out. Day view groups overlapping events (from a busy external feed) into a stacked card -- click the stack to spread the events out side by side, or click again to collapse it back.' },
+                { term: 'Category filter chips', desc: 'Toggle which categories (plus Classes and Reminders) show up on the calendar without changing any category\'s actual settings.' },
+                { term: 'Search', desc: 'Finds events/notes by title across the whole calendar, not just what\'s currently visible.' },
+                { term: 'Day notes', desc: 'A free-text title + notes field for any specific date, shown on that day everywhere it appears (Month cell, Week column, Day view, previews).' }
+            ] },
+            { section: 'Reminders & Countdowns', items: [
+                { term: 'Reminder', desc: 'A short recurring note tied to specific weekdays, optionally attached to a class or calendar category for color/label context.' },
+                { term: 'Countdown', desc: 'Tracks days remaining until a specific date (or the next upcoming No School day), shown on Home and the Planner page.' }
+            ] }
+        ];
+        function renderHelpGlossary() {
+            const container = document.getElementById('help-glossary');
+            if (!container) return;
+            container.innerHTML = HELP_GLOSSARY.map((group) => `
+                <details class="help-glossary-group">
+                    <summary class="help-glossary-summary">${escapeHtml(group.section)}</summary>
+                    <div class="help-glossary-items">
+                        ${group.items.map(item => `
+                            <div class="help-glossary-item">
+                                <p class="help-glossary-term">${escapeHtml(item.term)}</p>
+                                <p class="help-glossary-desc">${escapeHtml(item.desc)}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </details>
+            `).join('');
+        }
         function renderSettingsTabs() {
             const tabs = document.getElementById('settings-tabs');
             if (!tabs || tabs.childElementCount) return; // static once built, no need to rebuild per open
@@ -4464,6 +4634,7 @@ body.dark-theme[data-palette="mint"] {
                 btn.classList.toggle('active', btn.dataset.settingsTab === valid);
             });
             if (valid === 'shortcuts') renderShortcutsSettings();
+            if (valid === 'help') renderHelpGlossary();
             document.querySelector('#all-settings-modal .flex-grow.overflow-y-auto').scrollTop = 0;
         }
         function openAllSettingsModal(defaultCategory) {
@@ -5838,7 +6009,7 @@ body.dark-theme[data-palette="mint"] {
                     <!-- auto-fit (not a fixed 1/2/3-column breakpoint scale) so a category with
                          just one or two classes actually fills the row's width instead of sitting
                          in a column of a grid sized for three, leaving dead space beside it. -->
-                    <div class="grid gap-6" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+                    <div class="grid gap-6" style="grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));">
                         ${classCardsHTML}
                     </div>
                 </div>
@@ -5887,11 +6058,15 @@ body.dark-theme[data-palette="mint"] {
             const noteValue = classNotes[noteId] || '';
             const hasNote = !!noteValue;
             const extraLinks = (classItem.links || []).filter(l => l.url);
+            const hasIcon = isValidGlyphValue(classItem.icon);
             return `
-                <div class="class-card p-6 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}
+                <div class="class-card p-4 rounded-2xl border" data-schedule-slot="${classItem.scheduleSlot || ''}" ${classItem.color ? `data-has-color style="--class-color:${escapeAttr(classItem.color)}"` : ''}
                      onclick="openClassLink('${escapeJsAttr(classItem.url)}')">
                     <div class="flex items-start justify-between gap-2 mb-2 pr-8">
-                        <h4 class="text-xl font-bold">${escapeHtml(classItem.title)}</h4>
+                        <div class="flex items-center gap-2 min-w-0">
+                            ${hasIcon ? `<span class="class-card-icon" style="background:color-mix(in srgb, var(--class-color, var(--accent-2)) 22%, var(--glass-bg-strong));">${glyphSvgOrEmojiHtml(classItem.icon, 18)}</span>` : ''}
+                            <h4 class="text-xl font-bold">${escapeHtml(classItem.title)}</h4>
+                        </div>
                     </div>
                     <div class="class-meta-row">
                         ${getClassMetaChips(classItem).map(c => `<span class="class-meta-chip">${escapeHtml(c)}</span>`).join('')}
@@ -6162,6 +6337,7 @@ body.dark-theme[data-palette="mint"] {
                         </svg>
                     </span>
                     <button type="button" class="class-color-swatch-btn ${classItem.color ? '' : 'is-empty'}" data-category-index="${categoryIndex}" data-class-index="${classIndex}" style="background:${classItem.color || 'transparent'}" title="Class color" onclick="event.stopPropagation(); openClassColorPicker(this, ${categoryIndex}, ${classIndex})"></button>
+                    <button type="button" class="class-icon-swatch-btn" data-category-index="${categoryIndex}" data-class-index="${classIndex}" style="width:2rem; height:2rem; border-radius:9999px; background:var(--glass-bg-strong); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer;" title="Class icon or emoji" onclick="event.stopPropagation(); pickClassIcon(${categoryIndex}, ${classIndex})">${isValidGlyphValue(classItem.icon) ? glyphSvgOrEmojiHtml(classItem.icon, 16) : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>'}</button>
                     <input type="text" value="${escapeAttr(classItem.title)}" placeholder="Class Title" class="class-title-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'title', this.value)">
                     <input type="text" value="${escapeAttr(classItem.teacher || '')}" placeholder="Teacher" class="class-teacher-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'teacher', this.value)">
                     <input type="text" value="${escapeAttr(classItem.room || '')}" placeholder="Room" class="class-room-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'room', this.value)">
@@ -6357,6 +6533,17 @@ body.dark-theme[data-palette="mint"] {
             }
             closeClassColorPicker();
             updateCurrentClassHighlight();
+        }
+
+        function pickClassIcon(categoryIndex, classIndex) {
+            openGlyphPicker((value) => {
+                updateClassItem(categoryIndex, classIndex, 'icon', value);
+                const btn = document.querySelector(`.class-icon-swatch-btn[data-category-index="${categoryIndex}"][data-class-index="${classIndex}"]`);
+                if (btn) {
+                    btn.innerHTML = isValidGlyphValue(value) ? glyphSvgOrEmojiHtml(value, 16)
+                        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>';
+                }
+            }, { title: 'Choose an icon or emoji for this class', allowNone: true });
         }
 
         document.addEventListener('click', (e) => {
@@ -8836,7 +9023,10 @@ body.dark-theme[data-palette="mint"] {
             'due-soon': { daysAhead: 7, showCompleted: false },
             countdowns: { sortBy: 'soonest' },
             reminders: { sortBy: 'newest' },
-            upcoming: { daysAhead: 14, showWeekends: true }
+            // categories: {catId: false} for hidden ones; absent/true = shown. An empty object
+            // means "show every category" -- see renderHomeUpcoming for how that also controls
+            // whether the widget caps its list at 5 or shows everything that matches.
+            upcoming: { daysAhead: 14, showWeekends: true, categories: {} }
         };
         function loadHomeWidgetSettings(id) {
             let all;
@@ -8873,6 +9063,17 @@ body.dark-theme[data-palette="mint"] {
         function uiSelectRow(value, label, options, onchange, tooltip) {
             return `<label class="ui-setting-row" title="${escapeAttr(tooltip || label)}"><span>${escapeHtml(label)}</span><select class="ui-select" onchange="${onchange}">${options.map(o => `<option value="${escapeAttr(String(o.value))}" ${String(o.value) === String(value) ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</select></label>`;
         }
+        function toggleHomeUpcomingCategoryFilter(catId) {
+            const s = loadHomeWidgetSettings('upcoming');
+            const categories = Object.assign({}, s.categories || {});
+            categories[catId] = categories[catId] === false ? true : false;
+            saveHomeWidgetSetting('upcoming', 'categories', categories);
+            // saveHomeWidgetSetting only re-renders the widget itself, not its (separate) settings
+            // panel DOM -- rebuild the panel in place so the clicked chip's active state updates
+            // immediately instead of needing to close/reopen the panel to see it.
+            const panel = document.getElementById('home-widget-settings-panel-upcoming');
+            if (panel && !panel.classList.contains('hidden')) panel.innerHTML = buildHomeWidgetSettingsPanelHtml('upcoming');
+        }
         function toggleHomeWidgetSettingsPanel(id) {
             const panel = document.getElementById('home-widget-settings-panel-' + id);
             if (!panel) return;
@@ -8895,8 +9096,18 @@ body.dark-theme[data-palette="mint"] {
             } else if (id === 'reminders') {
                 rows = uiSelectRow(s.sortBy, 'Sort by', [{ value: 'newest', label: 'Newest first' }, { value: 'oldest', label: 'Oldest first' }, { value: 'alphabetical', label: 'Alphabetical' }], `saveHomeWidgetSetting('reminders','sortBy',this.value)`, 'How reminders are ordered in this widget');
             } else if (id === 'upcoming') {
+                const catFilter = s.categories || {};
+                const chipsHtml = calendarCategories.map(c => {
+                    const active = catFilter[c.id] !== false;
+                    return `<button type="button" class="category-filter-chip ${active ? 'active' : ''}" style="--chip-color:${escapeAttr(c.color)};" onclick="toggleHomeUpcomingCategoryFilter('${escapeJsAttr(c.id)}')"><span class="filter-chip-dot" style="background:${escapeAttr(c.color)};"></span>${escapeHtml(c.label)}</button>`;
+                }).join('');
+                const hasActiveFilter = Object.values(catFilter).some(v => v === false);
                 rows = uiSelectRow(s.daysAhead, 'Look ahead', [{ value: 7, label: '7 days' }, { value: 14, label: '14 days' }, { value: 30, label: '30 days' }], `saveHomeWidgetSetting('upcoming','daysAhead',Number(this.value))`, 'How far ahead to look for upcoming events')
-                    + uiToggleRow(s.showWeekends, 'Include weekends', `saveHomeWidgetSetting('upcoming','showWeekends',this.checked)`, 'Include Saturday/Sunday events in the list');
+                    + uiToggleRow(s.showWeekends, 'Include weekends', `saveHomeWidgetSetting('upcoming','showWeekends',this.checked)`, 'Include Saturday/Sunday events in the list')
+                    + `<div class="mini-cal-config-row" style="margin-top:0.5rem;">
+                        <p class="text-xs mb-1.5" style="color:var(--text-muted);">Categories shown${hasActiveFilter ? ' -- showing every matching event, not just the first 5' : ' (showing every category caps the list at 5)'}</p>
+                        <div class="flex flex-wrap gap-1.5">${chipsHtml}</div>
+                    </div>`;
             }
             return `<div class="mini-cal-config-panel" onclick="event.stopPropagation()">${rows}</div>`;
         }
@@ -9069,14 +9280,24 @@ body.dark-theme[data-palette="mint"] {
                 `).join('')}</div>
             ` : '';
 
+            // Showing every category by default would be overwhelming on a busy school calendar,
+            // so that case stays capped at 5 like before -- but once the user has actually narrowed
+            // it down via the category filter chips (widget settings), the whole point was to see
+            // everything in those categories, so the cap comes off entirely.
+            const catFilter = settings.categories || {};
+            const hasActiveFilter = Object.values(catFilter).some(v => v === false);
+            const cap = hasActiveFilter ? Infinity : 5;
+
             const items = [];
-            for (let i = 0; i < daysAhead && items.length < 5; i++) {
+            for (let i = 0; i < daysAhead && items.length < cap; i++) {
                 const d = new Date(today);
                 d.setDate(d.getDate() + i);
                 if (!settings.showWeekends && (d.getDay() === 0 || d.getDay() === 6)) continue;
-                getExternalEventsForDate(d).filter(event => event.category !== 'assignment').forEach(event => items.push({ date: d, event }));
+                getExternalEventsForDate(d)
+                    .filter(event => event.category !== 'assignment' && catFilter[categoryGroup(event.category)] !== false)
+                    .forEach(event => items.push({ date: d, event }));
             }
-            const trimmed = items.slice(0, 5);
+            const trimmed = cap === Infinity ? items : items.slice(0, cap);
             if (!trimmed.length) {
                 container.innerHTML = classesRowHtml || `<p class="home-widget-empty">No upcoming events.</p>`;
                 return;
@@ -11039,6 +11260,29 @@ body.dark-theme[data-palette="mint"] {
             return blocks;
         }
 
+        // Which overlapping-event stacks (see renderDayViewGrid) are currently "spread" open --
+        // keyed by a stack id stable across re-renders (built from the cluster's own event
+        // timestamps), reset per Day view visit since it's a transient view state, not data.
+        let spreadEventStacks = new Set();
+        function toggleEventStack(stackId) {
+            if (spreadEventStacks.has(stackId)) spreadEventStacks.delete(stackId);
+            else spreadEventStacks.add(stackId);
+            renderCalendar();
+        }
+        // Groups timed events into clusters of mutually-overlapping ones (transitively -- A/B
+        // overlapping and B/C overlapping puts A/B/C in one cluster even if A/C don't directly
+        // overlap), so a busy hour with many back-to-back external events renders as a readable
+        // fanned card stack instead of every event's card fully covering the ones under it.
+        function clusterOverlappingRanges(items) {
+            const sorted = items.slice().sort((a, b) => a.sMin - b.sMin);
+            const clusters = [];
+            sorted.forEach(item => {
+                const cluster = clusters.find(c => c.some(other => item.sMin < other.eMin && item.eMin > other.sMin));
+                if (cluster) cluster.push(item); else clusters.push([item]);
+            });
+            return clusters;
+        }
+
         function renderDayViewGrid(badgeHtml, classesToday, remindersToday, externalEvents) {
             const allDayEvents = externalEvents.filter(e => e.allDay);
             const timedEvents = externalEvents.filter(e => !e.allDay);
@@ -11074,7 +11318,7 @@ body.dark-theme[data-palette="mint"] {
 
             const topRowHtml = (allDayEvents.length || remindersToday.length) ? `
                 <div class="day-grid-allday-row">
-                    ${allDayEvents.map(e => `<span class="category-badge" style="background:${e.color}33; color:${e.color};">${escapeHtml(e.title)}</span>`).join('')}
+                    ${allDayEvents.map(e => `<span class="category-badge" style="background:${e.color}33; color:${e.color}; cursor:default;"${eventPopupAttr(e)}>${escapeHtml(e.title)}</span>`).join('')}
                     ${remindersToday.map(r => `<span class="category-badge" style="background:${reminderDisplayColor(r)}33; color:${reminderDisplayColor(r)};">📌 ${escapeHtml(r.text)}</span>`).join('')}
                 </div>
             ` : '';
@@ -11123,24 +11367,54 @@ body.dark-theme[data-palette="mint"] {
                 `;
             }).join('');
 
-            const eventBlocksHtml = timedEvents.map(ev => {
+            // Each timed event's real top/height, plus its column footprint (65% -> right edge)
+            // expressed as CSS calc() so clustered events can subdivide it -- computed up front so
+            // clusterOverlappingRanges (a plain interval-overlap grouping, no positioning opinions
+            // of its own) has sMin/eMin to work with.
+            const EVENT_COL_LEFT = '65%';
+            const EVENT_COL_WIDTH = 'calc(35% - 0.25rem)';
+            const timedEventGeoms = timedEvents.map(ev => {
                 const d = new Date(ev.timestamp);
                 const m = d.getHours() * 60 + d.getMinutes();
-                const top = (m - gridStart) * pxPerMin;
                 let endM = m + 30;
                 if (typeof ev.endTimestamp === 'number' && ev.endTimestamp > ev.timestamp) {
                     const de = new Date(ev.endTimestamp);
                     endM = isSameDay(d, de) ? (de.getHours() * 60 + de.getMinutes()) : gridEnd;
                 }
-                // Clip to the visible grid so one long/overnight event can't balloon past it.
-                endM = Math.min(endM, gridEnd);
-                const height = Math.max(20, (endM - m) * pxPerMin);
-                return `
-                    <div class="day-grid-event day-grid-event-ext" style="top:${top}px; height:${height}px; left:65%; right:0.25rem; background:${ev.color}33; border-left: 3px solid ${ev.color};" title="${escapeAttr(ev.title)} — ${escapeAttr(categoryLabel(ev.category))}">
-                        <span class="day-grid-event-title">${escapeHtml(ev.title)}</span>
-                        <span class="day-grid-event-time">${escapeHtml(formatEventTimestamp(ev.timestamp))}</span>
-                    </div>
-                `;
+                endM = Math.min(endM, gridEnd); // clip so one long/overnight event can't balloon past the grid
+                return { ev, sMin: m, eMin: endM };
+            });
+            const eventClusters = clusterOverlappingRanges(timedEventGeoms);
+            const eventBlocksHtml = eventClusters.map(cluster => {
+                const top = (item) => (item.sMin - gridStart) * pxPerMin;
+                const height = (item) => Math.max(20, (item.eMin - item.sMin) * pxPerMin);
+                if (cluster.length === 1) {
+                    const item = cluster[0], ev = item.ev;
+                    return `
+                        <div class="day-grid-event day-grid-event-ext" style="top:${top(item)}px; height:${height(item)}px; left:${EVENT_COL_LEFT}; width:${EVENT_COL_WIDTH}; background:${ev.color}33; border-left: 3px solid ${ev.color};"${eventPopupAttr(ev)}>
+                            <span class="day-grid-event-title">${escapeHtml(ev.title)}</span>
+                            <span class="day-grid-event-time">${escapeHtml(formatEventTimestamp(ev.timestamp))}</span>
+                        </div>
+                    `;
+                }
+                // Overlapping cluster: a stable id (built from every member's own timestamp) so
+                // the spread/collapsed toggle survives a re-render of the same day.
+                const stackId = 'stk_' + cluster.map(c => c.ev.timestamp).join('_');
+                const isSpread = spreadEventStacks.has(stackId);
+                const k = cluster.length;
+                return cluster.map((item, i) => {
+                    const ev = item.ev;
+                    const posStyle = isSpread
+                        ? `left:calc(${EVENT_COL_LEFT} + (${EVENT_COL_WIDTH}) * ${i} / ${k}); width:calc((${EVENT_COL_WIDTH}) / ${k} - 4px); z-index:${5 + i};`
+                        : `left:calc(${EVENT_COL_LEFT} + ${i * 10}px); width:calc(${EVENT_COL_WIDTH} - ${(k - 1) * 10}px); z-index:${5 + i};`;
+                    return `
+                        <div class="day-grid-event day-grid-event-ext day-grid-event-stacked ${isSpread ? 'is-spread' : ''}" style="top:${top(item)}px; height:${height(item)}px; ${posStyle} background:${ev.color}33; border-left: 3px solid ${ev.color};"${eventPopupAttr(ev)} onclick="toggleEventStack('${stackId}')">
+                            ${(!isSpread && i === 0) ? `<span class="day-grid-stack-badge" title="${k} overlapping events -- click to spread them out">${k}</span>` : ''}
+                            <span class="day-grid-event-title">${escapeHtml(ev.title)}</span>
+                            <span class="day-grid-event-time">${escapeHtml(formatEventTimestamp(ev.timestamp))}</span>
+                        </div>
+                    `;
+                }).join('');
             }).join('');
 
             // "Other" day-type custom periods (see getOtherDayPeriodBlocks above) -- rendered like
@@ -12262,6 +12536,163 @@ body.dark-theme[data-palette="mint"] {
         const ICON_LIBRARY_MAP = ICON_LIBRARY.reduce((acc, i) => { acc[i.key] = i.svg; return acc; }, {});
         const CATEGORY_ICON_DEFAULT = ICON_LIBRARY_MAP.calendar;
 
+        // ===================== ICON/EMOJI GLYPH PICKER (shared by calendar categories and class
+        // cards) ===================== A "glyph" value is either a plain ICON_LIBRARY key (unchanged
+        // from before) or an emoji prefixed with "emoji:" (e.g. "emoji:📚") -- prefixed so a stored
+        // value never collides with a real icon key, and every existing icon-only spot (like
+        // ICON_LIBRARY_MAP lookups) just keeps working unmodified for the non-emoji case.
+        const EMOJI_LIBRARY = [
+            { e: '📚', k: 'books reading library study school' }, { e: '📖', k: 'book open reading study' },
+            { e: '✏️', k: 'pencil write writing homework' }, { e: '📝', k: 'notes memo write pencil homework' },
+            { e: '🔬', k: 'microscope science lab biology' }, { e: '🧪', k: 'test tube science chemistry lab' },
+            { e: '🧬', k: 'dna science biology genetics' }, { e: '🔭', k: 'telescope science astronomy space' },
+            { e: '🌍', k: 'globe world earth geography' }, { e: '🗺️', k: 'map geography travel' },
+            { e: '🎨', k: 'art paint palette painting' }, { e: '🎭', k: 'theater drama masks' },
+            { e: '🎵', k: 'music note song' }, { e: '🎶', k: 'music notes song' },
+            { e: '🏛️', k: 'building history government civics' }, { e: '⚗️', k: 'chemistry science alembic' },
+            { e: '🧮', k: 'abacus math calculator' }, { e: '➕', k: 'plus math add' },
+            { e: '🧠', k: 'brain psychology mind smart' }, { e: '💻', k: 'laptop computer tech' },
+            { e: '🖥️', k: 'computer desktop tech' }, { e: '⌨️', k: 'keyboard typing tech' },
+            { e: '🖱️', k: 'mouse computer tech' }, { e: '📱', k: 'phone mobile tech' },
+            { e: '☎️', k: 'phone telephone call' }, { e: '📷', k: 'camera photo photography' },
+            { e: '🎥', k: 'video camera film movie' }, { e: '📺', k: 'tv television' },
+            { e: '📻', k: 'radio music' }, { e: '🎮', k: 'game controller gaming' },
+            { e: '🕹️', k: 'joystick game gaming' }, { e: '🎲', k: 'dice game board' },
+            { e: '♟️', k: 'chess game strategy' }, { e: '🧩', k: 'puzzle piece game' },
+            { e: '📅', k: 'calendar date schedule' }, { e: '📆', k: 'calendar date schedule' },
+            { e: '🗓️', k: 'calendar spiral date schedule' }, { e: '⏰', k: 'alarm clock time' },
+            { e: '⏱️', k: 'stopwatch time timer' }, { e: '⏲️', k: 'timer clock time' },
+            { e: '🕐', k: 'clock time' }, { e: '⚽', k: 'soccer ball sports' },
+            { e: '🏀', k: 'basketball sports ball' }, { e: '🏈', k: 'football sports ball' },
+            { e: '⚾', k: 'baseball sports ball' }, { e: '🎾', k: 'tennis sports ball' },
+            { e: '🏐', k: 'volleyball sports ball' }, { e: '🏉', k: 'rugby sports ball' },
+            { e: '🎳', k: 'bowling sports' }, { e: '🏓', k: 'ping pong table tennis sports' },
+            { e: '🏸', k: 'badminton sports' }, { e: '🥊', k: 'boxing sports fight' },
+            { e: '🥋', k: 'martial arts karate sports' }, { e: '🏹', k: 'archery bow arrow sports' },
+            { e: '⛳', k: 'golf sports' }, { e: '🏋️', k: 'weightlifting gym workout sports' },
+            { e: '🤸', k: 'gymnastics cartwheel sports' }, { e: '🚴', k: 'cycling bike sports' },
+            { e: '🏊', k: 'swimming pool sports' }, { e: '🎿', k: 'skiing snow sports' },
+            { e: '⭐', k: 'star favorite' }, { e: '✨', k: 'sparkles shine new' },
+            { e: '🔥', k: 'fire hot streak' }, { e: '💡', k: 'idea lightbulb bright' },
+            { e: '📌', k: 'pin pushpin reminder' }, { e: '📍', k: 'pin location' },
+            { e: '🚀', k: 'rocket launch fast space' }, { e: '🎯', k: 'target goal dart' },
+            { e: '🏆', k: 'trophy award win champion' }, { e: '🥇', k: 'gold medal first winner' },
+            { e: '🥈', k: 'silver medal second' }, { e: '🥉', k: 'bronze medal third' },
+            { e: '🎖️', k: 'medal award military' }, { e: '🏅', k: 'medal award sports' },
+            { e: '✅', k: 'check done complete yes' }, { e: '❌', k: 'x cross no cancel' },
+            { e: '❗', k: 'exclamation important alert' }, { e: '❓', k: 'question help unknown' },
+            { e: '💯', k: 'hundred perfect score' }, { e: '🔔', k: 'bell notification alert' },
+            { e: '🔒', k: 'lock secure private' }, { e: '🔓', k: 'unlock open' },
+            { e: '🎓', k: 'graduation cap school college' }, { e: '🏫', k: 'school building' },
+            { e: '📋', k: 'clipboard checklist tasks' }, { e: '📊', k: 'bar chart graph data stats' },
+            { e: '📈', k: 'chart up trending growth' }, { e: '📉', k: 'chart down declining' },
+            { e: '💼', k: 'briefcase work job business' }, { e: '🗂️', k: 'folder files organize' },
+            { e: '📁', k: 'folder files' }, { e: '📂', k: 'folder open files' },
+            { e: '✉️', k: 'envelope mail email' }, { e: '📧', k: 'email mail message' },
+            { e: '🔑', k: 'key unlock access' }, { e: '🗝️', k: 'key old vintage' },
+            { e: '🎒', k: 'backpack school bag' }, { e: '🧳', k: 'suitcase luggage travel' },
+            { e: '🎤', k: 'microphone sing music speak' }, { e: '🎧', k: 'headphones music listen' },
+            { e: '🎹', k: 'piano keyboard music' }, { e: '🎸', k: 'guitar music' },
+            { e: '🥁', k: 'drum music' }, { e: '🎺', k: 'trumpet music' },
+            { e: '🎻', k: 'violin music' }, { e: '🖌️', k: 'paintbrush art paint' },
+            { e: '🖍️', k: 'crayon art color' }, { e: '✂️', k: 'scissors cut craft' },
+            { e: '🚗', k: 'car drive vehicle' }, { e: '🚌', k: 'bus transport school bus' },
+            { e: '🚲', k: 'bike bicycle cycling' }, { e: '✈️', k: 'plane airplane travel flight' },
+            { e: '🚂', k: 'train transport' }, { e: '🚁', k: 'helicopter aircraft' },
+            { e: '🚢', k: 'ship boat travel' }, { e: '☀️', k: 'sun sunny weather' },
+            { e: '🌤️', k: 'partly cloudy weather sun' }, { e: '⛅', k: 'cloudy weather sun' },
+            { e: '🌧️', k: 'rain rainy weather' }, { e: '⛈️', k: 'storm thunder lightning weather' },
+            { e: '🌈', k: 'rainbow weather colorful' }, { e: '❄️', k: 'snowflake snow cold weather' },
+            { e: '🌙', k: 'moon night crescent' }, { e: '🌟', k: 'star glowing shine' },
+            { e: '🌊', k: 'wave ocean water' }, { e: '🍎', k: 'apple fruit food teacher' },
+            { e: '🍕', k: 'pizza food lunch' }, { e: '🍔', k: 'burger food lunch' },
+            { e: '🌮', k: 'taco food lunch' }, { e: '🍣', k: 'sushi food lunch' },
+            { e: '🍩', k: 'donut food snack sweet' }, { e: '🍪', k: 'cookie food snack sweet' },
+            { e: '🍦', k: 'ice cream food sweet dessert' }, { e: '☕', k: 'coffee drink caffeine' },
+            { e: '🐶', k: 'dog puppy animal pet' }, { e: '🐱', k: 'cat kitten animal pet' },
+            { e: '🦊', k: 'fox animal' }, { e: '🐻', k: 'bear animal' },
+            { e: '🐼', k: 'panda animal' }, { e: '🦁', k: 'lion animal mascot' },
+            { e: '🐯', k: 'tiger animal mascot' }, { e: '🦉', k: 'owl animal wise' },
+            { e: '😀', k: 'happy smile face grin' }, { e: '🙂', k: 'smile face happy' },
+            { e: '😎', k: 'cool sunglasses face' }, { e: '🥳', k: 'party celebrate face fun' },
+            { e: '🤓', k: 'nerd glasses smart face' }, { e: '😴', k: 'sleepy tired face sleep' },
+            { e: '❤️', k: 'heart love red favorite' }, { e: '🧡', k: 'heart orange love' },
+            { e: '💛', k: 'heart yellow love' }, { e: '💚', k: 'heart green love' },
+            { e: '💙', k: 'heart blue love' }, { e: '💜', k: 'heart purple love' }
+        ];
+        function isValidGlyphValue(v) {
+            return !!v && (!!ICON_LIBRARY_MAP[v] || v.indexOf('emoji:') === 0);
+        }
+        function glyphSvgOrEmojiHtml(value, sizePx) {
+            if (value && value.indexOf('emoji:') === 0) {
+                const char = value.slice('emoji:'.length);
+                return `<span style="font-size:${sizePx}px; line-height:1; display:inline-flex; align-items:center; justify-content:center;">${escapeHtml(char)}</span>`;
+            }
+            const inner = (value && ICON_LIBRARY_MAP[value]) || CATEGORY_ICON_DEFAULT;
+            return `<svg width="${sizePx}" height="${sizePx}" viewBox="0 0 24 24">${inner}</svg>`;
+        }
+        // Generic picker used by both the calendar category editor and the class card editor --
+        // a single search box filters icons and emoji at the same time (both shown together, no
+        // tab-switching needed) instead of two separate pickers with their own search.
+        function openGlyphPicker(onPick, opts) {
+            closeGlyphPicker();
+            opts = opts || {};
+            const popover = document.createElement('div');
+            popover.id = 'glyph-picker-popover';
+            popover.className = 'modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50';
+            popover.onclick = (e) => { if (e.target === popover) closeGlyphPicker(); };
+            window.__glyphPickerOnPick = onPick;
+            popover.innerHTML = `
+                <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-lg p-6 border" onclick="event.stopPropagation()">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold">${escapeHtml(opts.title || 'Choose an icon or emoji')}</h3>
+                        <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeGlyphPicker()">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    <div class="settings-search-wrap" style="margin-bottom:1rem;">
+                        <svg class="settings-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"></path></svg>
+                        <input type="text" id="glyph-picker-search" class="settings-search-input" placeholder="Search icons and emoji…" autocomplete="off" oninput="renderGlyphPickerResults(this.value)">
+                    </div>
+                    ${opts.allowNone ? `<button type="button" class="modal-footer-button is-secondary mb-3" onclick="window.__glyphPickerOnPick(''); closeGlyphPicker();">No icon</button>` : ''}
+                    <div id="glyph-picker-results" style="max-height:55vh; overflow-y:auto;"></div>
+                </div>
+            `;
+            document.body.appendChild(popover);
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => popover.classList.add('show'));
+            renderGlyphPickerResults('');
+            setTimeout(() => { const el = document.getElementById('glyph-picker-search'); if (el) el.focus(); }, 50);
+        }
+        function closeGlyphPicker() {
+            const popover = document.getElementById('glyph-picker-popover');
+            if (popover) popover.remove();
+            document.body.style.overflow = '';
+            window.__glyphPickerOnPick = null;
+        }
+        function renderGlyphPickerResults(query) {
+            const container = document.getElementById('glyph-picker-results');
+            if (!container) return;
+            const q = (query || '').trim().toLowerCase();
+            const icons = ICON_LIBRARY.filter(i => !q || i.key.toLowerCase().includes(q));
+            const emoji = EMOJI_LIBRARY.filter(i => !q || i.k.includes(q));
+            const gridStyle = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(2.6rem, 1fr)); gap:0.5rem;';
+            const iconBtn = (i) => `
+                <button type="button" title="${escapeAttr(i.key)}" onclick="window.__glyphPickerOnPick('${escapeJsAttr(i.key)}'); closeGlyphPicker();" style="width:2.6rem; height:2.6rem; border-radius:0.6rem; background:var(--glass-bg-strong); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                    <svg width="18" height="18" viewBox="0 0 24 24"><g style="color:var(--text-primary);" fill="currentColor" stroke="currentColor">${i.svg.replace(/white/g, 'currentColor')}</g></svg>
+                </button>`;
+            const emojiBtn = (i) => `
+                <button type="button" title="${escapeAttr(i.k.split(' ')[0])}" onclick="window.__glyphPickerOnPick('emoji:${escapeJsAttr(i.e)}'); closeGlyphPicker();" style="width:2.6rem; height:2.6rem; border-radius:0.6rem; background:var(--glass-bg-strong); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.3rem;">
+                    ${i.e}
+                </button>`;
+            container.innerHTML = `
+                <p class="text-xs font-semibold mb-1.5" style="color:var(--text-muted);">Icons${icons.length ? '' : ' (none match)'}</p>
+                <div style="${gridStyle} margin-bottom:1rem;">${icons.map(iconBtn).join('')}</div>
+                <p class="text-xs font-semibold mb-1.5" style="color:var(--text-muted);">Emoji${emoji.length ? '' : ' (none match)'}</p>
+                <div style="${gridStyle}">${emoji.map(emojiBtn).join('')}</div>
+            `;
+        }
+
         // No built-in categories -- a fresh install starts completely empty. Real categories only
         // ever come in through a data pull/restore/import, or the user adding their own (every
         // lookup below already falls back gracefully -- categoryLabel/categoryColorOf/
@@ -12285,7 +12716,7 @@ body.dark-theme[data-palette="mint"] {
             calendarCategories.forEach(c => {
                 if (!c.label) c.label = 'Category';
                 if (!c.color) c.color = '#a3e635';
-                if (!c.icon || !ICON_LIBRARY_MAP[c.icon]) c.icon = 'calendar';
+                if (!isValidGlyphValue(c.icon)) c.icon = 'calendar';
                 c.deletable = c.id !== 'assignment';
             });
             saveCalendarCategories();
@@ -12406,6 +12837,9 @@ body.dark-theme[data-palette="mint"] {
             if (category === 'canvas-event') category = GENERIC_CATEGORY_ID;
             const s = Math.max(5, Math.round((dotSizePx || 16) * 0.62));
             const c = findCategory(category);
+            if (c && c.icon && c.icon.indexOf('emoji:') === 0) {
+                return `<span style="pointer-events:none; flex-shrink:0;">${glyphSvgOrEmojiHtml(c.icon, s)}</span>`;
+            }
             const inner = (c && ICON_LIBRARY_MAP[c.icon]) || CATEGORY_ICON_DEFAULT;
             const invert = c && isLightColor(c.color);
             return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="pointer-events:none; flex-shrink:0;${invert ? ' filter:invert(1);' : ''}" aria-hidden="true">${inner}</svg>`;
@@ -12504,45 +12938,13 @@ body.dark-theme[data-palette="mint"] {
 
         // ----- Icon picker (shared popover, ~50 icons, reused by the category editor) -----
         function openIconPicker(categoryId) {
-            closeIconPicker();
-            const popover = document.createElement('div');
-            popover.id = 'icon-picker-popover';
-            popover.className = 'modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50';
-            popover.onclick = (e) => { if (e.target === popover) closeIconPicker(); };
-            popover.innerHTML = `
-                <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-md p-6 border" onclick="event.stopPropagation()">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold">Choose an icon</h3>
-                        <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeIconPicker()">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
-                    </div>
-                    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(2.6rem, 1fr)); gap:0.5rem; max-height:60vh; overflow-y:auto;">
-                        ${ICON_LIBRARY.map(i => `
-                            <button type="button" title="${escapeAttr(i.key)}" onclick="pickCategoryIcon('${escapeJsAttr(categoryId)}', '${escapeJsAttr(i.key)}')" style="width:2.6rem; height:2.6rem; border-radius:0.6rem; background:var(--glass-bg-strong); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:center; cursor:pointer;">
-                                <svg width="18" height="18" viewBox="0 0 24 24"><g style="color:var(--text-primary);" fill="currentColor" stroke="currentColor">${i.svg.replace(/white/g, 'currentColor')}</g></svg>
-                            </button>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(popover);
-            document.body.style.overflow = 'hidden';
-            // .modal-content starts at opacity:0/translated-down by default and only becomes
-            // visible once its ancestor .modal gets the "show" class (see every other modal in
-            // the app, e.g. openAllSettingsModal) -- this was never added here, so the picker was
-            // being appended to the DOM correctly but staying invisible.
-            requestAnimationFrame(() => popover.classList.add('show'));
+            openGlyphPicker((value) => pickCategoryIcon(categoryId, value), { title: 'Choose an icon or emoji' });
         }
-        function closeIconPicker() {
-            const popover = document.getElementById('icon-picker-popover');
-            if (popover) popover.remove();
-            document.body.style.overflow = '';
-        }
-        function pickCategoryIcon(categoryId, iconKey) {
+        function pickCategoryIcon(categoryId, glyphValue) {
+            if (!glyphValue) return; // categories always keep some icon -- no "None" option offered
             const c = calendarCategories.find(x => x.id === categoryId);
             if (c) {
-                c.icon = iconKey;
+                c.icon = glyphValue;
                 saveCalendarCategories();
                 renderCalendarCategoriesEditor();
                 renderCalendarCategoryFilterChips();
@@ -12551,7 +12953,6 @@ body.dark-theme[data-palette="mint"] {
                 if (activeAppView === 'home') renderHomeDashboard();
                 if (activeAppView === 'reminders') { renderPlannerCountdownsList(); renderRemindersView(); }
             }
-            closeIconPicker();
         }
 
         // ===================== CATEGORY RULES EDITOR UI (Gmail-filter-style, add/edit/delete/reorder) ====

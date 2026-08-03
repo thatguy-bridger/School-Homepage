@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-02T00:00:00Z",
+  "title": "Category filters for Upcoming Events, overlapping Day view events now stack as cards",
+  "summary": [
+    "The Home 'Upcoming Events' widget was always capped at 5 items even on a busy school-events calendar with dozens of entries. It now has category filter chips in its widget settings (gear icon) -- with every category shown (the default), it still caps at 5 to stay readable, but narrow it down to specific categories and it shows every matching upcoming event, uncapped.",
+    "The Calendar page's Day view used to render every timed external event as a full-width block, so several events close together in time would visually overlap into unreadable text. Overlapping events now render as a fanned card stack with a count badge -- click it to spread the cards out side by side so each is fully readable, click again to collapse it back. Every event in Day view (timed, all-day, and stacked) now also gets the same rich hover popup used everywhere else in the app (category, time, description)."
+  ]
+}
