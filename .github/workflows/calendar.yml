@@ -30,22 +30,19 @@ jobs:
         with:
           node-version: '20'
 
-      # Updated to your specific path
       - name: Generate ICS File
         run: node Resources/bruh/generate.js
-        
-      - name: Prepare public directory
-        run: |
-          mkdir public
-          mv alta_events.ics public/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # This is the magic change: path is set to '.'
+      # It grabs your HTML page, the newly generated .ics file, 
+      # and any other assets, deploying them all together.
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './public'
+          path: '.'
 
       - name: Deploy to GitHub Pages
         id: deployment
