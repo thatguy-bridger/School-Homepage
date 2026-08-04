@@ -1515,6 +1515,25 @@ body.dark-theme[data-palette="mint"] {
         }
         .modal-resize-handle:hover, .modal-resize-handle.is-active { opacity: 0.9; }
         .modal-resize-handle svg { width: 100%; height: 100%; display: block; color: var(--text-muted); }
+        /* Right-edge grip -- drags the modal's own CSS width directly (independent of the corner
+           handle's uniform scale transform, see attachModalWidthResizeHandle), so a modal can be
+           made wider/narrower on its own without also blowing up its height or font size. Sits at
+           vertical center of the right edge, same 90%-of-viewport ceiling as the corner handle. */
+        .modal-width-resize-handle {
+            position: absolute;
+            right: -0.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1rem;
+            height: 2.4rem;
+            cursor: ew-resize;
+            z-index: 5;
+            opacity: 0.35;
+            transition: opacity 0.15s ease-in-out;
+            touch-action: none;
+        }
+        .modal-width-resize-handle:hover, .modal-width-resize-handle.is-active { opacity: 0.9; }
+        .modal-width-resize-handle svg { width: 100%; height: 100%; display: block; color: var(--text-muted); }
 
         .modal-content h3 {
             color: var(--text-primary);
@@ -5853,8 +5872,68 @@ body.dark-theme[data-palette="mint"] {
             handle.addEventListener('mousedown', onDown);
             handle.addEventListener('touchstart', onDown, { passive: false });
         }
+        // Width-only resize (right-edge grip): sets the modal's own CSS width property directly,
+        // which transform:scale() never touches -- getComputedStyle(...).width always reads the
+        // PRE-transform box width, so this is fully independent of the corner handle's uniform
+        // scale and the two can be combined freely (wider AND bigger, or wider but not taller).
+        // Same 5%-margin/90%-of-viewport ceiling as the corner handle's scale limit, just applied
+        // to a raw pixel width instead of a scale factor.
+        function modalResizeMaxWidthPx() {
+            return window.innerWidth * (1 - MODAL_RESIZE_EDGE_MARGIN * 2);
+        }
+        function attachModalWidthResizeHandle(modalContent) {
+            if (!modalContent || modalContent.dataset.widthResizeHandleAttached) return;
+            modalContent.dataset.widthResizeHandleAttached = '1';
+            const handle = document.createElement('div');
+            handle.className = 'modal-width-resize-handle';
+            handle.title = 'Drag to resize width';
+            handle.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 4v16M16 4v16M4 9l-3 3 3 3M20 9l3 3-3 3"></path></svg>`;
+            modalContent.appendChild(handle);
+
+            let dragging = false;
+            let startX = 0, startWidthPx = 0, minWidthPx = 280, maxWidthPx = 0;
+
+            const onMove = (e) => {
+                if (!dragging) return;
+                const point = e.touches ? e.touches[0] : e;
+                const dx = point.clientX - startX;
+                const next = Math.max(minWidthPx, Math.min(maxWidthPx, startWidthPx + dx));
+                modalContent.style.width = next + 'px';
+            };
+            const onUp = () => {
+                if (!dragging) return;
+                dragging = false;
+                modalContent.classList.remove('is-resizing');
+                handle.classList.remove('is-active');
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onUp);
+            };
+            const onDown = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragging = true;
+                const point = e.touches ? e.touches[0] : e;
+                startX = point.clientX;
+                startWidthPx = parseFloat(getComputedStyle(modalContent).width) || modalContent.getBoundingClientRect().width;
+                minWidthPx = Math.min(280, startWidthPx);
+                maxWidthPx = modalResizeMaxWidthPx();
+                modalContent.classList.add('is-resizing');
+                handle.classList.add('is-active');
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+                document.addEventListener('touchmove', onMove, { passive: false });
+                document.addEventListener('touchend', onUp);
+            };
+            handle.addEventListener('mousedown', onDown);
+            handle.addEventListener('touchstart', onDown, { passive: false });
+        }
         function attachModalResizeHandlesToAll() {
-            document.querySelectorAll('.modal-content').forEach(attachModalResizeHandle);
+            document.querySelectorAll('.modal-content').forEach(el => {
+                attachModalResizeHandle(el);
+                attachModalWidthResizeHandle(el);
+            });
         }
         // Re-clamp every currently-scaled modal on viewport resize, so a modal you'd stretched out
         // on a big window doesn't get left overflowing the page if the window shrinks.
@@ -5863,6 +5942,9 @@ body.dark-theme[data-palette="mint"] {
                 const current = parseFloat(getComputedStyle(el).getPropertyValue('--modal-user-scale')) || 1;
                 const max = modalResizeMaxScale(el, current);
                 if (current > max) el.style.setProperty('--modal-user-scale', max);
+                const currentWidth = parseFloat(getComputedStyle(el).width);
+                const maxWidth = modalResizeMaxWidthPx();
+                if (currentWidth > maxWidth) el.style.width = maxWidth + 'px';
             });
         });
         attachModalResizeHandlesToAll();

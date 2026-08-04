@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-03T01:40:00Z",
+  "title": "Modals now have a separate width-only resize grip",
+  "summary": [
+    "The existing bottom-right corner grip still resizes a modal uniformly (both dimensions, text and all). A new grip on the right edge lets you widen or narrow a modal on its own -- handy for things like lists where you want more horizontal room without also stretching everything else. It respects the same 90%-of-screen ceiling as the corner grip, and the two can be combined freely (wider AND bigger, or just wider)."
+  ]
+}
