@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-03T01:30:00Z",
+  "title": "Widget Bank + build-your-own Home widgets",
+  "summary": [
+    "Home editing has a real \"+ Add Widget\" button now, opening a dedicated bank of every widget you can add -- built-in ones you've hidden, plus any custom widgets you've made -- instead of the old hidden widgets showing up as inline '+' tiles scattered through the grid.",
+    "You can build your own custom widgets from that same bank: a free-text info card (notes, a locker combo, anything), a set of clickable link tiles (paste a URL + label, opens immediately in a new tab), or a live stat pulled from real app data (classes scheduled today, assignments due this week, reminders today, days until your next countdown, your next/current class, today's A/B schedule, or how many classes are in your catalog). Each one gets its own title, can be resized/repositioned like any other widget, and is editable or deletable any time from its gear icon or the bank."
+  ]
+}

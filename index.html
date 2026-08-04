@@ -2446,6 +2446,22 @@ body.dark-theme[data-palette="mint"] {
             height: clamp(1.3rem, 6cqmin, 2.6rem);
             font-size: clamp(0.8rem, 3.6cqmin, 1.5rem);
         }
+        /* ---- Custom widget content (info/links/stat) -- see renderCustomWidgetContent ---- */
+        .custom-widget-info-text { white-space: pre-wrap; line-height: 1.5; font-size: 0.9rem; }
+        .custom-widget-links-list { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; }
+        .custom-widget-link-tile {
+            display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+            padding: 0.6rem 0.85rem; border-radius: 0.6rem;
+            background: color-mix(in srgb, var(--accent-2) 10%, transparent);
+            border: 1px solid var(--glass-border);
+            font-weight: 600; font-size: 0.85rem; text-decoration: none; color: var(--text-primary);
+            transition: background-color 0.15s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .custom-widget-link-tile:hover { background: color-mix(in srgb, var(--accent-2) 20%, transparent); transform: translateY(-1px); }
+        .custom-widget-link-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .custom-widget-stat { text-align: center; }
+        .custom-widget-stat-value { font-size: clamp(1.6rem, 10cqmin, 3rem); font-weight: 800; line-height: 1.1; }
+        .custom-widget-stat-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.3rem; }
         /* ---- Fill behavior: the widget is a column (title, optional settings panel, then the
            content body); the body is told to actually consume whatever vertical space the box
            has instead of staying top-packed and leaving the rest of a big widget empty. Widgets
@@ -3511,6 +3527,7 @@ body.dark-theme[data-palette="mint"] {
                             <button type="button" id="home-preset-save-button" class="modal-footer-button is-secondary hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="saveCurrentAsHomePreset()" title="Save the current layout, digest, and calendar preview settings as a new preset">Save Preset</button>
                             <button type="button" id="home-preset-delete-button" class="modal-footer-button bg-red-600 hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="deleteHomePreset(loadHomePresetSelection())" title="Delete this preset">Delete Preset</button>
                             <button type="button" id="home-reset-layout-button" class="modal-footer-button is-secondary hidden" style="font-size:0.72rem;padding:0.4rem 0.65rem;opacity:0.8;" onclick="confirmResetCustomizeHomeLayout()" title="Reset the Home layout back to its default widgets, sizes, and positions">Reset Layout</button>
+                            <button type="button" id="home-add-widget-button" class="modal-footer-button bg-green-600 hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="openWidgetBankModal()" title="Add a built-in or custom widget">+ Add Widget</button>
                             <button type="button" id="customize-home-button" class="icon-btn p-3 rounded-full" onclick="toggleHomeEditMode()" title="Customize Home">
                                 <svg class="home-edit-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                 <svg class="home-done-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
@@ -4070,6 +4087,37 @@ body.dark-theme[data-palette="mint"] {
             <div class="flex justify-end gap-2">
                 <button type="button" class="modal-footer-button is-secondary" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="closeCustomPeriodModal()">Cancel</button>
                 <button type="button" class="modal-footer-button bg-green-600" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="saveCustomPeriodModal()">Add Period</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Widget Bank (add built-in or custom widgets to Home) -->
+    <div id="widget-bank-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[60] hidden opacity-0" onclick="closeWidgetBankModal(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-2xl h-[80vh] flex flex-col p-6 border" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                <h3 class="text-lg font-bold">Add a Widget</h3>
+                <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeWidgetBankModal()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <button type="button" class="modal-footer-button bg-green-600 mb-4 flex-shrink-0" style="align-self:flex-start;padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="openCustomWidgetBuilder()">+ Create Custom Widget</button>
+            <div class="flex-grow overflow-y-auto pr-2" id="widget-bank-body"></div>
+        </div>
+    </div>
+
+    <!-- Custom Widget Builder -->
+    <div id="custom-widget-builder-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[70] hidden opacity-0" onclick="closeCustomWidgetBuilder(event)">
+        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-lg h-[85vh] flex flex-col p-6 border" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                <h3 class="text-lg font-bold" id="custom-widget-builder-title">New Custom Widget</h3>
+                <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeCustomWidgetBuilder()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="flex-grow overflow-y-auto pr-2" id="custom-widget-builder-body"></div>
+            <div class="flex justify-end gap-2 mt-4 flex-shrink-0">
+                <button type="button" class="modal-footer-button is-secondary" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="closeCustomWidgetBuilder()">Cancel</button>
+                <button type="button" class="modal-footer-button bg-green-600" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="saveCustomWidgetBuilder()">Save</button>
             </div>
         </div>
     </div>
@@ -8493,6 +8541,62 @@ body.dark-theme[data-palette="mint"] {
             showActionToast('Preview calendars updated to match your current filters.');
         }
 
+        // ===================== CUSTOM WIDGETS (user-built) =====================
+        // A user-authored widget instance: {id, type, title, ...type-specific fields}. Lives
+        // entirely separately from HOME_WIDGET_DEFS (the fixed built-ins, one hardcoded DOM
+        // element each) since there can be any number of these -- their DOM elements are created
+        // on demand (see ensureCustomWidgetDom) rather than existing in the page template.
+        //   type 'info'  -> { body: string }                         a free-text note card
+        //   type 'links' -> { links: [{ label, url }] }               clickable link buttons
+        //   type 'stat'  -> { source: string }                        one live number from the
+        //                                                              app's own data (see
+        //                                                              CUSTOM_WIDGET_STAT_SOURCES)
+        let customWidgets = [];
+        function loadCustomWidgets() {
+            try { customWidgets = JSON.parse(localStorage.getItem('customWidgetsV1') || '[]'); } catch (e) { customWidgets = []; }
+            if (!Array.isArray(customWidgets)) customWidgets = [];
+        }
+        function saveCustomWidgets() {
+            localStorage.setItem('customWidgetsV1', JSON.stringify(customWidgets));
+        }
+        function customWidgetLayoutId(cwId) { return 'custom:' + cwId; }
+        function isCustomWidgetLayoutId(id) { return typeof id === 'string' && id.indexOf('custom:') === 0; }
+        function customWidgetIdFromLayoutId(id) { return id.slice('custom:'.length); }
+        function findCustomWidget(cwId) { return customWidgets.find(w => w.id === cwId); }
+        // Predefined, safe (no arbitrary code) data sources a 'stat' custom widget can bind to --
+        // each just reads from data structures/functions that already exist elsewhere in the app.
+        const CUSTOM_WIDGET_STAT_SOURCES = {
+            classesToday: { label: 'Classes scheduled today', compute: () => String(getClassesForDate(appNow()).length) },
+            dueSoonCount: { label: 'Assignments due (next 7 days)', compute: () => { const now = appNowMs(); return String(canvasAssignments.filter(a => !isAssignmentDismissed(a) && a.dueAt >= now && a.dueAt - now <= 7 * 86400000).length); } },
+            remindersToday: { label: 'Reminders today', compute: () => String(getRemindersForDate(appNow()).length) },
+            nextCountdownDays: {
+                label: 'Days until next countdown', compute: () => {
+                    const upcoming = countdowns.map(cd => countdownTargetDate(cd)).filter(Boolean).filter(d => d >= appNow()).sort((a, b) => a - b);
+                    if (!upcoming.length) return '—';
+                    const today = appNow(); today.setHours(0, 0, 0, 0);
+                    return String(Math.round((upcoming[0] - today) / 86400000));
+                }
+            },
+            nextClassName: {
+                label: 'Next/current class', compute: () => {
+                    const info = getCurrentOrNextPeriodInfo();
+                    return (info && info.classItem && info.classItem.title) || (info && info.label) || 'None';
+                }
+            },
+            todayDayType: {
+                label: "Today's schedule", compute: () => {
+                    if (isNoSchoolDay(appNow())) return 'No School';
+                    const dt = getDayType(appNow());
+                    return dt ? dayTypeLabel(dt) : 'Unscheduled';
+                }
+            },
+            classCatalogCount: { label: 'Total classes in catalog', compute: () => String(classData.reduce((n, cat) => n + cat.classes.filter(c => !c.isDivider).length, 0)) }
+        };
+        function computeCustomWidgetStat(source) {
+            const def = CUSTOM_WIDGET_STAT_SOURCES[source];
+            if (!def) return '—';
+            try { return def.compute(); } catch (e) { return '—'; }
+        }
         const HOME_WIDGET_DEFS = [
             { id: 'next-class', label: 'Next Class', el: 'home-widget-next-class' },
             { id: 'due-soon', label: 'Due Soon', el: 'home-widget-due-soon' },
@@ -8516,8 +8620,9 @@ body.dark-theme[data-palette="mint"] {
             upcoming: { colSpan: 12, rowSpan: 5 },
             'calendar-preview': { colSpan: 12, rowSpan: 8 }
         };
+        const CUSTOM_WIDGET_DEFAULT_SPAN = { colSpan: 4, rowSpan: 3 };
         function clampHomeGridEntry(entry) {
-            const spans = HOME_WIDGET_DEFAULT_SPANS[entry.id] || { colSpan: 6, rowSpan: 4 };
+            const spans = HOME_WIDGET_DEFAULT_SPANS[entry.id] || (isCustomWidgetLayoutId(entry.id) ? CUSTOM_WIDGET_DEFAULT_SPAN : { colSpan: 6, rowSpan: 4 });
             const colSpan = Math.max(1, Math.min(HOME_GRID_COLS, Math.round(Number(entry.colSpan)) || spans.colSpan));
             const rowSpan = Math.max(1, Math.round(Number(entry.rowSpan)) || spans.rowSpan);
             const col = Math.max(1, Math.min(HOME_GRID_COLS - colSpan + 1, Math.round(Number(entry.col)) || 1));
@@ -8565,13 +8670,23 @@ body.dark-theme[data-palette="mint"] {
         function loadHomeWidgetLayout() {
             let layout;
             try { layout = JSON.parse(localStorage.getItem('homeWidgetLayoutV1') || 'null'); } catch (e) { layout = null; }
-            if (!Array.isArray(layout)) return defaultHomeWidgetLayout();
+            if (!Array.isArray(layout)) layout = defaultHomeWidgetLayout();
             // Reconcile against HOME_WIDGET_DEFS so a future widget added to the app (or one
-            // whose id changed) doesn't silently disappear or crash the layout logic.
+            // whose id changed) doesn't silently disappear or crash the layout logic. Custom
+            // widget entries (id "custom:<uuid>") are kept as long as that custom widget still
+            // exists in customWidgets -- deleting the widget itself (see deleteCustomWidget) is
+            // what actually removes its layout entry, not this reconciliation.
             const knownIds = new Set(HOME_WIDGET_DEFS.map(w => w.id));
-            const cleaned = layout.filter(entry => entry && knownIds.has(entry.id)).map(clampHomeGridEntry);
+            const customIds = new Set(customWidgets.map(w => customWidgetLayoutId(w.id)));
+            const cleaned = layout.filter(entry => entry && (knownIds.has(entry.id) || customIds.has(entry.id))).map(clampHomeGridEntry);
             HOME_WIDGET_DEFS.forEach(w => {
                 if (!cleaned.some(entry => entry.id === w.id)) cleaned.push({ id: w.id, visible: true, col: 1, row: 1, ...HOME_WIDGET_DEFAULT_SPANS[w.id] });
+            });
+            // A custom widget with no layout entry yet (freshly created) starts hidden -- it
+            // lives in the widget bank until the user explicitly adds it to the dashboard.
+            customWidgets.forEach(w => {
+                const lid = customWidgetLayoutId(w.id);
+                if (!cleaned.some(entry => entry.id === lid)) cleaned.push({ id: lid, visible: false, col: 1, row: 1, ...CUSTOM_WIDGET_DEFAULT_SPAN });
             });
             return cleaned;
         }
@@ -8599,11 +8714,291 @@ body.dark-theme[data-palette="mint"] {
             homeGridResizeObserver = new ResizeObserver(() => refreshHomeGridCellSize());
             homeGridResizeObserver.observe(grid);
         }
+        // Creates (once) the DOM element for a custom widget instance -- unlike the built-in
+        // widgets, which each have a hardcoded <div> in the page template, a custom widget's
+        // element doesn't exist until the user actually adds one, so it's built here on first use
+        // and just reused (by id) on every later layout apply/render.
+        function ensureCustomWidgetDom(cw) {
+            const elId = 'home-widget-custom-' + cw.id;
+            let el = document.getElementById(elId);
+            if (el) return el;
+            const grid = document.querySelector('.home-widget-grid');
+            if (!grid) return null;
+            el = document.createElement('div');
+            el.className = 'home-widget';
+            el.id = elId;
+            el.innerHTML = `
+                <h2>
+                    <span class="custom-widget-title-text"></span>
+                    <div class="home-widget-header-actions">
+                        <button type="button" class="home-widget-settings-btn" onclick="event.stopPropagation(); openCustomWidgetBuilder('${escapeJsAttr(cw.id)}')" title="Edit this widget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+                    </div>
+                </h2>
+                <div class="home-widget-body custom-widget-body"></div>
+            `;
+            grid.appendChild(el);
+            return el;
+        }
+        function renderCustomWidgetContent(cw) {
+            const el = document.getElementById('home-widget-custom-' + cw.id);
+            if (!el) return;
+            const titleEl = el.querySelector('.custom-widget-title-text');
+            if (titleEl) titleEl.textContent = cw.title || 'Custom Widget';
+            const body = el.querySelector('.custom-widget-body');
+            if (!body) return;
+            if (cw.type === 'info') {
+                body.innerHTML = cw.body ? `<p class="custom-widget-info-text">${escapeHtml(cw.body).replace(/\n/g, '<br>')}</p>` : `<p class="home-widget-empty">No content yet -- click the gear to add some.</p>`;
+            } else if (cw.type === 'links') {
+                const links = Array.isArray(cw.links) ? cw.links.filter(l => l.url) : [];
+                body.innerHTML = links.length ? `<div class="custom-widget-links-list">${links.map(l => `
+                    <a class="custom-widget-link-tile" href="${escapeAttr(normalizeExternalUrl(l.url) || '#')}" target="_blank" rel="noopener">
+                        <span class="custom-widget-link-label">${escapeHtml(l.label || l.url)}</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.85rem;height:0.85rem;flex-shrink:0;"><path d="M7 17L17 7M7 7h10v10"></path></svg>
+                    </a>
+                `).join('')}</div>` : `<p class="home-widget-empty">No links yet -- click the gear to add some.</p>`;
+            } else if (cw.type === 'stat') {
+                const def = CUSTOM_WIDGET_STAT_SOURCES[cw.source];
+                body.innerHTML = `
+                    <div class="custom-widget-stat">
+                        <p class="custom-widget-stat-value">${escapeHtml(computeCustomWidgetStat(cw.source))}</p>
+                        <p class="custom-widget-stat-label">${escapeHtml((def && def.label) || 'Stat')}</p>
+                    </div>
+                `;
+            } else {
+                body.innerHTML = `<p class="home-widget-empty">Unknown widget type.</p>`;
+            }
+        }
+
+        // ===================== WIDGET BANK (add built-in or custom widgets) =====================
+        // A real dedicated place to pull widgets from -- built-in ones you've hidden, and every
+        // custom widget you've made (see below) -- instead of the old inline "+" tiles scattered
+        // through the grid itself.
+        function openWidgetBankModal() {
+            renderWidgetBankModal();
+            const modal = document.getElementById('widget-bank-modal');
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => { modal.classList.remove('opacity-0'); modal.classList.add('show'); });
+        }
+        function closeWidgetBankModal(event) {
+            const modal = document.getElementById('widget-bank-modal');
+            const content = modal.querySelector('.modal-content');
+            if (event && content.contains(event.target)) return;
+            modal.classList.add('opacity-0');
+            modal.classList.remove('show');
+            modal.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
+        }
+        const CUSTOM_WIDGET_TYPE_LABELS = { info: 'Text', links: 'Links', stat: 'Stat' };
+        function renderWidgetBankModal() {
+            const body = document.getElementById('widget-bank-body');
+            if (!body) return;
+            const layout = loadHomeWidgetLayout();
+            const hiddenBuiltins = HOME_WIDGET_DEFS.filter(w => {
+                const entry = layout.find(e => e.id === w.id);
+                return entry && !entry.visible;
+            });
+            const builtinsHtml = `
+                <p class="text-xs font-semibold uppercase tracking-wide mb-2" style="color:var(--text-muted);">Built-in Widgets</p>
+                <div class="space-y-2 mb-5">
+                    ${hiddenBuiltins.length ? hiddenBuiltins.map(w => `
+                        <div class="flex items-center justify-between gap-2 ui-setting-row">
+                            <span class="font-medium">${escapeHtml(w.label)}</span>
+                            <button type="button" class="modal-footer-button bg-green-600" style="padding:0.35rem 0.75rem;font-size:0.75rem;" onclick="addBuiltinWidgetFromBank('${escapeJsAttr(w.id)}')">Add</button>
+                        </div>
+                    `).join('') : `<p class="text-sm settings-desc">Every built-in widget is already on your Home screen.</p>`}
+                </div>
+            `;
+            const customHtml = `
+                <p class="text-xs font-semibold uppercase tracking-wide mb-2" style="color:var(--text-muted);">Custom Widgets</p>
+                <div class="space-y-2">
+                    ${customWidgets.length ? customWidgets.map(cw => {
+                        const entry = layout.find(e => e.id === customWidgetLayoutId(cw.id));
+                        const onHome = entry && entry.visible;
+                        return `
+                        <div class="flex items-center justify-between gap-2 ui-setting-row">
+                            <span class="min-w-0">
+                                <span class="font-medium">${escapeHtml(cw.title || 'Custom Widget')}</span>
+                                <span class="text-xs settings-desc" style="margin-left:0.35rem;">${escapeHtml(CUSTOM_WIDGET_TYPE_LABELS[cw.type] || cw.type)}</span>
+                            </span>
+                            <span class="flex items-center gap-1.5 flex-shrink-0">
+                                <button type="button" class="modal-footer-button is-secondary" style="padding:0.3rem 0.6rem;font-size:0.72rem;" onclick="openCustomWidgetBuilder('${escapeJsAttr(cw.id)}')">Edit</button>
+                                ${onHome
+                                    ? `<button type="button" class="modal-footer-button is-secondary" style="padding:0.3rem 0.6rem;font-size:0.72rem;" onclick="removeCustomWidgetFromHomeFromBank('${escapeJsAttr(cw.id)}')">Remove</button>`
+                                    : `<button type="button" class="modal-footer-button bg-green-600" style="padding:0.3rem 0.6rem;font-size:0.72rem;" onclick="addCustomWidgetToHomeFromBank('${escapeJsAttr(cw.id)}')">Add</button>`}
+                            </span>
+                        </div>
+                    `;}).join('') : `<p class="text-sm settings-desc">No custom widgets yet -- click "+ Create Custom Widget" above.</p>`}
+                </div>
+            `;
+            body.innerHTML = builtinsHtml + customHtml;
+        }
+        function addBuiltinWidgetFromBank(id) {
+            showHomeWidgetById(id);
+            renderWidgetBankModal();
+        }
+        function addCustomWidgetToHomeFromBank(cwId) {
+            const layout = loadHomeWidgetLayout();
+            const entry = layout.find(e => e.id === customWidgetLayoutId(cwId));
+            if (entry) {
+                entry.visible = true;
+                placeHomeWidgetInFirstOpenSpot(entry, layout);
+            }
+            saveHomeWidgetLayout(layout);
+            applyHomeWidgetLayout();
+            if (homeEditMode) enterHomeEditMode();
+            markHomeLayoutCustom();
+            renderWidgetBankModal();
+        }
+        function removeCustomWidgetFromHomeFromBank(cwId) {
+            const layout = loadHomeWidgetLayout();
+            const entry = layout.find(e => e.id === customWidgetLayoutId(cwId));
+            if (entry) entry.visible = false;
+            saveHomeWidgetLayout(layout);
+            const el = document.getElementById('home-widget-custom-' + cwId);
+            if (el) el.classList.add('hidden');
+            renderHomeEditExtras();
+            markHomeLayoutCustom();
+            renderWidgetBankModal();
+        }
+
+        // ===================== CUSTOM WIDGET BUILDER =====================
+        // Transient (not saved until "Save") working copy of whichever custom widget is currently
+        // being created/edited in the builder modal.
+        let customWidgetBuilderState = null;
+        function openCustomWidgetBuilder(existingId) {
+            const existing = existingId ? findCustomWidget(existingId) : null;
+            customWidgetBuilderState = existing
+                ? JSON.parse(JSON.stringify(existing))
+                : { id: null, type: 'info', title: '', body: '', links: [{ label: '', url: '' }], source: Object.keys(CUSTOM_WIDGET_STAT_SOURCES)[0] };
+            if (!customWidgetBuilderState.links || !customWidgetBuilderState.links.length) customWidgetBuilderState.links = [{ label: '', url: '' }];
+            if (!customWidgetBuilderState.source) customWidgetBuilderState.source = Object.keys(CUSTOM_WIDGET_STAT_SOURCES)[0];
+            document.getElementById('custom-widget-builder-title').textContent = existing ? 'Edit Custom Widget' : 'New Custom Widget';
+            renderCustomWidgetBuilderBody();
+            const modal = document.getElementById('custom-widget-builder-modal');
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => { modal.classList.remove('opacity-0'); modal.classList.add('show'); });
+        }
+        function closeCustomWidgetBuilder(event) {
+            const modal = document.getElementById('custom-widget-builder-modal');
+            const content = modal.querySelector('.modal-content');
+            if (event && content.contains(event.target)) return;
+            modal.classList.add('opacity-0');
+            modal.classList.remove('show');
+            modal.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
+            customWidgetBuilderState = null;
+        }
+        function setCustomWidgetBuilderField(key, value) {
+            if (!customWidgetBuilderState) return;
+            customWidgetBuilderState[key] = value;
+            if (key === 'type') renderCustomWidgetBuilderBody();
+        }
+        function addCustomWidgetBuilderLink() {
+            customWidgetBuilderState.links.push({ label: '', url: '' });
+            renderCustomWidgetBuilderBody();
+        }
+        function removeCustomWidgetBuilderLink(i) {
+            customWidgetBuilderState.links.splice(i, 1);
+            if (!customWidgetBuilderState.links.length) customWidgetBuilderState.links.push({ label: '', url: '' });
+            renderCustomWidgetBuilderBody();
+        }
+        function setCustomWidgetBuilderLinkField(i, key, value) {
+            customWidgetBuilderState.links[i][key] = value;
+        }
+        function renderCustomWidgetBuilderBody() {
+            const s = customWidgetBuilderState;
+            const body = document.getElementById('custom-widget-builder-body');
+            if (!s || !body) return;
+            let typeFieldsHtml = '';
+            if (s.type === 'info') {
+                typeFieldsHtml = `
+                    <label class="block text-sm font-semibold mb-2">Content</label>
+                    <textarea class="form-input mb-2" rows="6" placeholder="Anything you want -- a note, a locker combo, instructions..." oninput="setCustomWidgetBuilderField('body', this.value)">${escapeHtml(s.body || '')}</textarea>
+                `;
+            } else if (s.type === 'links') {
+                typeFieldsHtml = `
+                    <label class="block text-sm font-semibold mb-2">Links</label>
+                    <div class="space-y-2 mb-2">
+                        ${s.links.map((l, i) => `
+                            <div class="flex gap-2 items-center">
+                                <input type="text" class="form-input" style="flex:1;" placeholder="Label" value="${escapeAttr(l.label)}" oninput="setCustomWidgetBuilderLinkField(${i}, 'label', this.value)">
+                                <input type="text" class="form-input" style="flex:1.5;" placeholder="https://..." value="${escapeAttr(l.url)}" oninput="setCustomWidgetBuilderLinkField(${i}, 'url', this.value)">
+                                <button type="button" class="text-gray-400 hover:text-red-600 transition flex-shrink-0" onclick="removeCustomWidgetBuilderLink(${i})"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button type="button" class="modal-footer-button is-secondary" style="padding:0.35rem 0.75rem;font-size:0.75rem;" onclick="addCustomWidgetBuilderLink()">+ Add Link</button>
+                `;
+            } else if (s.type === 'stat') {
+                typeFieldsHtml = `
+                    <label class="block text-sm font-semibold mb-2">What to show</label>
+                    <select class="form-select mb-2" onchange="setCustomWidgetBuilderField('source', this.value)">
+                        ${Object.entries(CUSTOM_WIDGET_STAT_SOURCES).map(([key, def]) => `<option value="${escapeAttr(key)}" ${s.source === key ? 'selected' : ''}>${escapeHtml(def.label)}</option>`).join('')}
+                    </select>
+                    <p class="text-xs settings-desc">Updates live, same as every other Home widget.</p>
+                `;
+            }
+            body.innerHTML = `
+                <label class="block text-sm font-semibold mb-2">Title</label>
+                <input type="text" class="form-input mb-4" placeholder="Widget title" value="${escapeAttr(s.title || '')}" oninput="setCustomWidgetBuilderField('title', this.value)">
+                <label class="block text-sm font-semibold mb-2">Type</label>
+                <select class="form-select mb-4" onchange="setCustomWidgetBuilderField('type', this.value)">
+                    <option value="info" ${s.type === 'info' ? 'selected' : ''}>Text / Info Card</option>
+                    <option value="links" ${s.type === 'links' ? 'selected' : ''}>Link Tiles</option>
+                    <option value="stat" ${s.type === 'stat' ? 'selected' : ''}>Live Stat</option>
+                </select>
+                ${typeFieldsHtml}
+                ${s.id ? `<button type="button" class="modal-footer-button bg-red-600 mt-4" style="padding:0.4rem 0.8rem;font-size:0.78rem;" onclick="deleteCustomWidgetFromBuilder()">Delete Widget</button>` : ''}
+            `;
+        }
+        function saveCustomWidgetBuilder() {
+            const s = customWidgetBuilderState;
+            if (!s) return;
+            const title = (s.title || '').trim() || 'Custom Widget';
+            if (s.id) {
+                const existing = findCustomWidget(s.id);
+                if (existing) Object.assign(existing, { title, type: s.type, body: s.body, links: s.links, source: s.source });
+            } else {
+                const id = 'cw_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+                customWidgets.push({ id, title, type: s.type, body: s.body, links: s.links, source: s.source });
+            }
+            saveCustomWidgets();
+            applyHomeWidgetLayout();
+            closeCustomWidgetBuilder();
+            renderWidgetBankModal();
+            markHomeLayoutCustom();
+        }
+        function deleteCustomWidgetFromBuilder() {
+            const s = customWidgetBuilderState;
+            if (!s || !s.id) return;
+            const title = s.title || 'this widget';
+            showConfirmationModal(`Delete "${title}"? This can't be undone.`, [
+                { text: 'Delete', action: () => {
+                    customWidgets = customWidgets.filter(w => w.id !== s.id);
+                    saveCustomWidgets();
+                    const layout = loadHomeWidgetLayout().filter(e => e.id !== customWidgetLayoutId(s.id));
+                    saveHomeWidgetLayout(layout);
+                    const el = document.getElementById('home-widget-custom-' + s.id);
+                    if (el) el.remove();
+                    closeCustomWidgetBuilder();
+                    renderWidgetBankModal();
+                    markHomeLayoutCustom();
+                }},
+                { text: 'Cancel', action: () => {} }
+            ]);
+        }
+
         function applyHomeWidgetLayout() {
             const layout = loadHomeWidgetLayout();
             layout.forEach(entry => {
-                const def = HOME_WIDGET_DEFS.find(w => w.id === entry.id);
-                const el = def && document.getElementById(def.el);
+                let el;
+                if (isCustomWidgetLayoutId(entry.id)) {
+                    const cw = findCustomWidget(customWidgetIdFromLayoutId(entry.id));
+                    if (!cw) return;
+                    el = ensureCustomWidgetDom(cw);
+                    if (el) renderCustomWidgetContent(cw);
+                } else {
+                    const def = HOME_WIDGET_DEFS.find(w => w.id === entry.id);
+                    el = def && document.getElementById(def.el);
+                }
                 if (!el) return;
                 el.classList.toggle('hidden', !entry.visible);
                 // The calendar preview is a full grid member like every other widget (resizable
@@ -8651,6 +9046,8 @@ body.dark-theme[data-palette="mint"] {
             }
             const resetBtn = document.getElementById('home-reset-layout-button');
             if (resetBtn) resetBtn.classList.remove('hidden');
+            const addWidgetBtn = document.getElementById('home-add-widget-button');
+            if (addWidgetBtn) addWidgetBtn.classList.remove('hidden');
             const presetSelect = document.getElementById('home-preset-select');
             if (presetSelect) { presetSelect.classList.remove('hidden'); renderHomePresetOptions(); }
             const presetSaveBtn = document.getElementById('home-preset-save-button');
@@ -8707,6 +9104,8 @@ body.dark-theme[data-palette="mint"] {
             }
             const resetBtn = document.getElementById('home-reset-layout-button');
             if (resetBtn) resetBtn.classList.add('hidden');
+            const addWidgetBtn = document.getElementById('home-add-widget-button');
+            if (addWidgetBtn) addWidgetBtn.classList.add('hidden');
             // The preset select itself stays visible outside edit mode too (see
             // renderHomeDashboard's own renderHomePresetOptions() call) -- always showing which
             // preset is currently loaded, not just while actively editing the layout. Only the
@@ -8736,31 +9135,18 @@ body.dark-theme[data-palette="mint"] {
         }
         // Dashed "+ Add Widget" tiles for anything currently hidden, appended into the live grid
         // right alongside the real widgets -- tapping one un-hides it in place, no separate list.
+        // Hidden widgets used to show up as "+" tiles scattered directly in the grid flow. That's
+        // replaced by the Widget Bank modal (openWidgetBankModal) -- a real dedicated place to
+        // pull widgets from, built-in or custom, instead of them just being hidden inline tiles
+        // mixed in among the real ones. This just cleans up any stale tiles left over from before.
         function renderHomeEditExtras() {
             document.querySelectorAll('.home-widget-add-tile').forEach(t => t.remove());
-            const grid = document.querySelector('.home-widget-grid');
-            const layout = loadHomeWidgetLayout();
-            layout.filter(e => !e.visible).forEach(entry => {
-                const def = HOME_WIDGET_DEFS.find(w => w.id === entry.id);
-                if (!def) return;
-                const tile = document.createElement('button');
-                tile.type = 'button';
-                tile.className = 'home-widget-add-tile';
-                // Auto-placed (no explicit grid-column/row) -- the browser's own grid layout
-                // flows it into the next open cells without overlapping the explicitly-positioned
-                // real widgets, so it never needs its own collision check.
-                tile.style.gridColumn = 'span 4';
-                tile.style.gridRow = 'span 3';
-                tile.innerHTML = `<span class="ios-add-dot" aria-hidden="true">+</span><span>${escapeHtml(def.label)}</span>`;
-                tile.onclick = () => showHomeWidgetById(def.id);
-                grid.appendChild(tile);
-            });
         }
         function hideHomeWidgetById(elId) {
-            const def = HOME_WIDGET_DEFS.find(w => w.el === elId);
-            if (!def) return;
+            const layoutId = layoutIdForElementId(elId);
+            if (!layoutId) return;
             const layout = loadHomeWidgetLayout();
-            const entry = layout.find(e => e.id === def.id);
+            const entry = layout.find(e => e.id === layoutId);
             if (entry) entry.visible = false;
             saveHomeWidgetLayout(layout);
             document.getElementById(elId).classList.add('hidden');
@@ -9028,6 +9414,28 @@ body.dark-theme[data-palette="mint"] {
             document.addEventListener('pointerup', onUp);
             document.addEventListener('pointercancel', onUp);
         }
+        // Resolves a widget DOM element's id (either a built-in's hardcoded id, or a custom
+        // widget's "home-widget-custom-<uuid>" id -- see ensureCustomWidgetDom) back to its
+        // layout id ("next-class", "custom:<uuid>", etc). The one thing move/resize/hide all
+        // need to look their entry up in loadHomeWidgetLayout()'s array.
+        function layoutIdForElementId(elId) {
+            const def = HOME_WIDGET_DEFS.find(w => w.el === elId);
+            if (def) return def.id;
+            if (elId.indexOf('home-widget-custom-') === 0) return customWidgetLayoutId(elId.slice('home-widget-custom-'.length));
+            return null;
+        }
+        // The reverse of layoutIdForElementId -- given a layout id ("next-class", "custom:<uuid>",
+        // ...), finds its DOM element id. Custom widgets may not have a DOM element yet (never
+        // been added to the dashboard, still sitting in the bank), which is fine -- callers treat
+        // a null return the same as "not currently on screen."
+        function elementIdForLayoutId(layoutId) {
+            if (isCustomWidgetLayoutId(layoutId)) {
+                const elId = 'home-widget-custom-' + customWidgetIdFromLayoutId(layoutId);
+                return document.getElementById(elId) ? elId : null;
+            }
+            const def = HOME_WIDGET_DEFS.find(w => w.id === layoutId);
+            return def ? def.el : null;
+        }
         function homeGridMetrics() {
             const grid = document.querySelector('.home-widget-grid');
             const gapPx = parseFloat(getComputedStyle(grid).columnGap) || 0;
@@ -9102,8 +9510,8 @@ body.dark-theme[data-palette="mint"] {
             e.preventDefault();
             const { grid, gapPx, cellPx, stridePx } = homeGridMetrics();
             const layout = loadHomeWidgetLayout();
-            const def = HOME_WIDGET_DEFS.find(w => w.el === el.id);
-            const entry = def && layout.find(en => en.id === def.id);
+            const layoutId = layoutIdForElementId(el.id);
+            const entry = layoutId && layout.find(en => en.id === layoutId);
             if (!entry) return;
             const others = layout.filter(en => en.id !== entry.id && en.visible);
 
@@ -9173,13 +9581,13 @@ body.dark-theme[data-palette="mint"] {
             e.stopPropagation();
             const { grid, gapPx, cellPx, stridePx } = homeGridMetrics();
             const layout = loadHomeWidgetLayout();
-            const def = HOME_WIDGET_DEFS.find(w => w.el === el.id);
-            const entry = def && layout.find(en => en.id === def.id);
+            const layoutId = layoutIdForElementId(el.id);
+            const entry = layoutId && layout.find(en => en.id === layoutId);
             if (!entry) return;
             const others = layout.filter(en => en.id !== entry.id && en.visible);
             const otherEls = new Map(others.map(o => {
-                const oDef = HOME_WIDGET_DEFS.find(w => w.id === o.id);
-                return [o.id, oDef ? document.getElementById(oDef.el) : null];
+                const oElId = elementIdForLayoutId(o.id);
+                return [o.id, oElId ? document.getElementById(oElId) : null];
             }));
             const col = entry.col, row = entry.row;
             const startColSpan = entry.colSpan, startRowSpan = entry.rowSpan;
@@ -16418,6 +16826,7 @@ body.dark-theme[data-palette="mint"] {
             loadDayNotes();
             loadReminders();
             loadCountdowns();
+            loadCustomWidgets();
             loadDismissedAssignments();
             loadCalendarCategories();
             loadCalendarCategoryRules();
