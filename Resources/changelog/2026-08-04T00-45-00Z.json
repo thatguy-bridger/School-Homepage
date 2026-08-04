@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-04T00:45:00Z",
+  "title": "Class Schedule Editor gets the same mobile single-column fix",
+  "summary": [
+    "The Class Schedule Editor (Settings > Edit Classes) had the same squeeze bug as the main Classes page: a category set to 2/3-per-row stayed side-by-side even on a phone. It now goes full-width, one category per row, below 640px, matching the read-only Classes page.",
+    "Swept Reminders, Grades, and the settings-list rows (external feeds, etc.) for the same pattern -- they were already single-column or already shrink safely, so no changes needed there."
+  ]
+}

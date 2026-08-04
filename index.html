@@ -1601,6 +1601,14 @@ body.dark-theme[data-palette="mint"] {
         .category-group.stacked-three-modal .flex.justify-between.items-center.mb-4 {
             flex-shrink: 0;
         }
+        /* Same fix as the read-only Classes page (.main-category-item, see its own @media rule)
+           -- the schedule editor's category cards squeeze to half/third width here too, cramping
+           the name input and per-class rows. Full width, one category per row, below 640px. */
+        @media (max-width: 640px) {
+            .category-group.stacked-two-modal, .category-group.stacked-three-modal {
+                width: 100%;
+            }
+        }
 
         /* Main screen category containers */
         .main-category-row {
