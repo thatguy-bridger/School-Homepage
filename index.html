@@ -1613,6 +1613,17 @@ body.dark-theme[data-palette="mint"] {
         .main-category-item.full-width { width: 100%; }
         .main-category-item.stacked-two { width: calc(50% - 1rem); }
         .main-category-item.stacked-three { width: calc(33.333% - 1.333rem); }
+        /* On a phone, a "2 per row"/"3 per row" category (set on desktop for side-by-side
+           browsing) squeezes each class card down to ~150px and forces its title to wrap onto
+           several lines -- below this width every category goes full-width, one class per row,
+           regardless of its desktop perRow setting. perRow is purely a desktop/tablet layout
+           choice; it never changes what classes exist, so nothing here touches classData. */
+        @media (max-width: 640px) {
+            .main-category-item.stacked-two, .main-category-item.stacked-three {
+                width: 100%;
+            }
+            .main-category-row { gap: 2.5rem; }
+        }
 
         /* Responsive Input Group within Modal */
         .class-input-group {
@@ -1952,6 +1963,14 @@ body.dark-theme[data-palette="mint"] {
             container-type: inline-size;
             container-name: daycell;
         }
+        /* ---- Compact Month cell (phone-width, see renderMonthView's isNarrowViewport branch) --
+           just the date, day-type badge, and a small row of plain colored dots (no titles/bars,
+           no per-source text lines) standing in for whatever's on that day; tapping the cell still
+           opens the full day detail. ---- */
+        .day-cell-compact { min-height: 3.4rem; padding: 0.35rem !important; gap: 0.2rem; }
+        .month-compact-dots { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem; margin-top: auto; }
+        .month-compact-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .month-compact-more { font-size: 0.55rem; font-weight: 700; color: var(--text-muted); line-height: 1; }
         /* ---- Apple-Calendar-style month event display ----
            All-day events stack as thin full-width colored lines at the top of the cell (their own
            row, separate from timed events, so they don't crowd out everything else on a busy
@@ -10339,7 +10358,17 @@ body.dark-theme[data-palette="mint"] {
         // =====================================================================================
         // ===================== CALENDAR =====================
         // =====================================================================================
-        let calendarView = localStorage.getItem('calendarView') || 'month';
+        // Same breakpoint as the app's own phone-width CSS (see the @media (max-width: 640px)
+        // rules) -- a single source of truth for "is this a phone" JS-side decisions like which
+        // calendar view to land on by default.
+        function isNarrowViewport() { return window.innerWidth < 640; }
+        // Month's dense 7-column grid reads fine on a laptop but turns into unreadable tiny cells
+        // on a phone (a whole grid of digit-sized boxes crammed with dots/badges) -- Agenda (a
+        // plain scrollable list of days) is the better phone default. This only picks the STARTING
+        // view on first load with nothing saved yet; once the user has actually switched views
+        // (calendarView gets persisted on every switchView call, see below), whatever they last
+        // used -- Month included -- is respected on every future load, on any device.
+        let calendarView = localStorage.getItem('calendarView') || (isNarrowViewport() ? 'agenda' : 'month');
         let currentDate = appNow();
         let selectedDayKey = null;
 
@@ -11817,6 +11846,11 @@ body.dark-theme[data-palette="mint"] {
             const weekdayHeaders = Array.from({ length: 7 }, (_, i) => weekdayLabelsBase[(weekStart + i) % 7])
                 .map(d => `<div class="weekday-header">${d}</div>`).join('');
 
+            // On a phone, Month's full cell content (titled event bars, class/reminder text
+            // lines) has no room to breathe -- see the .day-cell-compact CSS. Same grid, same
+            // data, same tap-to-open-day behavior, just date + badge + a handful of plain dots
+            // standing in for whatever's happening that day instead of trying to spell it all out.
+            const compact = isNarrowViewport();
             let cells = '';
             const cursor = new Date(gridStart);
             for (let i = 0; i < 42; i++) {
@@ -11826,12 +11860,40 @@ body.dark-theme[data-palette="mint"] {
                 const note = getNote(cursor);
                 const externalEvents = getFilteredExternalEventsForDate(cursor);
                 const classesToday = getClassesForDateFiltered(cursor);
+                const remindersToday = getRemindersForDateFiltered(cursor);
                 const badgeHtml = dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayTypeLabel(dayType)}</span>` : isNoSchoolDay(cursor) ? `<span class="day-badge badge-none">${NO_SCHOOL_ICON}No School</span>` : '';
+
+                if (compact) {
+                    const dots = [
+                        ...classesToday.map(c => ({ color: c.classItem.color || 'var(--accent-2)', title: c.classItem.title })),
+                        ...remindersToday.map(r => ({ color: reminderDisplayColor(r), title: r.text })),
+                        ...externalEvents.map(e => ({ color: e.color, title: e.title })),
+                        ...(note && (note.title || note.notes) ? [{ color: 'var(--accent-3)', title: note.title || 'Note' }] : [])
+                    ];
+                    const dotCap = 4;
+                    const dotsHtml = dots.length ? `
+                        <div class="month-compact-dots">
+                            ${dots.slice(0, dotCap).map(d => `<span class="month-compact-dot" style="background:${d.color};" title="${escapeAttr(d.title)}"></span>`).join('')}
+                            ${dots.length > dotCap ? `<span class="month-compact-more">+${dots.length - dotCap}</span>` : ''}
+                        </div>
+                    ` : '';
+                    cells += `
+                        <div class="day-cell day-cell-compact rounded-lg border ${isOutside ? 'outside-month' : ''} ${isToday ? 'is-today' : ''}" data-date="${dateKey(cursor)}" onclick="openDay('${dateKey(cursor)}')">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-semibold">${cursor.getDate()}</span>
+                                ${badgeHtml}
+                            </div>
+                            ${dotsHtml}
+                        </div>
+                    `;
+                    cursor.setDate(cursor.getDate() + 1);
+                    continue;
+                }
+
                 const titleHtml = note && note.title ? `<p class="text-xs mt-1 truncate font-medium">${escapeHtml(note.title)}</p>` : '';
                 const dotHtml = note && (note.title || note.notes) ? `<span class="note-dot"></span>` : '';
                 const externalDotsHtml = buildMonthDayEventsHtml(cursor, today, externalEvents);
                 const classesPreviewHtml = classesToday.length ? `<p class="day-classes-preview">${classesToday.map(c => `<span${classPopupAttr(c.classItem)}>${classNameHtml(c.classItem)}</span>`).join(', ')}</p>` : '';
-                const remindersToday = getRemindersForDateFiltered(cursor);
                 const remindersPreviewHtml = remindersToday.length ? `<p class="day-classes-preview">${remindersToday.map(r => `📌 <span style="color:${reminderDisplayColor(r)};">${escapeHtml(r.text)}</span>`).join(', ')}</p>` : '';
                 cells += `
                     <div class="day-cell p-2 rounded-lg border ${isOutside ? 'outside-month' : ''} ${isToday ? 'is-today' : ''}" data-date="${dateKey(cursor)}" onclick="openDay('${dateKey(cursor)}')">

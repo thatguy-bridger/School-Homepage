@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-04T00:30:00Z",
+  "title": "Mobile pass: single-column classes, Agenda-first calendar, compact Month cells",
+  "summary": [
+    "Classes: a category set to show 2 or 3 per row (for browsing on a laptop) no longer squeezes cards down to ~150px on a phone. Below 640px wide, every category goes full-width with one class per row, regardless of its desktop perRow setting -- nothing about your actual class data changes, just how it lays out on a narrow screen.",
+    "Calendar: a phone landing on the Calendar tab for the first time now starts on Agenda (a scrollable list of days) instead of Month's dense 7-column grid, which was unreadable at that size. If you've already picked a view before, your last choice is remembered as always, on any device.",
+    "If you do switch to Month view on a phone, each day cell now shows just the date, the A/B Day badge, and a small row of plain colored dots for whatever's happening that day, instead of trying to cram full event titles into a digit-sized box. Tapping the cell still opens the full day."
+  ]
+}
