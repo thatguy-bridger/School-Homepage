@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-03T02:00:00Z",
+  "title": "Custom widgets can be pinned to the top of the page, always visible",
+  "summary": [
+    "The custom widget builder has a new \"Pin to top of the page\" toggle. Turn it on and that widget shows in its own row right below the Home header -- always visible, not part of the resizable grid below -- instead of being a normal tile you add/remove/resize. Same widget types and edit flow as before (info card, link tiles, live stat); pinning is just a toggle on where it shows, not a separate kind of widget. Turning it back off returns it to a normal grid widget."
+  ]
+}

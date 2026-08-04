@@ -2446,6 +2446,38 @@ body.dark-theme[data-palette="mint"] {
             height: clamp(1.3rem, 6cqmin, 2.6rem);
             font-size: clamp(0.8rem, 3.6cqmin, 1.5rem);
         }
+        /* ---- Pinned card widgets: custom widgets with "Pin to top" on, shown in their own row
+           right at the top of the Home page (above the resizable grid) so they're always visible
+           regardless of how the grid itself is scrolled/arranged -- see renderPinnedCardWidgets. */
+        .home-pinned-widgets-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+        .home-pinned-card {
+            position: relative;
+            flex: 1 1 220px;
+            min-width: 200px;
+            max-width: 340px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1rem 1.1rem;
+            backdrop-filter: blur(16px) saturate(160%);
+            -webkit-backdrop-filter: blur(16px) saturate(160%);
+        }
+        .home-pinned-card-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+        .home-pinned-card .home-widget-settings-btn { display: flex; width: 1.3rem; height: 1.3rem; opacity: 0.5; }
+        .home-pinned-card .home-widget-settings-btn:hover { opacity: 1; }
         /* ---- Custom widget content (info/links/stat) -- see renderCustomWidgetContent ---- */
         .custom-widget-info-text { white-space: pre-wrap; line-height: 1.5; font-size: 0.9rem; }
         .custom-widget-links-list { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; }
@@ -3537,6 +3569,7 @@ body.dark-theme[data-palette="mint"] {
 
                     <div id="app-updates-banner-container"></div>
                     <div id="digest-banner-container"></div>
+                    <div id="home-pinned-widgets-container"></div>
 
                     <div class="home-widget-grid">
                         <div class="home-widget" id="home-widget-next-class">
@@ -8754,18 +8787,15 @@ body.dark-theme[data-palette="mint"] {
             grid.appendChild(el);
             return el;
         }
-        function renderCustomWidgetContent(cw) {
-            const el = document.getElementById('home-widget-custom-' + cw.id);
-            if (!el) return;
-            const titleEl = el.querySelector('.custom-widget-title-text');
-            if (titleEl) titleEl.textContent = cw.title || 'Custom Widget';
-            const body = el.querySelector('.custom-widget-body');
-            if (!body) return;
+        // Shared by both the resizable-grid version of a custom widget (renderCustomWidgetContent)
+        // and a pinned top-of-page card (renderPinnedCardWidgets) -- the actual info/links/stat
+        // markup is identical either way, only the surrounding chrome differs.
+        function buildCustomWidgetBodyHtml(cw) {
             if (cw.type === 'info') {
-                body.innerHTML = cw.body ? `<p class="custom-widget-info-text">${escapeHtml(cw.body).replace(/\n/g, '<br>')}</p>` : `<p class="home-widget-empty">No content yet -- click the gear to add some.</p>`;
+                return cw.body ? `<p class="custom-widget-info-text">${escapeHtml(cw.body).replace(/\n/g, '<br>')}</p>` : `<p class="home-widget-empty">No content yet -- click the gear to add some.</p>`;
             } else if (cw.type === 'links') {
                 const links = Array.isArray(cw.links) ? cw.links.filter(l => l.url) : [];
-                body.innerHTML = links.length ? `<div class="custom-widget-links-list">${links.map(l => `
+                return links.length ? `<div class="custom-widget-links-list">${links.map(l => `
                     <a class="custom-widget-link-tile" href="${escapeAttr(normalizeExternalUrl(l.url) || '#')}" target="_blank" rel="noopener">
                         <span class="custom-widget-link-label">${escapeHtml(l.label || l.url)}</span>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.85rem;height:0.85rem;flex-shrink:0;"><path d="M7 17L17 7M7 7h10v10"></path></svg>
@@ -8773,15 +8803,43 @@ body.dark-theme[data-palette="mint"] {
                 `).join('')}</div>` : `<p class="home-widget-empty">No links yet -- click the gear to add some.</p>`;
             } else if (cw.type === 'stat') {
                 const def = CUSTOM_WIDGET_STAT_SOURCES[cw.source];
-                body.innerHTML = `
+                return `
                     <div class="custom-widget-stat">
                         <p class="custom-widget-stat-value">${escapeHtml(computeCustomWidgetStat(cw.source))}</p>
                         <p class="custom-widget-stat-label">${escapeHtml((def && def.label) || 'Stat')}</p>
                     </div>
                 `;
-            } else {
-                body.innerHTML = `<p class="home-widget-empty">Unknown widget type.</p>`;
             }
+            return `<p class="home-widget-empty">Unknown widget type.</p>`;
+        }
+        function renderCustomWidgetContent(cw) {
+            const el = document.getElementById('home-widget-custom-' + cw.id);
+            if (!el) return;
+            const titleEl = el.querySelector('.custom-widget-title-text');
+            if (titleEl) titleEl.textContent = cw.title || 'Custom Widget';
+            const body = el.querySelector('.custom-widget-body');
+            if (!body) return;
+            body.innerHTML = buildCustomWidgetBodyHtml(cw);
+        }
+        // Custom widgets with "Pin to top" on skip the resizable grid entirely and render here
+        // instead -- a row right at the top of the Home page, always visible regardless of how
+        // the grid below is arranged/scrolled. Same widget data/types/edit flow as a normal
+        // custom widget; pinning is just a toggle on where it displays (see the builder's "Pin to
+        // top of the page" switch), not a separate kind of widget.
+        function renderPinnedCardWidgets() {
+            const container = document.getElementById('home-pinned-widgets-container');
+            if (!container) return;
+            const pinned = customWidgets.filter(w => w.pinned);
+            if (!pinned.length) { container.innerHTML = ''; return; }
+            container.innerHTML = `<div class="home-pinned-widgets-row">${pinned.map(cw => `
+                <div class="home-pinned-card">
+                    <div class="home-pinned-card-title">
+                        <span>${escapeHtml(cw.title || 'Custom Widget')}</span>
+                        <button type="button" class="home-widget-settings-btn" onclick="openCustomWidgetBuilder('${escapeJsAttr(cw.id)}')" title="Edit this widget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+                    </div>
+                    ${buildCustomWidgetBodyHtml(cw)}
+                </div>
+            `).join('')}</div>`;
         }
 
         // ===================== WIDGET BANK (add built-in or custom widgets) =====================
@@ -8832,13 +8890,15 @@ body.dark-theme[data-palette="mint"] {
                         <div class="flex items-center justify-between gap-2 ui-setting-row">
                             <span class="min-w-0">
                                 <span class="font-medium">${escapeHtml(cw.title || 'Custom Widget')}</span>
-                                <span class="text-xs settings-desc" style="margin-left:0.35rem;">${escapeHtml(CUSTOM_WIDGET_TYPE_LABELS[cw.type] || cw.type)}</span>
+                                <span class="text-xs settings-desc" style="margin-left:0.35rem;">${escapeHtml(CUSTOM_WIDGET_TYPE_LABELS[cw.type] || cw.type)}${cw.pinned ? ' · Pinned to top' : ''}</span>
                             </span>
                             <span class="flex items-center gap-1.5 flex-shrink-0">
                                 <button type="button" class="modal-footer-button is-secondary" style="padding:0.3rem 0.6rem;font-size:0.72rem;" onclick="openCustomWidgetBuilder('${escapeJsAttr(cw.id)}')">Edit</button>
-                                ${onHome
-                                    ? `<button type="button" class="modal-footer-button is-secondary" style="padding:0.3rem 0.6rem;font-size:0.72rem;" onclick="removeCustomWidgetFromHomeFromBank('${escapeJsAttr(cw.id)}')">Remove</button>`
-                                    : `<button type="button" class="modal-footer-button bg-green-600" style="padding:0.3rem 0.6rem;font-size:0.72rem;" onclick="addCustomWidgetToHomeFromBank('${escapeJsAttr(cw.id)}')">Add</button>`}
+                                ${cw.pinned
+                                    ? ''
+                                    : onHome
+                                        ? `<button type="button" class="modal-footer-button is-secondary" style="padding:0.3rem 0.6rem;font-size:0.72rem;" onclick="removeCustomWidgetFromHomeFromBank('${escapeJsAttr(cw.id)}')">Remove</button>`
+                                        : `<button type="button" class="modal-footer-button bg-green-600" style="padding:0.3rem 0.6rem;font-size:0.72rem;" onclick="addCustomWidgetToHomeFromBank('${escapeJsAttr(cw.id)}')">Add</button>`}
                             </span>
                         </div>
                     `;}).join('') : `<p class="text-sm settings-desc">No custom widgets yet -- click "+ Create Custom Widget" above.</p>`}
@@ -8883,7 +8943,7 @@ body.dark-theme[data-palette="mint"] {
             const existing = existingId ? findCustomWidget(existingId) : null;
             customWidgetBuilderState = existing
                 ? JSON.parse(JSON.stringify(existing))
-                : { id: null, type: 'info', title: '', body: '', links: [{ label: '', url: '' }], source: Object.keys(CUSTOM_WIDGET_STAT_SOURCES)[0] };
+                : { id: null, type: 'info', title: '', body: '', links: [{ label: '', url: '' }], source: Object.keys(CUSTOM_WIDGET_STAT_SOURCES)[0], pinned: false };
             if (!customWidgetBuilderState.links || !customWidgetBuilderState.links.length) customWidgetBuilderState.links = [{ label: '', url: '' }];
             if (!customWidgetBuilderState.source) customWidgetBuilderState.source = Object.keys(CUSTOM_WIDGET_STAT_SOURCES)[0];
             document.getElementById('custom-widget-builder-title').textContent = existing ? 'Edit Custom Widget' : 'New Custom Widget';
@@ -8961,6 +9021,10 @@ body.dark-theme[data-palette="mint"] {
                     <option value="stat" ${s.type === 'stat' ? 'selected' : ''}>Live Stat</option>
                 </select>
                 ${typeFieldsHtml}
+                <label class="ui-setting-row mt-4" title="Show this widget in its own row at the top of the Home page, always visible, instead of as a resizable tile in the grid below.">
+                    <span>Pin to top of the page (always visible)</span>
+                    <input type="checkbox" class="ui-switch" ${s.pinned ? 'checked' : ''} onchange="setCustomWidgetBuilderField('pinned', this.checked)">
+                </label>
                 ${s.id ? `<button type="button" class="modal-footer-button bg-red-600 mt-4" style="padding:0.4rem 0.8rem;font-size:0.78rem;" onclick="deleteCustomWidgetFromBuilder()">Delete Widget</button>` : ''}
             `;
         }
@@ -8970,10 +9034,10 @@ body.dark-theme[data-palette="mint"] {
             const title = (s.title || '').trim() || 'Custom Widget';
             if (s.id) {
                 const existing = findCustomWidget(s.id);
-                if (existing) Object.assign(existing, { title, type: s.type, body: s.body, links: s.links, source: s.source });
+                if (existing) Object.assign(existing, { title, type: s.type, body: s.body, links: s.links, source: s.source, pinned: !!s.pinned });
             } else {
                 const id = 'cw_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-                customWidgets.push({ id, title, type: s.type, body: s.body, links: s.links, source: s.source });
+                customWidgets.push({ id, title, type: s.type, body: s.body, links: s.links, source: s.source, pinned: !!s.pinned });
             }
             saveCustomWidgets();
             applyHomeWidgetLayout();
@@ -8993,6 +9057,7 @@ body.dark-theme[data-palette="mint"] {
                     saveHomeWidgetLayout(layout);
                     const el = document.getElementById('home-widget-custom-' + s.id);
                     if (el) el.remove();
+                    renderPinnedCardWidgets();
                     closeCustomWidgetBuilder();
                     renderWidgetBankModal();
                     markHomeLayoutCustom();
@@ -9008,6 +9073,14 @@ body.dark-theme[data-palette="mint"] {
                 if (isCustomWidgetLayoutId(entry.id)) {
                     const cw = findCustomWidget(customWidgetIdFromLayoutId(entry.id));
                     if (!cw) return;
+                    // Pinned widgets skip the resizable grid entirely (see renderPinnedCardWidgets)
+                    // -- if this one used to be a normal grid widget before being pinned, hide its
+                    // leftover grid element rather than positioning it.
+                    if (cw.pinned) {
+                        const existingEl = document.getElementById('home-widget-custom-' + cw.id);
+                        if (existingEl) existingEl.classList.add('hidden');
+                        return;
+                    }
                     el = ensureCustomWidgetDom(cw);
                     if (el) renderCustomWidgetContent(cw);
                 } else {
@@ -9023,6 +9096,7 @@ body.dark-theme[data-palette="mint"] {
                 el.style.gridColumn = `${entry.col} / span ${entry.colSpan}`;
                 el.style.gridRow = `${entry.row} / span ${entry.rowSpan}`;
             });
+            renderPinnedCardWidgets();
             renderMiniCalendarPreviewInto('home-calendar-preview');
             ensureHomeGridResizeObserver();
             refreshHomeGridCellSize();
