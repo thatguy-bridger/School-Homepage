@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-03T01:50:00Z",
+  "title": "Modal resizers merged back into one handle, and width can now actually reach 90%",
+  "summary": [
+    "Combined the two resize grips back into the original single bottom-right handle -- dragging left/right now sets the modal's width directly, and dragging up/down sets its overall size (the same uniform scale as before), both from the same corner grip instead of needing two separate handles.",
+    "Fixed the width ceiling actually being smaller than intended: it used to share its cap with the height-based scale, so a modal that was already tall would hit its size limit on the height axis long before width had any real room to grow. Width now has its own independent ceiling and can genuinely reach 90% of the screen regardless of the modal's height."
+  ]
+}
