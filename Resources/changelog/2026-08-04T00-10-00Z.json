@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-04T00:10:00Z",
+  "title": "Class cards shrink their text on narrow screens instead of clipping",
+  "summary": [
+    "On mobile, class cards (especially side-by-side pairs) were staying at a fixed text size and letting titles wrap into extra lines, which could crowd or clip the rest of the card. Class titles, icons, period/time chips, and the Advisory/Lunch-style divider rows now scale down smoothly as their card narrows, so text shrinks to fit instead of overflowing."
+  ]
+}

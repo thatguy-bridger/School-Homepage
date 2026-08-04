@@ -1197,6 +1197,12 @@ body.dark-theme[data-palette="mint"] {
                with no note/extra links doesn't look emptier than one that has them. */
             display: flex;
             flex-direction: column;
+            /* Lets the title/chips below react to THIS card's own width (see .class-card h4 /
+               .class-meta-chip) rather than the viewport -- a card squeezed to half-width on a
+               narrow phone (stacked-two categories never single-column below sm) shrinks its own
+               text instead of wrapping into more lines than the card has room for. */
+            container-type: inline-size;
+            container-name: classcard;
         }
         body.dark-theme .class-card {
             box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3) !important;
@@ -1232,13 +1238,18 @@ body.dark-theme[data-palette="mint"] {
             color: transparent;
             font-weight: 700;
             transition: color 0.5s ease-in-out;
+            /* Shrinks smoothly as the card narrows (see .class-card's container-type) instead of
+               wrapping onto more lines than a short/half-width card has vertical room for -- floors
+               at 0.8rem, caps at the original text-xl (1.25rem) on a full-width card. */
+            font-size: clamp(0.8rem, 6cqw, 1.25rem);
+            overflow-wrap: anywhere;
         }
         .class-card-icon {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 1.85rem;
-            height: 1.85rem;
+            width: clamp(1.4rem, 9cqw, 1.85rem);
+            height: clamp(1.4rem, 9cqw, 1.85rem);
             border-radius: 0.6rem;
             flex-shrink: 0;
         }
@@ -1272,7 +1283,7 @@ body.dark-theme[data-palette="mint"] {
         .class-meta-chip {
             display: inline-flex;
             align-items: center;
-            font-size: 0.72rem;
+            font-size: clamp(0.62rem, 4cqw, 0.72rem);
             font-weight: 600;
             padding: 0.25rem 0.7rem;
             border-radius: 9999px;
@@ -1297,25 +1308,33 @@ body.dark-theme[data-palette="mint"] {
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-wrap: wrap;
             gap: 0.5rem;
             padding: 0.5rem 0;
             text-align: center;
             text-decoration: none;
+            /* Same idea as .class-card -- reacts to its own (possibly half/third-width on mobile)
+               column width so the title/time shrink instead of the time range wrapping into a
+               tall stack of single words (see .class-card-divider-title/-time below). */
+            container-type: inline-size;
+            container-name: classdivider;
         }
         .class-card-divider.is-linked { cursor: pointer; border-radius: 0.6rem; transition: background-color 0.2s ease-in-out; }
         .class-card-divider.is-linked:hover { background: var(--glass-bg-strong); }
         .class-card-divider.is-linked:hover .class-card-divider-title { color: var(--accent-2); }
         .class-card-divider-title {
-            font-size: 0.82rem;
+            font-size: clamp(0.68rem, 7cqw, 0.82rem);
             font-weight: 800;
             letter-spacing: 0.04em;
             text-transform: uppercase;
             color: var(--text-secondary);
+            white-space: nowrap;
         }
         .class-card-divider-time {
-            font-size: 0.72rem;
+            font-size: clamp(0.6rem, 6cqw, 0.72rem);
             font-weight: 600;
             color: var(--text-muted);
+            white-space: nowrap;
         }
 
         .new-tab-button {
