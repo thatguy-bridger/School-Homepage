@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-03T01:10:00Z",
+  "title": "Faint alignment guides while dragging or resizing a Home widget",
+  "summary": [
+    "Dragging or resizing a widget on the Home screen now shows the nearest 6 grid lines on each axis as faint guides, fading out the further they are from the edge you're actually moving -- a quick visual hint for what the drag is about to snap to, without permanently cluttering the grid with lines the rest of the time."
+  ]
+}

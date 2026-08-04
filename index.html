@@ -2606,6 +2606,23 @@ body.dark-theme[data-palette="mint"] {
            that box edge-to-edge with padding:0, so its own content had nothing separating it. */
         .home-widget .mini-calendar-panel { background: transparent; border: none; box-shadow: none; padding: 0.5rem 0.4rem 0.5rem 0.4rem; backdrop-filter: none; height: 100%; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
         #home-calendar-preview { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+        /* Faint alignment guides shown live while dragging/resizing a widget (see
+           paintHomeGridLines) -- just the nearest handful of grid lines to whatever edge is
+           actually moving, each fainter the further it is, as a lightweight hint for what the
+           drag is about to snap to without permanently papering the whole grid in lines. */
+        .home-grid-lines-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 40;
+            pointer-events: none;
+        }
+        .home-grid-line {
+            position: absolute;
+            background: var(--accent-2);
+            transition: opacity 0.1s linear;
+        }
+        .home-grid-line-v { top: 0; bottom: 0; width: 1px; }
+        .home-grid-line-h { left: 0; right: 0; height: 1px; }
         /* Grid-cell outline shown live while dragging/resizing -- solid = a valid (non-colliding)
            cell target, dashed red = occupied by another widget, so the position is rejected. */
         .home-widget-resize-skeleton {
@@ -9043,6 +9060,44 @@ body.dark-theme[data-palette="mint"] {
             });
             return result;
         }
+        // Faint alignment guides shown live while dragging/resizing a widget -- just the nearest
+        // handful of grid lines to whichever edge is actually moving (the widget's own leading
+        // edge while dragging, or the growing/shrinking edge while resizing), each one fainter
+        // the further it is from that edge. Column lines are bounded (0..HOME_GRID_COLS, since
+        // the grid is always exactly 12 columns); row lines aren't (rowSpan is unbounded), so a
+        // window is taken around the anchor row instead of the whole (effectively infinite) axis.
+        let homeGridLinesOverlay = null;
+        function showHomeGridLinesOverlay(grid) {
+            hideHomeGridLinesOverlay();
+            homeGridLinesOverlay = document.createElement('div');
+            homeGridLinesOverlay.className = 'home-grid-lines-overlay';
+            grid.appendChild(homeGridLinesOverlay);
+        }
+        function hideHomeGridLinesOverlay() {
+            if (homeGridLinesOverlay) { homeGridLinesOverlay.remove(); homeGridLinesOverlay = null; }
+        }
+        const HOME_GRID_LINE_COUNT = 6;
+        function paintHomeGridLines(gapPx, stridePx, anchorCol, anchorRow) {
+            if (!homeGridLinesOverlay) return;
+            const colLineAt = (i) => i * stridePx - gapPx / 2;
+            const rowLineAt = (i) => i * stridePx - gapPx / 2;
+            const nearest = (candidates, anchor) => candidates
+                .map(i => ({ i, dist: Math.abs(i - anchor) }))
+                .sort((a, b) => a.dist - b.dist)
+                .slice(0, HOME_GRID_LINE_COUNT);
+            const colCandidates = Array.from({ length: HOME_GRID_COLS + 1 }, (_, i) => i);
+            const rowWindowStart = Math.max(0, anchorRow - HOME_GRID_LINE_COUNT);
+            const rowCandidates = Array.from({ length: HOME_GRID_LINE_COUNT * 2 + 1 }, (_, k) => rowWindowStart + k);
+            const opacityFor = (dist) => Math.max(0.03, 0.3 * (1 - dist / (HOME_GRID_LINE_COUNT + 1)));
+            let html = '';
+            nearest(colCandidates, anchorCol).forEach(({ i, dist }) => {
+                html += `<div class="home-grid-line home-grid-line-v" style="left:${colLineAt(i)}px; opacity:${opacityFor(dist).toFixed(2)};"></div>`;
+            });
+            nearest(rowCandidates, anchorRow).forEach(({ i, dist }) => {
+                html += `<div class="home-grid-line home-grid-line-h" style="top:${rowLineAt(i)}px; opacity:${opacityFor(dist).toFixed(2)};"></div>`;
+            });
+            homeGridLinesOverlay.innerHTML = html;
+        }
         function startHomeWidgetMove(e, el) {
             e.preventDefault();
             const { grid, gapPx, cellPx, stridePx } = homeGridMetrics();
@@ -9059,6 +9114,7 @@ body.dark-theme[data-palette="mint"] {
             skeleton.className = 'home-widget-resize-skeleton';
             grid.appendChild(skeleton);
             el.classList.add('is-dragging');
+            showHomeGridLinesOverlay(grid);
 
             const sizePx = (span) => span * cellPx + (span - 1) * gapPx;
             function paint(col, row, blocked) {
@@ -9067,6 +9123,7 @@ body.dark-theme[data-palette="mint"] {
                 skeleton.style.width = sizePx(entry.colSpan) + 'px';
                 skeleton.style.height = sizePx(entry.rowSpan) + 'px';
                 skeleton.classList.toggle('is-blocked', blocked);
+                paintHomeGridLines(gapPx, stridePx, col - 1, row - 1);
                 if (!blocked) {
                     el.style.gridColumn = `${col} / span ${entry.colSpan}`;
                     el.style.gridRow = `${row} / span ${entry.rowSpan}`;
@@ -9092,6 +9149,7 @@ body.dark-theme[data-palette="mint"] {
                 document.removeEventListener('pointermove', onMove);
                 document.removeEventListener('pointerup', onUp);
                 skeleton.remove();
+                hideHomeGridLinesOverlay();
                 el.classList.remove('is-dragging');
                 entry.col = lastValid.col;
                 entry.row = lastValid.row;
@@ -9131,6 +9189,7 @@ body.dark-theme[data-palette="mint"] {
             skeleton.className = 'home-widget-resize-skeleton';
             grid.appendChild(skeleton);
             others.forEach(o => { const oEl = otherEls.get(o.id); if (oEl) oEl.classList.add('is-reflowing'); });
+            showHomeGridLinesOverlay(grid);
 
             const sizePx = (span) => span * cellPx + (span - 1) * gapPx;
             let lastReflow = new Map();
@@ -9141,6 +9200,9 @@ body.dark-theme[data-palette="mint"] {
                 skeleton.style.height = sizePx(rowSpan) + 'px';
                 el.style.gridColumn = `${col} / span ${colSpan}`;
                 el.style.gridRow = `${row} / span ${rowSpan}`;
+                // The growing/shrinking edge is what the lines should hug -- the bottom-right
+                // corner of the tentative box, not the widget's fixed top-left anchor.
+                paintHomeGridLines(gapPx, stridePx, col - 1 + colSpan, row - 1 + rowSpan);
                 // Live-preview every other widget sliding to the row compaction would settle it
                 // at with THIS tentative size, without touching the real layout data yet -- only
                 // committed on drop (onUp).
@@ -9171,6 +9233,7 @@ body.dark-theme[data-palette="mint"] {
                 document.removeEventListener('pointermove', onMove);
                 document.removeEventListener('pointerup', onUp);
                 skeleton.remove();
+                hideHomeGridLinesOverlay();
                 entry.colSpan = lastValid.colSpan;
                 entry.rowSpan = lastValid.rowSpan;
                 others.forEach(o => {
