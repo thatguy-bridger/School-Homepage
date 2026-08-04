@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- viewport-fit=cover lets the page paint edge to edge (behind the notch/Dynamic Island
+         and the home indicator) rather than being letterboxed into the safe area. That's only
+         safe because the fixed topbar and the body padding below both offset themselves by
+         env(safe-area-inset-*) -- without those, content would sit under the hardware. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="color-scheme" content="light dark">
     <title>School Dashboard</title>
     <link rel="shortcut icon" href="Resources/logo.svg" type="image/x-icon">
@@ -16,9 +20,6 @@
         html { background-color: #eef1f8; }
         @media (prefers-color-scheme: dark) { html { background-color: #05050a; } }
     </style>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts - Inter for a modern look -->
     <style>
         /* Layout (display:flex) lives here instead of inline on the element so Tailwind's
            .hidden (display:none, no !important) can actually win over it when toggled -- an
@@ -136,11 +137,34 @@ body.dark-theme[data-palette="mint"] {
             color: #ffffff;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'Inter', sans-serif;
+            /* Inter first (only applies if the reader happens to have it installed -- no
+               webfont is loaded, deliberately, so the app stays a single offline-capable
+               file), then the platform's own UI font: San Francisco on iOS/macOS, Segoe on
+               Windows, Roboto on Android. */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            /* Was Tailwind's `p-4 sm:p-8` on <body>. Moved into CSS so the safe-area insets can
+               be folded in: with viewport-fit=cover the page now extends under the rounded
+               corners, the landscape notch and the home indicator, and max() keeps the original
+               1rem/2rem everywhere those insets are 0 (i.e. every non-notched device). */
+            padding: 1rem;
+            padding-left: max(1rem, env(safe-area-inset-left));
+            padding-right: max(1rem, env(safe-area-inset-right));
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
             background-color: var(--bg-solid);
             color: var(--text-primary);
             position: relative;
             transition: background-color 0.6s ease-in-out, color 0.5s ease-in-out;
+        }
+
+        /* Restores what Tailwind's `sm:p-8` used to give <body>, keeping the safe-area
+           floors from the base rule above. */
+        @media (min-width: 640px) {
+            body {
+                padding: 2rem;
+                padding-left: max(2rem, env(safe-area-inset-left));
+                padding-right: max(2rem, env(safe-area-inset-right));
+                padding-bottom: max(2rem, env(safe-area-inset-bottom));
+            }
         }
 
         /* Ambient background blobs */
@@ -175,8 +199,10 @@ body.dark-theme[data-palette="mint"] {
             width: 100%;
             max-width: 1600px;
             margin: 0 auto;
-            /* Clears the fixed .app-topbar (4.5rem tall) so it never overlaps page content. */
-            padding-top: 4.5rem;
+            /* Clears the fixed .app-topbar (4.5rem tall) so it never overlaps page content --
+               plus whatever the status bar/notch pushed the topbar down by, since the topbar's
+               own top offset grows with the inset. */
+            padding-top: calc(4.5rem + env(safe-area-inset-top));
         }
 
         /* Always-visible top bar (replaces the old bottom-fixed, mostly-hidden floating dock). */
@@ -186,7 +212,10 @@ body.dark-theme[data-palette="mint"] {
     gap: 1.25rem;
 
     position: fixed;
-    top: 1rem;
+    /* max() rather than a plain sum: on a device with no inset (desktop, older phones)
+       env() resolves to 0px and this stays the original 1rem, while on a notched phone in
+       portrait it drops below the status bar instead of under it. */
+    top: max(1rem, env(safe-area-inset-top));
     left: 50%;
     transform: translateX(-50%);
 
@@ -396,7 +425,7 @@ body.dark-theme[data-palette="mint"] {
             z-index: 500;
             width: 300px;
             max-width: calc(100vw - 16px);
-            max-height: 70vh;
+            max-height: 70dvh;
             overflow-y: auto;
             padding: 0.9rem 1.05rem;
             border-radius: 1rem;
@@ -1582,6 +1611,11 @@ body.dark-theme[data-palette="mint"] {
             color: var(--text-muted);
             cursor: grab;
             touch-action: none;
+            /* Without these, holding the handle on iOS raises the text-selection callout on top
+               of the drag that's already in progress. */
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
             transition: color 0.3s ease-in-out;
         }
         .drag-handle:hover { color: var(--accent-2); }
@@ -1822,6 +1856,10 @@ body.dark-theme[data-palette="mint"] {
             color: var(--text-muted);
             cursor: grab;
             touch-action: none;
+            /* See .drag-handle -- same iOS long-press callout suppression. */
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
             transition: color 0.3s ease-in-out;
             padding: 0.25rem;
         }
@@ -2302,7 +2340,7 @@ body.dark-theme[data-palette="mint"] {
             border: 1px solid var(--glass-border);
             border-radius: 1rem;
             box-shadow: 0 12px 30px rgba(0,0,0,0.25);
-            max-height: 60vh;
+            max-height: 60dvh;
             overflow-y: auto;
             z-index: 20;
         }
@@ -3319,6 +3357,29 @@ body.dark-theme[data-palette="mint"] {
         body.dark-theme .cursor-glow.is-active { opacity: 0.22; }
         @media (pointer: coarse) {
             .cursor-glow { display: none; }
+
+            /* These buttons are deliberately sized by container queries so they scale with the
+               widget they sit in, which on a small widget lands them around 21px -- half the
+               ~44px a fingertip actually needs. Rather than fight the sizing (and make them
+               visually clunky on desktop), keep the drawn button exactly as-is and grow only
+               the touch region with a transparent centered pseudo-element: a click anywhere in
+               it still targets the button, since ::after is part of the button's own box. */
+            .home-widget-add-btn,
+            .home-widget-settings-btn,
+            .home-pinned-card .home-widget-settings-btn {
+                position: relative;
+            }
+            .home-widget-add-btn::after,
+            .home-widget-settings-btn::after,
+            .home-pinned-card .home-widget-settings-btn::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 44px;
+                height: 44px;
+                transform: translate(-50%, -50%);
+            }
         }
 
         /* ===================== Click ripple ===================== */
@@ -3432,8 +3493,20 @@ body.dark-theme[data-palette="mint"] {
             scroll-behavior: auto !important;
         }
     </style>
+    <!-- Tailwind CSS: prebuilt and inlined (previously cdn.tailwindcss.com).
+         Inlined rather than linked as a separate file because the whole app is meant to
+         stay one self-contained document -- the iOS wrapper caches only index.html, so an
+         external stylesheet would leave it completely unstyled offline. Loading it from a
+         CDN also meant Tailwind compiled every class in the browser on each page load,
+         which is a visible flash and real CPU cost on a phone.
+         Regenerate after adding new utility classes:
+           npx tailwindcss@3 -i input.css -o out.css --minify
+         with content: ['./index.html'] and an otherwise stock v3 config (darkMode left at
+         the default 'media', matching what the CDN build used), then replace the <style>
+         body below with the output. -->
+    <style>*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.19 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.\!container{width:100%!important}.container{width:100%}@media (min-width:640px){.\!container{max-width:640px!important}.container{max-width:640px}}@media (min-width:768px){.\!container{max-width:768px!important}.container{max-width:768px}}@media (min-width:1024px){.\!container{max-width:1024px!important}.container{max-width:1024px}}@media (min-width:1280px){.\!container{max-width:1280px!important}.container{max-width:1280px}}@media (min-width:1536px){.\!container{max-width:1536px!important}.container{max-width:1536px}}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}.\!visible{visibility:visible!important}.visible{visibility:visible}.invisible{visibility:hidden}.collapse{visibility:collapse}.static{position:static}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0}.isolate{isolation:isolate}.z-50{z-index:50}.z-\[60\]{z-index:60}.z-\[65\]{z-index:65}.z-\[70\]{z-index:70}.col-span-4{grid-column:span 4/span 4}.col-span-full{grid-column:1/-1}.my-4{margin-top:1rem;margin-bottom:1rem}.my-8{margin-top:2rem;margin-bottom:2rem}.-ml-1{margin-left:-.25rem}.-ml-2{margin-left:-.5rem}.-mr-4{margin-right:-1rem}.mb-0\.5{margin-bottom:.125rem}.mb-1{margin-bottom:.25rem}.mb-1\.5{margin-bottom:.375rem}.mb-10{margin-bottom:2.5rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-5{margin-bottom:1.25rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.ml-3{margin-left:.75rem}.mr-3{margin-right:.75rem}.mt-0\.5{margin-top:.125rem}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-5{margin-top:1.25rem}.mt-6{margin-top:1.5rem}.line-clamp-2{-webkit-line-clamp:2}.line-clamp-2,.line-clamp-4{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical}.line-clamp-4{-webkit-line-clamp:4}.block{display:block}.inline-block{display:inline-block}.inline{display:inline}.flex{display:flex}.inline-flex{display:inline-flex}.table{display:table}.\!grid{display:grid!important}.grid{display:grid}.contents{display:contents}.hidden{display:none}.h-1\.5{height:.375rem}.h-2{height:.5rem}.h-24{height:6rem}.h-3{height:.75rem}.h-3\.5{height:.875rem}.h-32{height:8rem}.h-4{height:1rem}.h-48{height:12rem}.h-5{height:1.25rem}.h-6{height:1.5rem}.h-7{height:1.75rem}.h-8{height:2rem}.h-9{height:2.25rem}.h-\[80dvh\]{height:80dvh}.h-\[85dvh\]{height:85dvh}.h-\[90dvh\]{height:90dvh}.h-\[97dvh\]{height:97dvh}.h-px{height:1px}.max-h-\[85dvh\]{max-height:85dvh}.min-h-\[100dvh\]{min-height:100dvh}.w-1\.5{width:.375rem}.w-14{width:3.5rem}.w-2{width:.5rem}.w-3{width:.75rem}.w-3\.5{width:.875rem}.w-4{width:1rem}.w-40{width:10rem}.w-5{width:1.25rem}.w-6{width:1.5rem}.w-7{width:1.75rem}.w-8{width:2rem}.w-9{width:2.25rem}.w-\[90vw\]{width:90vw}.w-\[92vw\]{width:92vw}.w-\[95vw\]{width:95vw}.w-\[98vw\]{width:98vw}.w-full{width:100%}.min-w-0{min-width:0}.max-w-2xl{max-width:42rem}.max-w-3xl{max-width:48rem}.max-w-4xl{max-width:56rem}.max-w-lg{max-width:32rem}.max-w-md{max-width:28rem}.max-w-sm{max-width:24rem}.flex-1{flex:1 1 0%}.flex-shrink{flex-shrink:1}.flex-shrink-0{flex-shrink:0}.shrink{flex-shrink:1}.flex-grow,.grow{flex-grow:1}.-rotate-90{--tw-rotate:-90deg}.-rotate-90,.transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.resize{resize:both}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-7{grid-template-columns:repeat(7,minmax(0,1fr))}.grid-cols-\[22px_36px_36px_1fr_auto\]{grid-template-columns:22px 36px 36px 1fr auto}.grid-cols-\[22px_40px_1fr_auto\]{grid-template-columns:22px 40px 1fr auto}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.content-start{align-content:flex-start}.items-start{align-items:flex-start}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-0\.5{gap:.125rem}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.space-y-0\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.125rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.125rem*var(--tw-space-y-reverse))}.space-y-1>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.25rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.25rem*var(--tw-space-y-reverse))}.space-y-1\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.375rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.375rem*var(--tw-space-y-reverse))}.space-y-2>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.5rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.5rem*var(--tw-space-y-reverse))}.space-y-3>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.75rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.75rem*var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.whitespace-pre-wrap{white-space:pre-wrap}.rounded{border-radius:.25rem}.rounded-2xl{border-radius:1rem}.rounded-3xl{border-radius:1.5rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:.5rem}.rounded-md{border-radius:.375rem}.rounded-xl{border-radius:.75rem}.border{border-width:1px}.border-0{border-width:0}.border-b{border-bottom-width:1px}.border-emerald-200{--tw-border-opacity:1;border-color:rgb(167 243 208/var(--tw-border-opacity,1))}.border-gray-200{--tw-border-opacity:1;border-color:rgb(229 231 235/var(--tw-border-opacity,1))}.border-gray-300{--tw-border-opacity:1;border-color:rgb(209 213 219/var(--tw-border-opacity,1))}.border-indigo-200{--tw-border-opacity:1;border-color:rgb(199 210 254/var(--tw-border-opacity,1))}.border-red-200{--tw-border-opacity:1;border-color:rgb(254 202 202/var(--tw-border-opacity,1))}.bg-black\/50{background-color:rgba(0,0,0,.5)}.bg-black\/70{background-color:rgba(0,0,0,.7)}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235/var(--tw-bg-opacity,1))}.bg-cyan-100{--tw-bg-opacity:1;background-color:rgb(207 250 254/var(--tw-bg-opacity,1))}.bg-emerald-50\/80{background-color:rgba(236,253,245,.8)}.bg-gray-50{--tw-bg-opacity:1;background-color:rgb(249 250 251/var(--tw-bg-opacity,1))}.bg-gray-800{--tw-bg-opacity:1;background-color:rgb(31 41 55/var(--tw-bg-opacity,1))}.bg-green-600{--tw-bg-opacity:1;background-color:rgb(22 163 74/var(--tw-bg-opacity,1))}.bg-indigo-50\/80{background-color:rgba(238,242,255,.8)}.bg-indigo-600{--tw-bg-opacity:1;background-color:rgb(79 70 229/var(--tw-bg-opacity,1))}.bg-purple-100{--tw-bg-opacity:1;background-color:rgb(243 232 255/var(--tw-bg-opacity,1))}.bg-red-50\/80{background-color:hsla(0,86%,97%,.8)}.bg-red-600{--tw-bg-opacity:1;background-color:rgb(220 38 38/var(--tw-bg-opacity,1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.bg-transparent{background-color:transparent}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1))}.bg-gradient-to-r{background-image:linear-gradient(to right,var(--tw-gradient-stops))}.from-transparent{--tw-gradient-from:transparent var(--tw-gradient-from-position);--tw-gradient-to:transparent var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.via-current{--tw-gradient-to:hsla(0,0%,100%,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),currentColor var(--tw-gradient-via-position),var(--tw-gradient-to)}.p-1{padding:.25rem}.p-1\.5{padding:.375rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.px-1{padding-left:.25rem;padding-right:.25rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-12{padding-top:3rem;padding-bottom:3rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.pb-1{padding-bottom:.25rem}.pb-3{padding-bottom:.75rem}.pr-1{padding-right:.25rem}.pr-2{padding-right:.5rem}.pr-4{padding-right:1rem}.pr-8{padding-right:2rem}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-5xl{font-size:3rem;line-height:1}.text-\[0\.65rem\]{font-size:.65rem}.text-\[0\.6rem\]{font-size:.6rem}.text-\[11px\]{font-size:11px}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.font-normal{font-weight:400}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.ordinal{--tw-ordinal:ordinal;font-variant-numeric:var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction)}.tracking-tight{letter-spacing:-.025em}.tracking-wide{letter-spacing:.025em}.text-cyan-600{--tw-text-opacity:1;color:rgb(8 145 178/var(--tw-text-opacity,1))}.text-cyan-700{--tw-text-opacity:1;color:rgb(14 116 144/var(--tw-text-opacity,1))}.text-emerald-700{--tw-text-opacity:1;color:rgb(4 120 87/var(--tw-text-opacity,1))}.text-gray-400{--tw-text-opacity:1;color:rgb(156 163 175/var(--tw-text-opacity,1))}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128/var(--tw-text-opacity,1))}.text-gray-600{--tw-text-opacity:1;color:rgb(75 85 99/var(--tw-text-opacity,1))}.text-gray-700{--tw-text-opacity:1;color:rgb(55 65 81/var(--tw-text-opacity,1))}.text-gray-900{--tw-text-opacity:1;color:rgb(17 24 39/var(--tw-text-opacity,1))}.text-green-500{--tw-text-opacity:1;color:rgb(34 197 94/var(--tw-text-opacity,1))}.text-green-600{--tw-text-opacity:1;color:rgb(22 163 74/var(--tw-text-opacity,1))}.text-indigo-700{--tw-text-opacity:1;color:rgb(67 56 202/var(--tw-text-opacity,1))}.text-purple-700{--tw-text-opacity:1;color:rgb(126 34 206/var(--tw-text-opacity,1))}.text-red-500{--tw-text-opacity:1;color:rgb(239 68 68/var(--tw-text-opacity,1))}.text-red-700{--tw-text-opacity:1;color:rgb(185 28 28/var(--tw-text-opacity,1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}.text-slate-900{--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.underline{text-decoration-line:underline}.opacity-0{opacity:0}.opacity-20{opacity:.2}.opacity-40{opacity:.4}.opacity-50{opacity:.5}.shadow{--tw-shadow:0 1px 3px 0 rgba(0,0,0,.1),0 1px 2px -1px rgba(0,0,0,.1);--tw-shadow-colored:0 1px 3px 0 var(--tw-shadow-color),0 1px 2px -1px var(--tw-shadow-color)}.shadow,.shadow-2xl{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgba(0,0,0,.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.outline{outline-style:solid}.blur{--tw-blur:blur(8px)}.blur,.drop-shadow{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.drop-shadow{--tw-drop-shadow:drop-shadow(0 1px 2px rgba(0,0,0,.1)) drop-shadow(0 1px 1px rgba(0,0,0,.06))}.grayscale{--tw-grayscale:grayscale(100%)}.grayscale,.invert{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.invert{--tw-invert:invert(100%)}.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px)}.backdrop-blur-md,.backdrop-blur-sm{-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px)}.backdrop-filter{-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.transition-colors{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.duration-500{transition-duration:.5s}.ease-in-out{transition-timing-function:cubic-bezier(.4,0,.2,1)}.ease-out{transition-timing-function:cubic-bezier(0,0,.2,1)}.hover\:scale-105:hover{--tw-scale-x:1.05;--tw-scale-y:1.05;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:bg-blue-700:hover{--tw-bg-opacity:1;background-color:rgb(29 78 216/var(--tw-bg-opacity,1))}.hover\:bg-green-100:hover{--tw-bg-opacity:1;background-color:rgb(220 252 231/var(--tw-bg-opacity,1))}.hover\:bg-red-100:hover{--tw-bg-opacity:1;background-color:rgb(254 226 226/var(--tw-bg-opacity,1))}.hover\:text-gray-700:hover{--tw-text-opacity:1;color:rgb(55 65 81/var(--tw-text-opacity,1))}.hover\:text-gray-800:hover{--tw-text-opacity:1;color:rgb(31 41 55/var(--tw-text-opacity,1))}.hover\:text-green-700:hover{--tw-text-opacity:1;color:rgb(21 128 61/var(--tw-text-opacity,1))}.hover\:text-red-600:hover{--tw-text-opacity:1;color:rgb(220 38 38/var(--tw-text-opacity,1))}.hover\:text-red-700:hover{--tw-text-opacity:1;color:rgb(185 28 28/var(--tw-text-opacity,1))}.focus\:rounded:focus{border-radius:.25rem}@media (min-width:640px){.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.sm\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.sm\:grid-cols-7{grid-template-columns:repeat(7,minmax(0,1fr))}.sm\:flex-row{flex-direction:row}.sm\:p-10{padding:2.5rem}.sm\:p-6{padding:1.5rem}.sm\:p-8{padding:2rem}.sm\:text-2xl{font-size:1.5rem;line-height:2rem}.sm\:text-4xl{font-size:2.25rem;line-height:2.5rem}.sm\:text-6xl{font-size:3.75rem;line-height:1}}@media (min-width:768px){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (prefers-color-scheme:dark){.dark\:border-emerald-900\/50{border-color:rgba(6,78,59,.5)}.dark\:border-gray-700{--tw-border-opacity:1;border-color:rgb(55 65 81/var(--tw-border-opacity,1))}.dark\:border-indigo-900\/50{border-color:rgba(49,46,129,.5)}.dark\:border-red-900\/50{border-color:rgba(127,29,29,.5)}.dark\:bg-cyan-900\/50{background-color:rgba(22,78,99,.5)}.dark\:bg-emerald-950\/40{background-color:rgba(2,44,34,.4)}.dark\:bg-gray-800{--tw-bg-opacity:1;background-color:rgb(31 41 55/var(--tw-bg-opacity,1))}.dark\:bg-gray-800\/60{background-color:rgba(31,41,55,.6)}.dark\:bg-indigo-950\/40{background-color:rgba(30,27,75,.4)}.dark\:bg-purple-900\/50{background-color:rgba(88,28,135,.5)}.dark\:bg-red-950\/40{background-color:rgba(69,10,10,.4)}.dark\:bg-slate-700{--tw-bg-opacity:1;background-color:rgb(51 65 85/var(--tw-bg-opacity,1))}.dark\:text-cyan-200{--tw-text-opacity:1;color:rgb(165 243 252/var(--tw-text-opacity,1))}.dark\:text-cyan-300{--tw-text-opacity:1;color:rgb(103 232 249/var(--tw-text-opacity,1))}.dark\:text-emerald-200{--tw-text-opacity:1;color:rgb(167 243 208/var(--tw-text-opacity,1))}.dark\:text-gray-300{--tw-text-opacity:1;color:rgb(209 213 219/var(--tw-text-opacity,1))}.dark\:text-gray-400{--tw-text-opacity:1;color:rgb(156 163 175/var(--tw-text-opacity,1))}.dark\:text-green-400{--tw-text-opacity:1;color:rgb(74 222 128/var(--tw-text-opacity,1))}.dark\:text-indigo-200{--tw-text-opacity:1;color:rgb(199 210 254/var(--tw-text-opacity,1))}.dark\:text-purple-200{--tw-text-opacity:1;color:rgb(233 213 255/var(--tw-text-opacity,1))}.dark\:text-red-200{--tw-text-opacity:1;color:rgb(254 202 202/var(--tw-text-opacity,1))}.dark\:text-slate-100{--tw-text-opacity:1;color:rgb(241 245 249/var(--tw-text-opacity,1))}.dark\:text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.dark\:text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.dark\:hover\:text-gray-200:hover{--tw-text-opacity:1;color:rgb(229 231 235/var(--tw-text-opacity,1))}}</style>
 </head>
-<body class="min-h-screen p-4 sm:p-8">
+<body class="min-h-[100dvh]">
     <script>
         (function () {
             try {
@@ -3465,7 +3538,7 @@ body.dark-theme[data-palette="mint"] {
     <!-- First-run onboarding: only shown when no local data exists yet at all (see isFirstRun in
          DOMContentLoaded) -- deliberately no backdrop-click dismiss, this is a one-time prompt. -->
     <div id="onboarding-sync-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-50 hidden opacity-0">
-        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-lg p-8 border">
+        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-lg p-4 sm:p-8 border">
             <h3 class="text-2xl font-bold mb-3">Welcome!</h3>
             <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
                 Hey, you probably want to sync up your data with another app! Enter your GitHub Gist token below to sync -- if you've already used this app somewhere else, this pulls your classes, schedule, notes, and reminders right over.
@@ -3486,7 +3559,7 @@ body.dark-theme[data-palette="mint"] {
 
     <!-- Countdown quick-add modal (opened from the Countdowns widget's + button) -->
     <div id="countdown-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="hideCountdownModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-8 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-4 sm:p-8 border" onclick="event.stopPropagation()">
             <h3 class="text-2xl font-bold mb-4" id="countdown-modal-title">Add Countdown</h3>
             <label class="block text-sm font-semibold mb-2" for="countdown-label-input">Label</label>
             <input type="text" id="countdown-label-input" class="form-input mb-2" placeholder="e.g. Winter Break, Finals">
@@ -3506,7 +3579,7 @@ body.dark-theme[data-palette="mint"] {
 
     <!-- Reminders quick-add modal (opened via the "N" keyboard shortcut or a button) -->
     <div id="reminder-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="hideReminderModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-8 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-4 sm:p-8 border" onclick="event.stopPropagation()">
             <h3 class="text-2xl font-bold mb-4" id="reminder-modal-title">Add Reminder</h3>
             <label class="block text-sm font-semibold mb-2" for="reminder-text-input">Reminder</label>
             <input type="text" id="reminder-text-input" class="form-input mb-4" placeholder="e.g. Bring gym clothes" onkeydown="if(event.key==='Enter'){event.preventDefault(); saveReminderFromModal();}">
@@ -3533,47 +3606,47 @@ body.dark-theme[data-palette="mint"] {
 
     <!-- Top bar: app-level navigation -->
     <header class="app-topbar">
-        <button type="button" class="topbar-logo" onclick="pushAppDataFromLogo()" title="Push your data to your gist">
+        <button type="button" class="topbar-logo" onclick="pushAppDataFromLogo()" title="Push your data to your gist" aria-label="Push your data to your gist">
             <img src="Resources/logo.svg" alt="Push data to gist" class="orbit-hub-logo">
         </button>
         <div class="orbit-stage" id="orbit-stage">
             <div class="orbit-item">
-                <a href="#home" data-view="home" class="sidebar-link active" onclick="event.preventDefault(); switchAppView('home')" title="Home">
+                <a href="#home" data-view="home" class="sidebar-link active" onclick="event.preventDefault(); switchAppView('home')" title="Home" aria-label="Home">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                     <span class="sr-only">Home</span>
                 </a>
             </div>
 
             <div class="orbit-item">
-                <a href="#classes" data-view="classes" class="sidebar-link" onclick="event.preventDefault(); switchAppView('classes')" title="Classes">
+                <a href="#classes" data-view="classes" class="sidebar-link" onclick="event.preventDefault(); switchAppView('classes')" title="Classes" aria-label="Classes">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path></svg>
                     <span class="sr-only">Classes</span>
                 </a>
             </div>
 
             <div class="orbit-item">
-                <a href="#calendar" data-view="calendar" class="sidebar-link" onclick="event.preventDefault(); switchAppView('calendar')" title="Calendar">
+                <a href="#calendar" data-view="calendar" class="sidebar-link" onclick="event.preventDefault(); switchAppView('calendar')" title="Calendar" aria-label="Calendar">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     <span class="sr-only">Calendar</span>
                 </a>
             </div>
 
             <div class="orbit-item">
-                <a href="#reminders" data-view="reminders" class="sidebar-link" onclick="event.preventDefault(); switchAppView('reminders')" title="Planner">
+                <a href="#reminders" data-view="reminders" class="sidebar-link" onclick="event.preventDefault(); switchAppView('reminders')" title="Planner" aria-label="Planner">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v1a3 3 0 006 0v-1m-9 0h12a1 1 0 001-1c-1.5-1-2-3-2-5a5 5 0 00-10 0c0 2-.5 4-2 5a1 1 0 001 1z"></path></svg>
                     <span class="sr-only">Reminders</span>
                 </a>
             </div>
 
             <div class="orbit-item">
-                <a href="#grades" data-view="grades" class="sidebar-link" onclick="event.preventDefault(); switchAppView('grades')" title="Grades">
+                <a href="#grades" data-view="grades" class="sidebar-link" onclick="event.preventDefault(); switchAppView('grades')" title="Grades" aria-label="Grades">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0v7m-9-5v5a1 1 0 001 1h16a1 1 0 001-1v-5"></path></svg>
                     <span class="sr-only">Grades</span>
                 </a>
             </div>
 
             <div class="orbit-item">
-                <button type="button" id="theme-toggle" class="sidebar-link" aria-haspopup="true" aria-expanded="false" onclick="event.preventDefault(); toggleThemePopover()" title="Theme">
+                <button type="button" id="theme-toggle" class="sidebar-link" aria-haspopup="true" aria-expanded="false" onclick="event.preventDefault(); toggleThemePopover()" title="Theme" aria-label="Theme">
                     <svg id="moon-icon" class="hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9 9 0 008.354-5.646z"></path></svg>
                     <svg id="sun-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6m0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0m0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13m8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5M3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8m10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0m-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0m9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707M4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708"/>
@@ -3584,7 +3657,7 @@ body.dark-theme[data-palette="mint"] {
             </div>
 
             <div class="orbit-item">
-                <button type="button" id="settings-dock-button" class="sidebar-link" onclick="event.preventDefault(); openContextualSettings()" title="Settings">
+                <button type="button" id="settings-dock-button" class="sidebar-link" onclick="event.preventDefault(); openContextualSettings()" title="Settings" aria-label="Settings">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     <span class="sr-only">Settings</span>
                 </button>
@@ -3605,14 +3678,14 @@ body.dark-theme[data-palette="mint"] {
                         </div>
                         <div class="flex flex-wrap items-center justify-end gap-2">
                             <select id="home-preset-select" class="form-select" style="font-size:0.8rem;padding:0.45rem 0.7rem;width:auto;" onchange="applyHomePreset(this.value)" title="Switch to a saved layout preset (widgets, digest, and calendar preview settings all switch together)"></select>
-                            <button type="button" id="home-preset-rename-button" class="modal-footer-button is-secondary hidden" style="font-size:0.75rem;padding:0.45rem 0.55rem;" onclick="renameHomePreset(loadHomePresetSelection())" title="Rename this preset">
+                            <button type="button" id="home-preset-rename-button" class="modal-footer-button is-secondary hidden" style="font-size:0.75rem;padding:0.45rem 0.55rem;" onclick="renameHomePreset(loadHomePresetSelection())" title="Rename this preset" aria-label="Rename this preset">
                                 <svg style="width:0.85rem;height:0.85rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
-                            <button type="button" id="home-preset-save-button" class="modal-footer-button is-secondary hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="saveCurrentAsHomePreset()" title="Save the current layout, digest, and calendar preview settings as a new preset">Save Preset</button>
-                            <button type="button" id="home-preset-delete-button" class="modal-footer-button bg-red-600 hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="deleteHomePreset(loadHomePresetSelection())" title="Delete this preset">Delete Preset</button>
-                            <button type="button" id="home-reset-layout-button" class="modal-footer-button is-secondary hidden" style="font-size:0.72rem;padding:0.4rem 0.65rem;opacity:0.8;" onclick="confirmResetCustomizeHomeLayout()" title="Reset the Home layout back to its default widgets, sizes, and positions">Reset Layout</button>
-                            <button type="button" id="home-add-widget-button" class="modal-footer-button bg-green-600 hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="openWidgetBankModal()" title="Add a built-in or custom widget">+ Add Widget</button>
-                            <button type="button" id="customize-home-button" class="icon-btn p-3 rounded-full" onclick="toggleHomeEditMode()" title="Customize Home">
+                            <button type="button" id="home-preset-save-button" class="modal-footer-button is-secondary hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="saveCurrentAsHomePreset()" title="Save the current layout, digest, and calendar preview settings as a new preset" aria-label="Save the current layout, digest, and calendar preview settings as a new preset">Save Preset</button>
+                            <button type="button" id="home-preset-delete-button" class="modal-footer-button bg-red-600 hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="deleteHomePreset(loadHomePresetSelection())" title="Delete this preset" aria-label="Delete this preset">Delete Preset</button>
+                            <button type="button" id="home-reset-layout-button" class="modal-footer-button is-secondary hidden" style="font-size:0.72rem;padding:0.4rem 0.65rem;opacity:0.8;" onclick="confirmResetCustomizeHomeLayout()" title="Reset the Home layout back to its default widgets, sizes, and positions" aria-label="Reset the Home layout back to its default widgets, sizes, and positions">Reset Layout</button>
+                            <button type="button" id="home-add-widget-button" class="modal-footer-button bg-green-600 hidden" style="font-size:0.75rem;padding:0.45rem 0.7rem;" onclick="openWidgetBankModal()" title="Add a built-in or custom widget" aria-label="Add a built-in or custom widget">+ Add Widget</button>
+                            <button type="button" id="customize-home-button" class="icon-btn p-3 rounded-full" onclick="toggleHomeEditMode()" title="Customize Home" aria-label="Customize Home">
                                 <svg class="home-edit-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                 <svg class="home-done-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
                             </button>
@@ -3628,7 +3701,7 @@ body.dark-theme[data-palette="mint"] {
                             <h2 id="home-next-class-title">
                                 <span>Next Class</span>
                                 <div class="home-widget-header-actions">
-                                    <button type="button" class="home-widget-settings-btn" onclick="toggleHomeWidgetSettingsPanel('next-class')" title="Next Class widget settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+                                    <button type="button" class="home-widget-settings-btn" onclick="toggleHomeWidgetSettingsPanel('next-class')" title="Next Class widget settings" aria-label="Next Class widget settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
                                 </div>
                             </h2>
                             <div id="home-widget-settings-panel-next-class" class="home-widget-settings-panel hidden"></div>
@@ -3638,7 +3711,7 @@ body.dark-theme[data-palette="mint"] {
                             <h2>
                                 <span>Due Soon</span>
                                 <div class="home-widget-header-actions">
-                                    <button type="button" class="home-widget-settings-btn" onclick="toggleHomeWidgetSettingsPanel('due-soon')" title="Due Soon widget settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+                                    <button type="button" class="home-widget-settings-btn" onclick="toggleHomeWidgetSettingsPanel('due-soon')" title="Due Soon widget settings" aria-label="Due Soon widget settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
                                 </div>
                             </h2>
                             <div id="home-widget-settings-panel-due-soon" class="home-widget-settings-panel hidden"></div>
@@ -3648,8 +3721,8 @@ body.dark-theme[data-palette="mint"] {
                             <h2>
                                 <span>Countdowns</span>
                                 <div class="home-widget-header-actions">
-                                    <button type="button" class="home-widget-settings-btn" onclick="toggleHomeWidgetSettingsPanel('countdowns')" title="Countdowns widget settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
-                                    <button type="button" class="home-widget-add-btn" onclick="openCountdownModal()" title="Add countdown">+</button>
+                                    <button type="button" class="home-widget-settings-btn" onclick="toggleHomeWidgetSettingsPanel('countdowns')" title="Countdowns widget settings" aria-label="Countdowns widget settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+                                    <button type="button" class="home-widget-add-btn" onclick="openCountdownModal()" title="Add countdown" aria-label="Add countdown">+</button>
                                 </div>
                             </h2>
                             <div id="home-widget-settings-panel-countdowns" class="home-widget-settings-panel hidden"></div>
@@ -3659,8 +3732,8 @@ body.dark-theme[data-palette="mint"] {
                             <h2>
                                 <span>Reminders</span>
                                 <div class="home-widget-header-actions">
-                                    <button type="button" class="home-widget-settings-btn" onclick="toggleHomeWidgetSettingsPanel('reminders')" title="Reminders widget settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
-                                    <button type="button" class="home-widget-add-btn" onclick="openReminderModal()" title="Add reminder">+</button>
+                                    <button type="button" class="home-widget-settings-btn" onclick="toggleHomeWidgetSettingsPanel('reminders')" title="Reminders widget settings" aria-label="Reminders widget settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+                                    <button type="button" class="home-widget-add-btn" onclick="openReminderModal()" title="Add reminder" aria-label="Add reminder">+</button>
                                 </div>
                             </h2>
                             <div id="home-widget-settings-panel-reminders" class="home-widget-settings-panel hidden"></div>
@@ -3670,7 +3743,7 @@ body.dark-theme[data-palette="mint"] {
                             <h2>
                                 <span>Upcoming Events</span>
                                 <div class="home-widget-header-actions">
-                                    <button type="button" class="home-widget-settings-btn" onclick="toggleHomeWidgetSettingsPanel('upcoming')" title="Upcoming Events widget settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+                                    <button type="button" class="home-widget-settings-btn" onclick="toggleHomeWidgetSettingsPanel('upcoming')" title="Upcoming Events widget settings" aria-label="Upcoming Events widget settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
                                 </div>
                             </h2>
                             <div id="home-widget-settings-panel-upcoming" class="home-widget-settings-panel hidden"></div>
@@ -3694,10 +3767,10 @@ body.dark-theme[data-palette="mint"] {
                             <div id="assignment-countdown-chip" class="countdown-chip hidden"></div>
                         </div>
                         <div class="view-toolbar">
-                            <button id="edit-classes-button" class="icon-btn p-3 rounded-full" onclick="toggleClassEditMode()" title="Edit Classes">
+                            <button id="edit-classes-button" class="icon-btn p-3 rounded-full" onclick="toggleClassEditMode()" title="Edit Classes" aria-label="Edit Classes">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
-                            <button id="settings-button" class="icon-btn p-3 rounded-full" onclick="openAllSettingsModal('bell-schedule')" title="Settings">
+                            <button id="settings-button" class="icon-btn p-3 rounded-full" onclick="openAllSettingsModal('bell-schedule')" title="Settings" aria-label="Settings">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             </button>
                         </div>
@@ -3726,10 +3799,10 @@ body.dark-theme[data-palette="mint"] {
                             <button id="export-button" class="px-4 py-2 rounded-full text-sm font-semibold">Export</button>
                             <button id="import-button" class="px-4 py-2 rounded-full text-sm font-semibold">Import</button>
                             <input type="file" id="import-file-input" accept="application/json,.json,text/csv,.csv" class="hidden">
-                            <button type="button" id="calendar-legend-toggle-btn" class="icon-btn p-3 rounded-full" onclick="toggleCalendarLegend()" title="Legend">
+                            <button type="button" id="calendar-legend-toggle-btn" class="icon-btn p-3 rounded-full" onclick="toggleCalendarLegend()" title="Legend" aria-label="Legend">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </button>
-                            <button id="calendar-settings-button" class="icon-btn p-3 rounded-full" onclick="openAllSettingsModal('calendar-display')" title="Settings">
+                            <button id="calendar-settings-button" class="icon-btn p-3 rounded-full" onclick="openAllSettingsModal('calendar-display')" title="Settings" aria-label="Settings">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             </button>
                         </div>
@@ -3750,7 +3823,7 @@ body.dark-theme[data-palette="mint"] {
                         <div class="flex flex-wrap items-center gap-2">
                             <button type="button" class="category-filter-chip active" data-group="classes" style="--chip-color:#6366f1;" onclick="toggleCalendarClassesFilter()"><span class="filter-chip-dot" style="background:#6366f1;"></span>Classes</button>
                             <button type="button" class="category-filter-chip active" data-group="reminders" style="--chip-color:#eab308;" onclick="toggleCalendarRemindersFilter()"><span class="filter-chip-dot" style="background:#eab308;"></span>Reminders</button>
-                            <button type="button" class="icon-btn p-2 rounded-full" onclick="openAllSettingsModal('categories-rules')" title="Edit categories &amp; rules">
+                            <button type="button" class="icon-btn p-2 rounded-full" onclick="openAllSettingsModal('categories-rules')" title="Edit categories &amp; rules" aria-label="Edit categories &amp; rules">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             </button>
                         </div>
@@ -3760,7 +3833,7 @@ body.dark-theme[data-palette="mint"] {
                         </div>
                     </div>
                     <div class="flex justify-end mb-4">
-                        <button type="button" class="modal-footer-button is-secondary" style="font-size:0.75rem;padding:0.4rem 0.85rem;" onclick="syncCalPreviewToCurrentFilters()" title="Copy these shown/hidden filters into the Home and Classes calendar previews, one time">
+                        <button type="button" class="modal-footer-button is-secondary" style="font-size:0.75rem;padding:0.4rem 0.85rem;" onclick="syncCalPreviewToCurrentFilters()" title="Copy these shown/hidden filters into the Home and Classes calendar previews, one time" aria-label="Copy these shown/hidden filters into the Home and Classes calendar previews, one time">
                             Sync Preview Calendars to Current Filters
                         </button>
                     </div>
@@ -3860,35 +3933,35 @@ body.dark-theme[data-palette="mint"] {
         </div>
         <p class="theme-popover-label">Color</p>
         <div class="theme-palette-grid">
-            <button type="button" class="theme-palette-swatch" data-palette="crimson" style="--sw1:#dc2626;--sw2:#ef4444;--sw3:#f87171" onclick="applyPalette('crimson')" title="Crimson"><span class="sr-only">Crimson</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="coral" style="--sw1:#f97316;--sw2:#fb7185;--sw3:#ec4899" onclick="applyPalette('coral')" title="Coral"><span class="sr-only">Coral</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="amber" style="--sw1:#d97706;--sw2:#fbbf24;--sw3:#fde047" onclick="applyPalette('amber')" title="Amber"><span class="sr-only">Amber</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="sunset" style="--sw1:#f59e0b;--sw2:#f97316;--sw3:#ef4444" onclick="applyPalette('sunset')" title="Sunset"><span class="sr-only">Sunset</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="lime" style="--sw1:#65a30d;--sw2:#a3e635;--sw3:#bef264" onclick="applyPalette('lime')" title="Lime"><span class="sr-only">Lime</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="mint" style="--sw1:#22c55e;--sw2:#14b8a6;--sw3:#06b6d4" onclick="applyPalette('mint')" title="Mint"><span class="sr-only">Mint</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="emerald" style="--sw1:#10b981;--sw2:#14b8a6;--sw3:#84cc16" onclick="applyPalette('emerald')" title="Emerald"><span class="sr-only">Emerald</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="teal" style="--sw1:#0d9488;--sw2:#2dd4bf;--sw3:#5eead4" onclick="applyPalette('teal')" title="Teal"><span class="sr-only">Teal</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="sky" style="--sw1:#0284c7;--sw2:#38bdf8;--sw3:#7dd3fc" onclick="applyPalette('sky')" title="Sky"><span class="sr-only">Sky</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="midnight" style="--sw1:#1d4ed8;--sw2:#4338ca;--sw3:#7c3aed" onclick="applyPalette('midnight')" title="Midnight"><span class="sr-only">Midnight</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="indigo" style="--sw1:#6366f1;--sw2:#a855f7;--sw3:#ec4899" onclick="applyPalette('indigo')" title="Indigo"><span class="sr-only">Indigo</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="violet" style="--sw1:#7c3aed;--sw2:#a78bfa;--sw3:#c026d3" onclick="applyPalette('violet')" title="Violet"><span class="sr-only">Violet</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="fuchsia" style="--sw1:#c026d3;--sw2:#e879f9;--sw3:#f0abfc" onclick="applyPalette('fuchsia')" title="Fuchsia"><span class="sr-only">Fuchsia</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="rose" style="--sw1:#f43f5e;--sw2:#ec4899;--sw3:#fb7185" onclick="applyPalette('rose')" title="Rose"><span class="sr-only">Rose</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="slate" style="--sw1:#64748b;--sw2:#475569;--sw3:#94a3b8" onclick="applyPalette('slate')" title="Slate"><span class="sr-only">Slate</span></button>
-            <button type="button" class="theme-palette-swatch" data-palette="monochrome" style="--sw1:#404040;--sw2:#737373;--sw3:#a3a3a3" onclick="applyPalette('monochrome')" title="Monochrome"><span class="sr-only">Monochrome</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="crimson" style="--sw1:#dc2626;--sw2:#ef4444;--sw3:#f87171" onclick="applyPalette('crimson')" title="Crimson" aria-label="Crimson"><span class="sr-only">Crimson</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="coral" style="--sw1:#f97316;--sw2:#fb7185;--sw3:#ec4899" onclick="applyPalette('coral')" title="Coral" aria-label="Coral"><span class="sr-only">Coral</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="amber" style="--sw1:#d97706;--sw2:#fbbf24;--sw3:#fde047" onclick="applyPalette('amber')" title="Amber" aria-label="Amber"><span class="sr-only">Amber</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="sunset" style="--sw1:#f59e0b;--sw2:#f97316;--sw3:#ef4444" onclick="applyPalette('sunset')" title="Sunset" aria-label="Sunset"><span class="sr-only">Sunset</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="lime" style="--sw1:#65a30d;--sw2:#a3e635;--sw3:#bef264" onclick="applyPalette('lime')" title="Lime" aria-label="Lime"><span class="sr-only">Lime</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="mint" style="--sw1:#22c55e;--sw2:#14b8a6;--sw3:#06b6d4" onclick="applyPalette('mint')" title="Mint" aria-label="Mint"><span class="sr-only">Mint</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="emerald" style="--sw1:#10b981;--sw2:#14b8a6;--sw3:#84cc16" onclick="applyPalette('emerald')" title="Emerald" aria-label="Emerald"><span class="sr-only">Emerald</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="teal" style="--sw1:#0d9488;--sw2:#2dd4bf;--sw3:#5eead4" onclick="applyPalette('teal')" title="Teal" aria-label="Teal"><span class="sr-only">Teal</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="sky" style="--sw1:#0284c7;--sw2:#38bdf8;--sw3:#7dd3fc" onclick="applyPalette('sky')" title="Sky" aria-label="Sky"><span class="sr-only">Sky</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="midnight" style="--sw1:#1d4ed8;--sw2:#4338ca;--sw3:#7c3aed" onclick="applyPalette('midnight')" title="Midnight" aria-label="Midnight"><span class="sr-only">Midnight</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="indigo" style="--sw1:#6366f1;--sw2:#a855f7;--sw3:#ec4899" onclick="applyPalette('indigo')" title="Indigo" aria-label="Indigo"><span class="sr-only">Indigo</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="violet" style="--sw1:#7c3aed;--sw2:#a78bfa;--sw3:#c026d3" onclick="applyPalette('violet')" title="Violet" aria-label="Violet"><span class="sr-only">Violet</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="fuchsia" style="--sw1:#c026d3;--sw2:#e879f9;--sw3:#f0abfc" onclick="applyPalette('fuchsia')" title="Fuchsia" aria-label="Fuchsia"><span class="sr-only">Fuchsia</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="rose" style="--sw1:#f43f5e;--sw2:#ec4899;--sw3:#fb7185" onclick="applyPalette('rose')" title="Rose" aria-label="Rose"><span class="sr-only">Rose</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="slate" style="--sw1:#64748b;--sw2:#475569;--sw3:#94a3b8" onclick="applyPalette('slate')" title="Slate" aria-label="Slate"><span class="sr-only">Slate</span></button>
+            <button type="button" class="theme-palette-swatch" data-palette="monochrome" style="--sw1:#404040;--sw2:#737373;--sw3:#a3a3a3" onclick="applyPalette('monochrome')" title="Monochrome" aria-label="Monochrome"><span class="sr-only">Monochrome</span></button>
             <span id="theme-popover-custom-swatches" style="display:contents"></span>
         </div>
         <p class="theme-popover-label" style="margin-top: 1rem;">Motion</p>
         <div class="motion-mode-row">
-            <button type="button" class="motion-mode-btn" data-motion="auto" onclick="applyMotionPref('auto')" title="Follow your system's reduced motion setting">
+            <button type="button" class="motion-mode-btn" data-motion="auto" onclick="applyMotionPref('auto')" title="Follow your system's reduced motion setting" aria-label="Follow your system's reduced motion setting">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13V7a2 2 0 012-2h14a2 2 0 012 2v6m-2 8H5a2 2 0 01-2-2v-6a2 2 0 012-2h14a2 2 0 012 2v6a2 2 0 01-2 2z"></path></svg>
                 <span>Auto</span>
             </button>
-            <button type="button" class="motion-mode-btn" data-motion="full" onclick="applyMotionPref('full')" title="Full animation">
+            <button type="button" class="motion-mode-btn" data-motion="full" onclick="applyMotionPref('full')" title="Full animation" aria-label="Full animation">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 <span>Full</span>
             </button>
-            <button type="button" class="motion-mode-btn" data-motion="reduced" onclick="applyMotionPref('reduced')" title="Reduce motion">
+            <button type="button" class="motion-mode-btn" data-motion="reduced" onclick="applyMotionPref('reduced')" title="Reduce motion" aria-label="Reduce motion">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke-width="2"></circle><path stroke-linecap="round" stroke-width="2" d="M8 12h8"></path></svg>
                 <span>Reduced</span>
             </button>
@@ -3897,7 +3970,7 @@ body.dark-theme[data-palette="mint"] {
 
     <!-- Settings Modal (Classes) -->
     <div id="scheduling-settings-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="closeSchedulingSettingsModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-3xl h-[90vh] flex flex-col p-8 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-3xl h-[90dvh] flex flex-col p-4 sm:p-8 border" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-6 flex-shrink-0">
                 <h3 class="text-3xl font-bold tracking-tight">Settings</h3>
                 <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeSchedulingSettingsModal()">
@@ -3935,22 +4008,22 @@ body.dark-theme[data-palette="mint"] {
                         <h5 class="text-lg font-semibold mb-2">Color Palette</h5>
                         <p class="text-sm mb-3 settings-desc">Pick a built-in palette here, or create your own below -- every palette is a 3-color gradient used across accents, glows, and highlights throughout the app.</p>
                         <div class="custom-theme-swatch-grid">
-                            <button type="button" class="theme-palette-swatch" data-palette="crimson" style="--sw1:#dc2626;--sw2:#ef4444;--sw3:#f87171" onclick="applyPalette('crimson')" title="Crimson"><span class="sr-only">Crimson</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="coral" style="--sw1:#f97316;--sw2:#fb7185;--sw3:#ec4899" onclick="applyPalette('coral')" title="Coral"><span class="sr-only">Coral</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="amber" style="--sw1:#d97706;--sw2:#fbbf24;--sw3:#fde047" onclick="applyPalette('amber')" title="Amber"><span class="sr-only">Amber</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="sunset" style="--sw1:#f59e0b;--sw2:#f97316;--sw3:#ef4444" onclick="applyPalette('sunset')" title="Sunset"><span class="sr-only">Sunset</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="lime" style="--sw1:#65a30d;--sw2:#a3e635;--sw3:#bef264" onclick="applyPalette('lime')" title="Lime"><span class="sr-only">Lime</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="mint" style="--sw1:#22c55e;--sw2:#14b8a6;--sw3:#06b6d4" onclick="applyPalette('mint')" title="Mint"><span class="sr-only">Mint</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="emerald" style="--sw1:#10b981;--sw2:#14b8a6;--sw3:#84cc16" onclick="applyPalette('emerald')" title="Emerald"><span class="sr-only">Emerald</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="teal" style="--sw1:#0d9488;--sw2:#2dd4bf;--sw3:#5eead4" onclick="applyPalette('teal')" title="Teal"><span class="sr-only">Teal</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="sky" style="--sw1:#0284c7;--sw2:#38bdf8;--sw3:#7dd3fc" onclick="applyPalette('sky')" title="Sky"><span class="sr-only">Sky</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="midnight" style="--sw1:#1d4ed8;--sw2:#4338ca;--sw3:#7c3aed" onclick="applyPalette('midnight')" title="Midnight"><span class="sr-only">Midnight</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="indigo" style="--sw1:#6366f1;--sw2:#a855f7;--sw3:#ec4899" onclick="applyPalette('indigo')" title="Indigo"><span class="sr-only">Indigo</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="violet" style="--sw1:#7c3aed;--sw2:#a78bfa;--sw3:#c026d3" onclick="applyPalette('violet')" title="Violet"><span class="sr-only">Violet</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="fuchsia" style="--sw1:#c026d3;--sw2:#e879f9;--sw3:#f0abfc" onclick="applyPalette('fuchsia')" title="Fuchsia"><span class="sr-only">Fuchsia</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="rose" style="--sw1:#f43f5e;--sw2:#ec4899;--sw3:#fb7185" onclick="applyPalette('rose')" title="Rose"><span class="sr-only">Rose</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="slate" style="--sw1:#64748b;--sw2:#475569;--sw3:#94a3b8" onclick="applyPalette('slate')" title="Slate"><span class="sr-only">Slate</span></button>
-                            <button type="button" class="theme-palette-swatch" data-palette="monochrome" style="--sw1:#404040;--sw2:#737373;--sw3:#a3a3a3" onclick="applyPalette('monochrome')" title="Monochrome"><span class="sr-only">Monochrome</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="crimson" style="--sw1:#dc2626;--sw2:#ef4444;--sw3:#f87171" onclick="applyPalette('crimson')" title="Crimson" aria-label="Crimson"><span class="sr-only">Crimson</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="coral" style="--sw1:#f97316;--sw2:#fb7185;--sw3:#ec4899" onclick="applyPalette('coral')" title="Coral" aria-label="Coral"><span class="sr-only">Coral</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="amber" style="--sw1:#d97706;--sw2:#fbbf24;--sw3:#fde047" onclick="applyPalette('amber')" title="Amber" aria-label="Amber"><span class="sr-only">Amber</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="sunset" style="--sw1:#f59e0b;--sw2:#f97316;--sw3:#ef4444" onclick="applyPalette('sunset')" title="Sunset" aria-label="Sunset"><span class="sr-only">Sunset</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="lime" style="--sw1:#65a30d;--sw2:#a3e635;--sw3:#bef264" onclick="applyPalette('lime')" title="Lime" aria-label="Lime"><span class="sr-only">Lime</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="mint" style="--sw1:#22c55e;--sw2:#14b8a6;--sw3:#06b6d4" onclick="applyPalette('mint')" title="Mint" aria-label="Mint"><span class="sr-only">Mint</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="emerald" style="--sw1:#10b981;--sw2:#14b8a6;--sw3:#84cc16" onclick="applyPalette('emerald')" title="Emerald" aria-label="Emerald"><span class="sr-only">Emerald</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="teal" style="--sw1:#0d9488;--sw2:#2dd4bf;--sw3:#5eead4" onclick="applyPalette('teal')" title="Teal" aria-label="Teal"><span class="sr-only">Teal</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="sky" style="--sw1:#0284c7;--sw2:#38bdf8;--sw3:#7dd3fc" onclick="applyPalette('sky')" title="Sky" aria-label="Sky"><span class="sr-only">Sky</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="midnight" style="--sw1:#1d4ed8;--sw2:#4338ca;--sw3:#7c3aed" onclick="applyPalette('midnight')" title="Midnight" aria-label="Midnight"><span class="sr-only">Midnight</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="indigo" style="--sw1:#6366f1;--sw2:#a855f7;--sw3:#ec4899" onclick="applyPalette('indigo')" title="Indigo" aria-label="Indigo"><span class="sr-only">Indigo</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="violet" style="--sw1:#7c3aed;--sw2:#a78bfa;--sw3:#c026d3" onclick="applyPalette('violet')" title="Violet" aria-label="Violet"><span class="sr-only">Violet</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="fuchsia" style="--sw1:#c026d3;--sw2:#e879f9;--sw3:#f0abfc" onclick="applyPalette('fuchsia')" title="Fuchsia" aria-label="Fuchsia"><span class="sr-only">Fuchsia</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="rose" style="--sw1:#f43f5e;--sw2:#ec4899;--sw3:#fb7185" onclick="applyPalette('rose')" title="Rose" aria-label="Rose"><span class="sr-only">Rose</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="slate" style="--sw1:#64748b;--sw2:#475569;--sw3:#94a3b8" onclick="applyPalette('slate')" title="Slate" aria-label="Slate"><span class="sr-only">Slate</span></button>
+                            <button type="button" class="theme-palette-swatch" data-palette="monochrome" style="--sw1:#404040;--sw2:#737373;--sw3:#a3a3a3" onclick="applyPalette('monochrome')" title="Monochrome" aria-label="Monochrome"><span class="sr-only">Monochrome</span></button>
                         </div>
 
                         <h5 class="text-lg font-semibold mb-2 mt-6">Your Custom Themes</h5>
@@ -4036,7 +4109,7 @@ body.dark-theme[data-palette="mint"] {
          Settings modal (which stays open underneath it), and with equal z-index the later modal
          in DOM order (Settings, further down the page) was painting on top instead. -->
     <div id="day-type-editor-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[60] hidden opacity-0" onclick="closeDayTypeEditor(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[98vw] h-[97vh] flex flex-col p-8 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[98vw] h-[97dvh] flex flex-col p-4 sm:p-8 border" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h3 class="text-2xl font-bold tracking-tight">Class Schedule Editor</h3>
                 <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeDayTypeEditor()">
@@ -4068,7 +4141,7 @@ body.dark-theme[data-palette="mint"] {
          z-index than that modal's z-[60]. Replaces the old two-prompt()-in-a-row flow with the
          same title+notes form the Day view's own edit mode already uses. -->
     <div id="day-type-note-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[70] hidden opacity-0" onclick="closeDayTypeEditorNoteModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-md p-6 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-md p-4 sm:p-6 border" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4">
                 <h3 id="day-type-note-modal-title" class="text-lg font-bold"></h3>
                 <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeDayTypeEditorNoteModal()">
@@ -4095,7 +4168,7 @@ body.dark-theme[data-palette="mint"] {
          above the Day view itself (which isn't a modal) with room to spare below the note/
          schedule-type-editor modals it doesn't nest inside. -->
     <div id="day-view-daytype-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[65] hidden opacity-0" onclick="closeDayViewDayTypeModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-2xl max-h-[85vh] flex flex-col p-6 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-2xl max-h-[85dvh] flex flex-col p-4 sm:p-6 border" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4">
                 <h3 id="day-view-daytype-modal-title" class="text-lg font-bold">Day Type</h3>
                 <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeDayViewDayTypeModal()">
@@ -4116,7 +4189,7 @@ body.dark-theme[data-palette="mint"] {
          another slot in userScheduleSlotOptions). z-[60] so it can be opened from inside the
          Settings modal OR the Class Schedule Editor and still land on top of either. -->
     <div id="schedule-type-editor-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[60] hidden opacity-0" onclick="closeScheduleTypeEditor(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-3xl h-[85vh] flex flex-col p-6 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-3xl h-[85dvh] flex flex-col p-4 sm:p-6 border" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <input type="text" id="schedule-type-editor-name-input" class="text-xl font-bold bg-transparent focus:rounded p-1 -ml-1 w-full" placeholder="Schedule type name" onchange="renameScheduleTypeFromEditor(this.value)">
                 <button class="text-gray-400 hover:text-gray-800 transition flex-shrink-0 ml-3" onclick="closeScheduleTypeEditor()">
@@ -4126,7 +4199,7 @@ body.dark-theme[data-palette="mint"] {
             <p class="settings-desc text-sm mb-2 flex-shrink-0">
                 Pick which periods run under this schedule type -- only checked ones get a time card below. Set each one's start/end time in 24-hour format.
             </p>
-            <div id="schedule-type-editor-period-picker" class="mb-4 flex-shrink-0 pb-3 border-b border-gray-200 dark:border-gray-700 overflow-y-auto" style="max-height:40vh;"></div>
+            <div id="schedule-type-editor-period-picker" class="mb-4 flex-shrink-0 pb-3 border-b border-gray-200 dark:border-gray-700 overflow-y-auto" style="max-height:40dvh;"></div>
             <div id="schedule-type-editor-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto flex-grow content-start"></div>
             <div class="flex justify-between items-center gap-3 mt-6 flex-shrink-0">
                 <button type="button" id="schedule-type-editor-delete-btn" class="modal-footer-button bg-red-600" style="padding:0.5rem 0.9rem;font-size:0.82rem;" onclick="removeScheduleTypeFromEditor()">Delete Schedule Type</button>
@@ -4141,7 +4214,7 @@ body.dark-theme[data-palette="mint"] {
          can stack above any other modal it might be opened from (Settings at z-50, the nested
          z-[60] modals like Custom Period/Schedule Type Editor). -->
     <div id="text-prompt-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[65] hidden opacity-0" onclick="closeTextPromptModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-sm p-6 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-sm p-4 sm:p-6 border" onclick="event.stopPropagation()">
             <h3 id="text-prompt-modal-title" class="text-lg font-bold mb-2"></h3>
             <p id="text-prompt-modal-desc" class="text-sm settings-desc mb-3"></p>
             <input type="text" id="text-prompt-modal-input" class="form-input mb-5" onkeydown="if(event.key==='Enter'){event.preventDefault();submitTextPromptModal();}">
@@ -4154,7 +4227,7 @@ body.dark-theme[data-palette="mint"] {
 
     <!-- Add Custom Period -->
     <div id="custom-period-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[60] hidden opacity-0" onclick="closeCustomPeriodModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-md p-6 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-md p-4 sm:p-6 border" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold">Add Custom Period</h3>
                 <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeCustomPeriodModal()">
@@ -4178,7 +4251,7 @@ body.dark-theme[data-palette="mint"] {
 
     <!-- Widget Bank (add built-in or custom widgets to Home) -->
     <div id="widget-bank-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[60] hidden opacity-0" onclick="closeWidgetBankModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-2xl h-[80vh] flex flex-col p-6 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-2xl h-[80dvh] flex flex-col p-4 sm:p-6 border" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h3 class="text-lg font-bold">Add a Widget</h3>
                 <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeWidgetBankModal()">
@@ -4192,7 +4265,7 @@ body.dark-theme[data-palette="mint"] {
 
     <!-- Custom Widget Builder -->
     <div id="custom-widget-builder-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[70] hidden opacity-0" onclick="closeCustomWidgetBuilder(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-lg h-[85vh] flex flex-col p-6 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-lg h-[85dvh] flex flex-col p-4 sm:p-6 border" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h3 class="text-lg font-bold" id="custom-widget-builder-title">New Custom Widget</h3>
                 <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeCustomWidgetBuilder()">
@@ -4209,7 +4282,7 @@ body.dark-theme[data-palette="mint"] {
 
     <!-- Settings Modal (Calendar) -->
     <div id="calendar-settings-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="closeCalendarSettingsModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-lg h-[85vh] flex flex-col p-8 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-lg h-[85dvh] flex flex-col p-4 sm:p-8 border" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-6 flex-shrink-0">
                 <h3 class="text-2xl font-bold tracking-tight">Calendar Settings</h3>
                 <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeCalendarSettingsModal()">
@@ -4290,7 +4363,7 @@ body.dark-theme[data-palette="mint"] {
          time (see openAllSettingsModal / closeAllSettingsModal) rather than duplicating every
          field's id and wiring. -->
     <div id="all-settings-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="closeAllSettingsModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-4xl h-[90vh] flex flex-col p-8 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[95vw] max-w-4xl h-[90dvh] flex flex-col p-4 sm:p-8 border" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-6 flex-shrink-0">
                 <h3 class="text-3xl font-bold tracking-tight">Settings</h3>
                 <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeAllSettingsModal()">
@@ -4356,7 +4429,7 @@ body.dark-theme[data-palette="mint"] {
                         <label class="block text-sm font-medium mb-1 settings-desc">GitHub Token (Gist read/write scope)</label>
                         <div class="flex gap-2 mb-3">
                             <input type="password" id="pref-github-token" class="form-input flex-grow" placeholder="github_pat_..." onchange="saveGithubTokenPref(this.value)" autocomplete="off">
-                            <button type="button" class="modal-footer-button is-secondary" onclick="copyGithubToken()" title="Copy this token so you can paste it into the app on another device">Copy Token</button>
+                            <button type="button" class="modal-footer-button is-secondary" onclick="copyGithubToken()" title="Copy this token so you can paste it into the app on another device" aria-label="Copy this token so you can paste it into the app on another device">Copy Token</button>
                         </div>
                         <div id="gist-sync-status" class="text-xs settings-desc mb-3">Not connected yet.</div>
                         <div id="gist-sync-url-row" class="hidden mb-3">
@@ -4477,7 +4550,7 @@ body.dark-theme[data-palette="mint"] {
 
     <!-- Custom Confirmation Modal -->
     <div id="confirmation-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="handleConfirmationModalClick(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-8 border">
+        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-4 sm:p-8 border">
             <h3 class="text-2xl font-bold mb-1">Confirm Action</h3>
             <p class="text-xs font-medium mb-4 hidden" id="confirmation-hint" style="color: var(--text-muted);">(click anywhere to continue)</p>
             <p class="text-gray-700 mb-6" id="confirmation-message"></p>
@@ -4487,7 +4560,7 @@ body.dark-theme[data-palette="mint"] {
 
     <!-- Event Detail Modal (opened by clicking a calendar dot or a search result) -->
     <div id="event-detail-modal" class="modal fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 hidden opacity-0" onclick="hideEventDetailModal(event)">
-        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-8 border" onclick="event.stopPropagation()">
+        <div class="modal-content rounded-2xl shadow-2xl w-[90vw] max-w-md p-4 sm:p-8 border" onclick="event.stopPropagation()">
             <div id="event-detail-modal-content"></div>
             <div class="flex justify-end gap-4 mt-6">
                 <button type="button" class="modal-footer-button is-secondary" onclick="hideEventDetailModal()">Close</button>
@@ -4819,7 +4892,7 @@ body.dark-theme[data-palette="mint"] {
         function renderSettingsTabs() {
             const tabs = document.getElementById('settings-tabs');
             if (!tabs || tabs.childElementCount) return; // static once built, no need to rebuild per open
-            tabs.innerHTML = `<button type="button" class="settings-tab-btn is-home-tab" data-settings-tab="home" onclick="showSettingsCategory('home')" title="Settings home">
+            tabs.innerHTML = `<button type="button" class="settings-tab-btn is-home-tab" data-settings-tab="home" onclick="showSettingsCategory('home')" title="Settings home" aria-label="Settings home">
                 <svg style="width:0.95rem;height:0.95rem;display:inline-block;vertical-align:-0.15rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"></path></svg>
             </button>` + SETTINGS_CATEGORIES.map(cat =>
                 `<button type="button" class="settings-tab-btn" data-settings-tab="${cat.id}" onclick="showSettingsCategory('${cat.id}')">${escapeHtml(cat.label)}</button>`
@@ -5148,9 +5221,9 @@ body.dark-theme[data-palette="mint"] {
         // .theme-palette-swatch -- `deletable` adds a small "x" overlay (only shown in the
         // Settings tab's management grid, not the quick popover switcher).
         function customThemeSwatchHtml(theme, deletable) {
-            return `<button type="button" class="theme-palette-swatch ${deletable ? 'is-deletable' : ''}" data-palette="custom:${escapeAttr(theme.id)}" style="--sw1:${escapeAttr(theme.c1)};--sw2:${escapeAttr(theme.c2)};--sw3:${escapeAttr(theme.c3)}" onclick="applyPalette('custom:${escapeJsAttr(theme.id)}')" title="${escapeAttr(theme.name)}">
+            return `<button type="button" class="theme-palette-swatch ${deletable ? 'is-deletable' : ''}" data-palette="custom:${escapeAttr(theme.id)}" style="--sw1:${escapeAttr(theme.c1)};--sw2:${escapeAttr(theme.c2)};--sw3:${escapeAttr(theme.c3)}" onclick="applyPalette('custom:${escapeJsAttr(theme.id)}')" title="${escapeAttr(theme.name)}" aria-label="${escapeAttr(theme.name)}">
                 <span class="sr-only">${escapeHtml(theme.name)}</span>
-                ${deletable ? `<span class="theme-swatch-delete" onclick="deleteCustomTheme('${escapeJsAttr(theme.id)}', event)" title="Delete this theme">×</span>` : ''}
+                ${deletable ? `<span class="theme-swatch-delete" onclick="deleteCustomTheme('${escapeJsAttr(theme.id)}', event)" title="Delete this theme" aria-label="Delete this theme">×</span>` : ''}
             </button>`;
         }
         function renderCustomThemeSwatches() {
@@ -6386,12 +6459,12 @@ body.dark-theme[data-palette="mint"] {
                         </div>
                         <textarea class="class-note-textarea" placeholder="Quick note..." oninput="autoGrowTextarea(this); document.getElementById('note-charcount-${noteId}').textContent = this.value.length;" onchange="saveClassNote('${noteId}', this.value)">${escapeHtml(noteValue)}</textarea>
                     </div>
-                    <button class="new-tab-button" onclick="event.stopPropagation(); openClassLink('${escapeJsAttr(classItem.url)}');" title="Open in new tab">
+                    <button class="new-tab-button" onclick="event.stopPropagation(); openClassLink('${escapeJsAttr(classItem.url)}');" title="Open in new tab" aria-label="Open in new tab">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     </button>
                     <div class="class-url-display" title="${escapeAttr(classItem.url)}">${escapeHtml(classItem.url)}</div>
                     <div class="class-card-footer">
-                        <button class="class-note-toggle ${hasNote ? 'has-note' : ''}" data-note-id="${noteId}" onclick="event.stopPropagation(); toggleClassNote('${noteId}')" title="Quick note">
+                        <button class="class-note-toggle ${hasNote ? 'has-note' : ''}" data-note-id="${noteId}" onclick="event.stopPropagation(); toggleClassNote('${noteId}')" title="Quick note" aria-label="Quick note">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9m-9-7l9 7m-9-7v7h9M9 13h6M9 17h6"></path></svg>
                         </button>
                     </div>
@@ -6533,7 +6606,7 @@ body.dark-theme[data-palette="mint"] {
                          ondragend="handleCategoryDragEnd(event)">
                         <div class="flex justify-between items-center mb-4">
                             <div class="flex items-center flex-grow">
-                                <span class="drag-handle mr-3 p-1 rounded-md transition" title="Drag to reorder">
+                                <span class="drag-handle mr-3 p-1 rounded-md transition" title="Drag to reorder" aria-label="Drag to reorder category">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                                 </span>
                                 <input type="text" value="${escapeAttr(category.categoryName)}" placeholder="Category Name"
@@ -6543,10 +6616,10 @@ body.dark-theme[data-palette="mint"] {
                             </div>
                             <div class="flex flex-wrap items-center justify-end gap-2">
                                 ${perRowSegmentedHTML(categoryIndex, category.perRow)}
-                                <button type="button" class="duplicate-category-btn text-green-500 hover:text-green-700 p-2 rounded-full hover:bg-green-100 transition" onclick="duplicateCategory(${categoryIndex})" title="Duplicate Category">
+                                <button type="button" class="duplicate-category-btn text-green-500 hover:text-green-700 p-2 rounded-full hover:bg-green-100 transition" onclick="duplicateCategory(${categoryIndex})" title="Duplicate Category" aria-label="Duplicate Category">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">  <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
                                 </button>
-                                <button type="button" class="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 transition" onclick="removeCategory(${categoryIndex})" title="Delete Category">
+                                <button type="button" class="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 transition" onclick="removeCategory(${categoryIndex})" title="Delete Category" aria-label="Delete Category">
                                     <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
                                 </button>
                             </div>
@@ -6584,7 +6657,7 @@ body.dark-theme[data-palette="mint"] {
                      ondragend="handleCategoryDragEnd(event)">
                     <div class="flex justify-between items-center mb-4">
                         <div class="flex items-center flex-grow">
-                            <span class="drag-handle mr-3 p-1 rounded-md transition" title="Drag to reorder">
+                            <span class="drag-handle mr-3 p-1 rounded-md transition" title="Drag to reorder" aria-label="Drag to reorder category">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                             </span>
                             <input type="text" value="${escapeAttr(category.categoryName)}" placeholder="Category Name"
@@ -6594,10 +6667,10 @@ body.dark-theme[data-palette="mint"] {
                         </div>
                         <div class="flex flex-wrap items-center justify-end gap-2">
                             ${perRowSegmentedHTML(categoryIndex, category.perRow)}
-                            <button type="button" class="duplicate-category-btn text-green-500 hover:text-green-700 p-2 rounded-full hover:bg-green-100 transition" onclick="duplicateCategory(${categoryIndex})" title="Duplicate Category">
+                            <button type="button" class="duplicate-category-btn text-green-500 hover:text-green-700 p-2 rounded-full hover:bg-green-100 transition" onclick="duplicateCategory(${categoryIndex})" title="Duplicate Category" aria-label="Duplicate Category">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">  <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
                             </button>
-                            <button type="button" class="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 transition" onclick="removeCategory(${categoryIndex})" title="Delete Category">
+                            <button type="button" class="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 transition" onclick="removeCategory(${categoryIndex})" title="Delete Category" aria-label="Delete Category">
                                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
                             </button>
                         </div>
@@ -6629,7 +6702,7 @@ body.dark-theme[data-palette="mint"] {
                 <div class="class-input-group ${classItem.isDivider ? 'is-divider-row' : ''}"
                      data-category-index="${categoryIndex}"
                      data-class-index="${classIndex}">
-                    <span class="drag-handle-class mr-3 p-1 rounded-md transition" title="Drag to reorder class"
+                    <span class="drag-handle-class mr-3 p-1 rounded-md transition" title="Drag to reorder class" aria-label="Drag to reorder class"
                           draggable="true"
                           ondragstart="handleClassDragStart(event, ${categoryIndex}, ${classIndex})">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -6638,9 +6711,9 @@ body.dark-theme[data-palette="mint"] {
                             <circle cx="12" cy="19" r="1.5"/>
                         </svg>
                     </span>
-                    <button type="button" class="class-color-swatch-btn ${classItem.color ? '' : 'is-empty'}" data-category-index="${categoryIndex}" data-class-index="${classIndex}" style="background:${classItem.color || 'transparent'}" title="Class color" onclick="event.stopPropagation(); openClassColorPicker(this, ${categoryIndex}, ${classIndex})"></button>
-                    <button type="button" class="class-icon-swatch-btn" data-category-index="${categoryIndex}" data-class-index="${classIndex}" style="width:2rem; height:2rem; border-radius:9999px; background:var(--glass-bg-strong); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer;" title="Class icon or emoji" onclick="event.stopPropagation(); pickClassIcon(${categoryIndex}, ${classIndex})">${isValidGlyphValue(classItem.icon) ? glyphSvgOrEmojiHtml(classItem.icon, 16) : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>'}</button>
-                    <button type="button" class="modal-footer-button is-secondary divider-toggle-btn ${classItem.isDivider ? 'active' : ''}" style="padding:0.35rem 0.7rem; font-size:0.72rem; flex-shrink:0;" title="Show this as a small centered text divider (Lunch/Advisory/Assembly) instead of a full class card -- no link, notes, or extra fields shown" onclick="event.stopPropagation(); toggleClassDivider(${categoryIndex}, ${classIndex}, this)">${classItem.isDivider ? 'Divider ✓' : 'Divider'}</button>
+                    <button type="button" class="class-color-swatch-btn ${classItem.color ? '' : 'is-empty'}" data-category-index="${categoryIndex}" data-class-index="${classIndex}" style="background:${classItem.color || 'transparent'}" title="Class color" aria-label="Class color" onclick="event.stopPropagation(); openClassColorPicker(this, ${categoryIndex}, ${classIndex})"></button>
+                    <button type="button" class="class-icon-swatch-btn" data-category-index="${categoryIndex}" data-class-index="${classIndex}" style="width:2rem; height:2rem; border-radius:9999px; background:var(--glass-bg-strong); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer;" title="Class icon or emoji" aria-label="Class icon or emoji" onclick="event.stopPropagation(); pickClassIcon(${categoryIndex}, ${classIndex})">${isValidGlyphValue(classItem.icon) ? glyphSvgOrEmojiHtml(classItem.icon, 16) : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>'}</button>
+                    <button type="button" class="modal-footer-button is-secondary divider-toggle-btn ${classItem.isDivider ? 'active' : ''}" style="padding:0.35rem 0.7rem; font-size:0.72rem; flex-shrink:0;" title="Show this as a small centered text divider (Lunch/Advisory/Assembly) instead of a full class card -- no link, notes, or extra fields shown" aria-label="Show this as a small centered text divider (Lunch/Advisory/Assembly) instead of a full class card -- no link, notes, or extra fields shown" onclick="event.stopPropagation(); toggleClassDivider(${categoryIndex}, ${classIndex}, this)">${classItem.isDivider ? 'Divider ✓' : 'Divider'}</button>
                     <input type="text" value="${escapeAttr(classItem.title)}" placeholder="Class Title" class="class-title-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'title', this.value)">
                     <input type="text" value="${escapeAttr(classItem.teacher || '')}" placeholder="Teacher" class="class-teacher-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'teacher', this.value)">
                     <input type="text" value="${escapeAttr(classItem.room || '')}" placeholder="Room" class="class-room-input form-input" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'room', this.value)">
@@ -6650,10 +6723,10 @@ body.dark-theme[data-palette="mint"] {
                     </select>
                     <div class="flex items-center gap-2">
                         <input type="url" value="${escapeAttr(classItem.url)}" placeholder="URL" class="class-url-input form-input flex-grow" onchange="updateClassItem(${categoryIndex}, ${classIndex}, 'url', this.value)">
-                        <button type="button" class="duplicate-class-btn p-2" onclick="duplicateClass(${categoryIndex}, ${classIndex})" title="Duplicate Class">
+                        <button type="button" class="duplicate-class-btn p-2" onclick="duplicateClass(${categoryIndex}, ${classIndex})" title="Duplicate Class" aria-label="Duplicate Class">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">  <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
                         </button>
-                        <button type="button" class="remove-class-btn p-2" onclick="removeClass(${categoryIndex}, ${classIndex})" title="Remove Class">
+                        <button type="button" class="remove-class-btn p-2" onclick="removeClass(${categoryIndex}, ${classIndex})" title="Remove Class" aria-label="Remove Class">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                         </button>
                     </div>
@@ -6665,7 +6738,7 @@ body.dark-theme[data-palette="mint"] {
                                 </select>
                                 <input type="text" value="${escapeAttr(link.label || '')}" placeholder="Label (e.g. Zoom)" class="form-input" style="max-width:120px;" onchange="updateClassLink(${categoryIndex}, ${classIndex}, ${linkIndex}, 'label', this.value)">
                                 <input type="url" value="${escapeAttr(link.url || '')}" placeholder="URL" class="form-input flex-grow" onchange="updateClassLink(${categoryIndex}, ${classIndex}, ${linkIndex}, 'url', this.value)">
-                                <button type="button" class="remove-class-btn p-2" onclick="removeClassLink(${categoryIndex}, ${classIndex}, ${linkIndex})" title="Remove item">
+                                <button type="button" class="remove-class-btn p-2" onclick="removeClassLink(${categoryIndex}, ${classIndex}, ${linkIndex})" title="Remove item" aria-label="Remove item">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                                 </button>
                             </div>
@@ -6818,8 +6891,8 @@ body.dark-theme[data-palette="mint"] {
                 ? classData[classColorPickerTarget.categoryIndex].classes[classColorPickerTarget.classIndex].color
                 : '';
             grid.innerHTML = `
-                <button type="button" class="class-color-swatch is-none ${!current ? 'is-selected' : ''}" title="No color" onclick="selectClassColor('')">&#10005;</button>
-                ${PASTEL_CLASS_COLORS.map(hex => `<button type="button" class="class-color-swatch ${current === hex ? 'is-selected' : ''}" style="background:${hex}" title="${hex}" onclick="selectClassColor('${hex}')"></button>`).join('')}
+                <button type="button" class="class-color-swatch is-none ${!current ? 'is-selected' : ''}" title="No color" aria-label="No color" onclick="selectClassColor('')">&#10005;</button>
+                ${PASTEL_CLASS_COLORS.map(hex => `<button type="button" class="class-color-swatch ${current === hex ? 'is-selected' : ''}" style="background:${hex}" title="${hex}" aria-label="${hex}" onclick="selectClassColor('${hex}')"></button>`).join('')}
             `;
             const customInput = document.getElementById('class-color-custom-input');
             if (customInput) customInput.value = /^#[0-9a-fA-F]{6}$/.test(current) ? current : '#000000';
@@ -7356,7 +7429,7 @@ body.dark-theme[data-palette="mint"] {
                 return `<div class="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm space-y-1">
                     <div class="flex items-center justify-between gap-1">
                         <p class="font-semibold text-xs text-gray-900 dark:text-white truncate">${escapeHtml(slot.label)}</p>
-                        <button type="button" class="text-gray-400 hover:text-red-600 transition flex-shrink-0" title="Remove this period from this schedule type" onclick="clearScheduleTypeEditorSlot('${escapeJsAttr(slot.value)}')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                        <button type="button" class="text-gray-400 hover:text-red-600 transition flex-shrink-0" title="Remove this period from this schedule type" aria-label="Remove this period from this schedule type" onclick="clearScheduleTypeEditorSlot('${escapeJsAttr(slot.value)}')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                     </div>
                     ${rowsHtml}
                 </div>`;
@@ -7664,7 +7737,7 @@ body.dark-theme[data-palette="mint"] {
                          ${weekend ? '' : `onmousedown="dayTypeEditorStartDrag('${key}', event)" onmouseenter="dayTypeEditorDragOver('${key}')" onclick="dayTypeEditorCellClick('${key}', event)"`}>
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-medium">${d.getDate()}</span>
-                            ${!weekend ? `<button type="button" class="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" title="Add/edit note" onclick="dayTypeEditorEditNote('${key}', event)">${note ? '&#128221;' : '+'}</button>` : ''}
+                            ${!weekend ? `<button type="button" class="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" title="Add/edit note" aria-label="Add/edit note" onclick="dayTypeEditorEditNote('${key}', event)">${note ? '&#128221;' : '+'}</button>` : ''}
                         </div>
                         ${dayType ? `<span class="day-badge badge-${dayType.toLowerCase()}">${dayTypeLabel(dayType)}</span>` : (weekend ? '' : '<span class="text-[0.65rem] text-gray-400">No School</span>')}
                         ${scheduleType && scheduleId !== 'regular' ? `<div class="text-[0.65rem] mt-0.5 px-1 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-200 inline-block">${escapeHtml(scheduleType.label)}</div>` : ''}
@@ -7965,7 +8038,7 @@ body.dark-theme[data-palette="mint"] {
                     <div class="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm space-y-1 mb-2">
                         <div class="flex items-center justify-between gap-1">
                             <p class="font-semibold text-xs text-gray-900 dark:text-white truncate">${escapeHtml(customLabels[k] || 'Custom Period')}</p>
-                            <button type="button" class="text-gray-400 hover:text-red-600 transition flex-shrink-0" title="Remove this period" onclick="dayViewOtherRemoveCustomPeriod('${escapeJsAttr(k)}')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                            <button type="button" class="text-gray-400 hover:text-red-600 transition flex-shrink-0" title="Remove this period" aria-label="Remove this period" onclick="dayViewOtherRemoveCustomPeriod('${escapeJsAttr(k)}')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                         </div>
                         ${dayViewCustomTimeInputsHtml(k, entry.customTimes[k])}
                     </div>
@@ -8330,22 +8403,31 @@ body.dark-theme[data-palette="mint"] {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             if (draggedClassItem) return;
+            placeDraggedCategory(e.clientX, e.clientY, e.target);
+        }
 
-            const target = e.target.closest('.category-group');
+        // Pointer-position-only half of the dragover handler, split out so the touch reordering
+        // path below can reuse the exact same placement rules instead of reimplementing (and
+        // then drifting from) them. Takes raw coordinates plus whatever element is under the
+        // pointer, since touch has to look that up via elementFromPoint rather than being handed
+        // it by the event.
+        function placeDraggedCategory(clientX, clientY, overEl) {
+            if (!draggedCategoryItem || !overEl) return;
+            const target = overEl.closest('.category-group');
             if (target && target !== draggedCategoryItem) {
                 const targetRect = target.getBoundingClientRect();
                 document.querySelectorAll('.category-group').forEach(item => item.classList.remove('drag-over'));
                 target.classList.add('drag-over');
 
-                const isCloserVertically = Math.abs(e.clientY - targetRect.y) < Math.abs(e.clientX - targetRect.x);
+                const isCloserVertically = Math.abs(clientY - targetRect.y) < Math.abs(clientX - targetRect.x);
                 if (isCloserVertically) {
-                    if (e.clientY < (targetRect.y + targetRect.height / 2)) {
+                    if (clientY < (targetRect.y + targetRect.height / 2)) {
                         target.parentNode.insertBefore(draggedCategoryItem, target);
                     } else {
                         target.parentNode.insertBefore(draggedCategoryItem, target.nextSibling);
                     }
                 } else {
-                    if (e.clientX < (targetRect.x + targetRect.width / 2)) {
+                    if (clientX < (targetRect.x + targetRect.width / 2)) {
                         target.parentNode.insertBefore(draggedCategoryItem, target);
                     } else {
                         target.parentNode.insertBefore(draggedCategoryItem, target.nextSibling);
@@ -8402,8 +8484,13 @@ body.dark-theme[data-palette="mint"] {
         function handleClassDragOver(e) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
+            placeDraggedClass(e.clientX, e.clientY, e.target);
+        }
 
-            const target = e.target;
+        // Same split as placeDraggedCategory: position logic only, shared with touch reordering.
+        function placeDraggedClass(clientX, clientY, overEl) {
+            if (!overEl) return;
+            const target = overEl;
             const targetClassItem = target.closest('.class-input-group');
             let targetClassContainer = target.closest('.class-inputs-container');
             if (!targetClassContainer) {
@@ -8420,7 +8507,7 @@ body.dark-theme[data-palette="mint"] {
                 if (targetClassItem && targetClassItem.parentNode === targetClassContainer) {
                     const targetRect = targetClassItem.getBoundingClientRect();
                     const targetMidpoint = targetRect.y + targetRect.height / 2;
-                    if (e.clientY < targetMidpoint) {
+                    if (clientY < targetMidpoint) {
                         targetClassContainer.insertBefore(draggedClassItem, targetClassItem);
                     } else {
                         targetClassContainer.insertBefore(draggedClassItem, targetClassItem.nextSibling);
@@ -8428,7 +8515,7 @@ body.dark-theme[data-palette="mint"] {
                 } else {
                     const containerRect = targetClassContainer.getBoundingClientRect();
                     const containerMidpointY = containerRect.y + containerRect.height / 2;
-                    if (e.clientY < containerMidpointY) {
+                    if (clientY < containerMidpointY) {
                         targetClassContainer.insertBefore(draggedClassItem, targetClassContainer.firstElementChild);
                     } else {
                         targetClassContainer.appendChild(draggedClassItem);
@@ -8454,6 +8541,86 @@ body.dark-theme[data-palette="mint"] {
             draggedClassOriginalCategoryIndex = null;
             draggedClassOriginalIndex = null;
         }
+
+        // --- TOUCH REORDERING (classes + categories) ---
+        // Everything above is HTML5 drag and drop, which is mouse-only: iOS and Android never
+        // fire dragstart/dragover for touch, so on a phone the reorder handles simply did
+        // nothing. This reimplements both gestures on Pointer Events, reusing placeDraggedClass
+        // and placeDraggedCategory verbatim so the two input paths can't drift apart, and
+        // finishing through the same *DragEnd handlers so the save-and-cleanup step is shared
+        // too. Mouse pointers are ignored here and left to the native implementation.
+        (function setupTouchReorder() {
+            let mode = null;          // 'class' | 'category' | null
+            let activePointerId = null;
+
+            function onPointerDown(e) {
+                if (e.pointerType === 'mouse') return;
+                const classHandle = e.target.closest('.drag-handle-class');
+                const categoryHandle = classHandle ? null : e.target.closest('.drag-handle');
+                if (!classHandle && !categoryHandle) return;
+
+                if (classHandle) {
+                    const item = classHandle.closest('.class-input-group');
+                    if (!item) return;
+                    // Unlike handleClassDragStart, the row is deliberately left in the DOM: that
+                    // one detaches it so the browser can render a drag image, but here the row
+                    // itself is what the finger appears to be moving.
+                    draggedClassItem = item;
+                    draggedClassOriginalCategoryIndex = parseInt(item.dataset.categoryIndex);
+                    draggedClassOriginalIndex = parseInt(item.dataset.classIndex);
+                    item.classList.add('dragging');
+                    mode = 'class';
+                } else {
+                    const group = categoryHandle.closest('.category-group');
+                    if (!group) return;
+                    draggedCategoryItem = group;
+                    draggedCategoryOriginalIndex = parseInt(group.dataset.categoryIndex);
+                    group.classList.add('dragging');
+                    mode = 'category';
+                }
+
+                activePointerId = e.pointerId;
+                e.preventDefault();
+                window.addEventListener('pointermove', onPointerMove, { passive: false });
+                window.addEventListener('pointerup', onPointerUp);
+                window.addEventListener('pointercancel', onPointerUp);
+            }
+
+            function onPointerMove(e) {
+                if (e.pointerId !== activePointerId) return;
+                // Without this the page scrolls under the finger instead of dragging. The
+                // handles also set touch-action:none so the browser doesn't claim the gesture
+                // before this listener ever runs.
+                e.preventDefault();
+                // Touch keeps targeting the element the gesture started on, so ask the document
+                // what's actually under the finger -- the equivalent of what dragover's e.target
+                // gave the mouse path for free.
+                const over = document.elementFromPoint(e.clientX, e.clientY);
+                if (!over) return;
+                if (mode === 'class') placeDraggedClass(e.clientX, e.clientY, over);
+                else if (mode === 'category') placeDraggedCategory(e.clientX, e.clientY, over);
+            }
+
+            function onPointerUp(e) {
+                if (activePointerId !== null && e.pointerId !== activePointerId) return;
+                window.removeEventListener('pointermove', onPointerMove);
+                window.removeEventListener('pointerup', onPointerUp);
+                window.removeEventListener('pointercancel', onPointerUp);
+
+                if (mode === 'class') {
+                    handleClassDragEnd(e);
+                } else if (mode === 'category' && draggedCategoryItem) {
+                    // handleCategoryDragEnd reads e.target to clear the dragging class, so hand
+                    // it the element rather than the pointerup event (whose target is wherever
+                    // the finger happened to lift).
+                    handleCategoryDragEnd({ target: draggedCategoryItem });
+                }
+                mode = null;
+                activePointerId = null;
+            }
+
+            document.addEventListener('pointerdown', onPointerDown, { passive: false });
+        })();
 
         // --- TIME & DATE DISPLAY ---
         // Single source of truth for the "Time: ... | Date: ..." subheader shown under Home,
@@ -8721,8 +8888,17 @@ body.dark-theme[data-palette="mint"] {
             'calendar-preview': { colSpan: 12, rowSpan: 8 }
         };
         const CUSTOM_WIDGET_DEFAULT_SPAN = { colSpan: 4, rowSpan: 3 };
+        // The grid is a fixed 12 columns at every viewport, so colSpan is a fraction of the
+        // screen rather than an absolute size: the 4-column default that reads as a comfortable
+        // third of a desktop window is only ~130px on a phone, too narrow for a stat label or a
+        // link row to fit without wrapping. Match the built-in widgets' 6 (half width) there --
+        // it's the span they already use on phones, so a new custom widget lands looking like
+        // its neighbours instead of a sliver.
+        function customWidgetDefaultSpan() {
+            return isNarrowViewport() ? { colSpan: 6, rowSpan: 3 } : CUSTOM_WIDGET_DEFAULT_SPAN;
+        }
         function clampHomeGridEntry(entry) {
-            const spans = HOME_WIDGET_DEFAULT_SPANS[entry.id] || (isCustomWidgetLayoutId(entry.id) ? CUSTOM_WIDGET_DEFAULT_SPAN : { colSpan: 6, rowSpan: 4 });
+            const spans = HOME_WIDGET_DEFAULT_SPANS[entry.id] || (isCustomWidgetLayoutId(entry.id) ? customWidgetDefaultSpan() : { colSpan: 6, rowSpan: 4 });
             const colSpan = Math.max(1, Math.min(HOME_GRID_COLS, Math.round(Number(entry.colSpan)) || spans.colSpan));
             const rowSpan = Math.max(1, Math.round(Number(entry.rowSpan)) || spans.rowSpan);
             const col = Math.max(1, Math.min(HOME_GRID_COLS - colSpan + 1, Math.round(Number(entry.col)) || 1));
@@ -8786,7 +8962,7 @@ body.dark-theme[data-palette="mint"] {
             // lives in the widget bank until the user explicitly adds it to the dashboard.
             customWidgets.forEach(w => {
                 const lid = customWidgetLayoutId(w.id);
-                if (!cleaned.some(entry => entry.id === lid)) cleaned.push({ id: lid, visible: false, col: 1, row: 1, ...CUSTOM_WIDGET_DEFAULT_SPAN });
+                if (!cleaned.some(entry => entry.id === lid)) cleaned.push({ id: lid, visible: false, col: 1, row: 1, ...customWidgetDefaultSpan() });
             });
             return cleaned;
         }
@@ -8831,7 +9007,7 @@ body.dark-theme[data-palette="mint"] {
                 <h2>
                     <span class="custom-widget-title-text"></span>
                     <div class="home-widget-header-actions">
-                        <button type="button" class="home-widget-settings-btn" onclick="event.stopPropagation(); openCustomWidgetBuilder('${escapeJsAttr(cw.id)}')" title="Edit this widget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+                        <button type="button" class="home-widget-settings-btn" onclick="event.stopPropagation(); openCustomWidgetBuilder('${escapeJsAttr(cw.id)}')" title="Edit this widget" aria-label="Edit this widget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
                     </div>
                 </h2>
                 <div class="home-widget-body custom-widget-body"></div>
@@ -8887,7 +9063,7 @@ body.dark-theme[data-palette="mint"] {
                 <div class="home-pinned-card">
                     <div class="home-pinned-card-title">
                         <span>${escapeHtml(cw.title || 'Custom Widget')}</span>
-                        <button type="button" class="home-widget-settings-btn" onclick="openCustomWidgetBuilder('${escapeJsAttr(cw.id)}')" title="Edit this widget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+                        <button type="button" class="home-widget-settings-btn" onclick="openCustomWidgetBuilder('${escapeJsAttr(cw.id)}')" title="Edit this widget" aria-label="Edit this widget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
                     </div>
                     ${buildCustomWidgetBodyHtml(cw)}
                 </div>
@@ -10033,7 +10209,7 @@ body.dark-theme[data-palette="mint"] {
                             </div>
                             <div class="home-due-item-actions">
                                 <span class="home-due-countdown" style="color:${color};">${formatDueCountdown(msLeft)}</span>
-                                <button type="button" class="home-assignment-done-btn" onclick="event.stopPropagation(); markAssignmentDone('${escapeJsAttr(assignmentKey(a))}')" title="Mark as done">
+                                <button type="button" class="home-assignment-done-btn" onclick="event.stopPropagation(); markAssignmentDone('${escapeJsAttr(assignmentKey(a))}')" title="Mark as done" aria-label="Mark as done">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
                                 </button>
                             </div>
@@ -11063,7 +11239,7 @@ body.dark-theme[data-palette="mint"] {
                         <span class="shortcut-row-label">${escapeHtml(action.label)}</span>
                         <div class="shortcut-row-actions">
                             <button type="button" class="shortcut-kbd-btn ${isListening ? 'is-listening' : ''}" onclick="startListeningForShortcut('${escapeJsAttr(action.id)}')">${isListening ? 'Press a key…' : `<kbd>${escapeHtml(comboLabel(binding))}</kbd>`}</button>
-                            ${isListening ? `<button type="button" class="shortcut-cancel-btn" onclick="cancelListeningForShortcut()" title="Cancel">Cancel</button>` : (comboKey(binding) !== comboKey(action.default) ? `<button type="button" class="shortcut-reset-btn" onclick="resetShortcutToDefault('${escapeJsAttr(action.id)}')" title="Reset to default">Reset</button>` : '')}
+                            ${isListening ? `<button type="button" class="shortcut-cancel-btn" onclick="cancelListeningForShortcut()" title="Cancel" aria-label="Cancel">Cancel</button>` : (comboKey(binding) !== comboKey(action.default) ? `<button type="button" class="shortcut-reset-btn" onclick="resetShortcutToDefault('${escapeJsAttr(action.id)}')" title="Reset to default" aria-label="Reset to default">Reset</button>` : '')}
                         </div>
                     </div>
                 `;
@@ -11370,10 +11546,10 @@ body.dark-theme[data-palette="mint"] {
                             <p class="home-item-sub">${reminderWeekdaysLabel(r.weekdays)}${info ? ` · ${escapeHtml(info.label)}` : ''}</p>
                         </div>
                         <div class="home-due-item-actions" style="opacity:1;">
-                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="openReminderModal('${escapeJsAttr(r.id)}')" title="Edit reminder">
+                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="openReminderModal('${escapeJsAttr(r.id)}')" title="Edit reminder" aria-label="Edit reminder">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
-                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="removeReminder('${escapeJsAttr(r.id)}')" title="Delete reminder">
+                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="removeReminder('${escapeJsAttr(r.id)}')" title="Delete reminder" aria-label="Delete reminder">
                                 <svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                             </button>
                         </div>
@@ -11408,10 +11584,10 @@ body.dark-theme[data-palette="mint"] {
                         </div>
                         <div class="home-due-item-actions" style="opacity:1;">
                             <span class="home-due-countdown" style="color:${cd.color || 'var(--accent-3)'};">${daysLabel}</span>
-                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="openCountdownModal('${escapeJsAttr(cd.id)}')" title="Edit countdown">
+                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="openCountdownModal('${escapeJsAttr(cd.id)}')" title="Edit countdown" aria-label="Edit countdown">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
-                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="removeCountdown('${escapeJsAttr(cd.id)}')" title="Delete countdown">
+                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="removeCountdown('${escapeJsAttr(cd.id)}')" title="Delete countdown" aria-label="Delete countdown">
                                 <svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                             </button>
                         </div>
@@ -11585,7 +11761,7 @@ body.dark-theme[data-palette="mint"] {
             // config but is configured from here, not duplicated there.
             const showEditGear = containerId === 'home-calendar-preview' && typeof isHomeEditModeActive === 'function' && isHomeEditModeActive();
             const gearHtml = showEditGear ? `
-                <button type="button" class="mini-calendar-config-btn" onclick="event.stopPropagation(); toggleHomeCalPreviewPanel();" title="Configure this preview">
+                <button type="button" class="mini-calendar-config-btn" onclick="event.stopPropagation(); toggleHomeCalPreviewPanel();" title="Configure this preview" aria-label="Configure this preview">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 </button>
             ` : '';
@@ -12009,7 +12185,7 @@ body.dark-theme[data-palette="mint"] {
             const badgeClass = dayType ? `badge-${dayType.toLowerCase()}` : 'badge-none';
             const label = dayType ? `${dayTypeLabel(dayType)}` : `${NO_SCHOOL_ICON}None`;
             return `
-                <button type="button" class="day-view-type-card" onclick="openDayViewDayTypeModal()" title="Click to change this day's type">
+                <button type="button" class="day-view-type-card" onclick="openDayViewDayTypeModal()" title="Click to change this day's type" aria-label="Click to change this day's type">
                     <span class="day-badge ${badgeClass}">${label}</span>
                     ${scheduleType && scheduleId !== 'regular' ? `<span class="day-view-type-tag">${escapeHtml(scheduleType.label)}</span>` : ''}
                     ${hasCustom ? `<span class="day-view-type-tag day-view-type-custom">&#9998; Custom</span>` : ''}
@@ -13236,15 +13412,15 @@ body.dark-theme[data-palette="mint"] {
                 return `
                 <div class="grid grid-cols-[22px_40px_1fr_auto] items-center gap-3 text-sm py-2 settings-list-row">
                     <div class="flex flex-col gap-0.5">
-                        <button type="button" class="feed-reorder-btn" onclick="moveExternalFeed('${feed.id}', -1)" title="Move up" ${i === 0 ? 'disabled' : ''}>
+                        <button type="button" class="feed-reorder-btn" onclick="moveExternalFeed('${feed.id}', -1)" title="Move up" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7"></path></svg>
                         </button>
-                        <button type="button" class="feed-reorder-btn" onclick="moveExternalFeed('${feed.id}', 1)" title="Move down" ${i === externalFeeds.length - 1 ? 'disabled' : ''}>
+                        <button type="button" class="feed-reorder-btn" onclick="moveExternalFeed('${feed.id}', 1)" title="Move down" aria-label="Move down" ${i === externalFeeds.length - 1 ? 'disabled' : ''}>
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
                     </div>
 
-                    <button type="button" class="w-9 h-9 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" style="background:${escapeAttr(feed.color || feedColor(feed, i))};" onclick="document.getElementById('feed-color-${feed.id}').click()" title="Change feed color"></button>
+                    <button type="button" class="w-9 h-9 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" style="background:${escapeAttr(feed.color || feedColor(feed, i))};" onclick="document.getElementById('feed-color-${feed.id}').click()" title="Change feed color" aria-label="Change feed color"></button>
                     <input id="feed-color-${feed.id}" type="color" class="hidden" value="${escapeAttr(feed.color || feedColor(feed, i))}" onchange="updateExternalFeedColor('${feed.id}', this.value)">
 
                     <div class="min-w-0">
@@ -13257,7 +13433,7 @@ body.dark-theme[data-palette="mint"] {
                         <button type="button" class="modal-footer-button ${feed.enabled ? 'bg-slate-100 text-slate-900 dark:bg-slate-700 dark:text-slate-100' : 'bg-transparent border border-gray-300 text-gray-700 dark:border-gray-700 dark:text-gray-300'}" onclick="toggleExternalFeedVisibility('${feed.id}', ${!feed.enabled})">
                             ${feed.enabled ? 'Hide' : 'Show'}
                         </button>
-                        <button type="button" class="remove-class-btn p-1" onclick="removeExternalFeed('${feed.id}')" title="Remove">
+                        <button type="button" class="remove-class-btn p-1" onclick="removeExternalFeed('${feed.id}')" title="Remove" aria-label="Remove">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                         </button>
                     </div>
@@ -13940,7 +14116,7 @@ body.dark-theme[data-palette="mint"] {
             popover.onclick = (e) => { if (e.target === popover) closeGlyphPicker(); };
             window.__glyphPickerOnPick = onPick;
             popover.innerHTML = `
-                <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-lg p-6 border" onclick="event.stopPropagation()">
+                <div class="modal-content rounded-2xl shadow-2xl w-[92vw] max-w-lg p-4 sm:p-6 border" onclick="event.stopPropagation()">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold">${escapeHtml(opts.title || 'Choose an icon or emoji')}</h3>
                         <button class="text-gray-400 hover:text-gray-800 transition" onclick="closeGlyphPicker()">
@@ -13952,7 +14128,7 @@ body.dark-theme[data-palette="mint"] {
                         <input type="text" id="glyph-picker-search" class="settings-search-input" placeholder="Search icons and emoji…" autocomplete="off" oninput="renderGlyphPickerResults(this.value)">
                     </div>
                     ${opts.allowNone ? `<button type="button" class="modal-footer-button is-secondary mb-3" onclick="window.__glyphPickerOnPick(''); closeGlyphPicker();">No icon</button>` : ''}
-                    <div id="glyph-picker-results" style="max-height:55vh; overflow-y:auto;"></div>
+                    <div id="glyph-picker-results" style="max-height:55dvh; overflow-y:auto;"></div>
                 </div>
             `;
             document.body.appendChild(popover);
@@ -13975,11 +14151,11 @@ body.dark-theme[data-palette="mint"] {
             const emoji = EMOJI_LIBRARY.filter(i => !q || i.k.includes(q));
             const gridStyle = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(2.6rem, 1fr)); gap:0.5rem;';
             const iconBtn = (i) => `
-                <button type="button" title="${escapeAttr(i.key)}" onclick="window.__glyphPickerOnPick('${escapeJsAttr(i.key)}'); closeGlyphPicker();" style="width:2.6rem; height:2.6rem; border-radius:0.6rem; background:var(--glass-bg-strong); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                <button type="button" title="${escapeAttr(i.key)}" aria-label="${escapeAttr(i.key)}" onclick="window.__glyphPickerOnPick('${escapeJsAttr(i.key)}'); closeGlyphPicker();" style="width:2.6rem; height:2.6rem; border-radius:0.6rem; background:var(--glass-bg-strong); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:center; cursor:pointer;">
                     <svg width="18" height="18" viewBox="0 0 24 24"><g style="color:var(--text-primary);" fill="currentColor" stroke="currentColor">${i.svg.replace(/white/g, 'currentColor')}</g></svg>
                 </button>`;
             const emojiBtn = (i) => `
-                <button type="button" title="${escapeAttr(i.k.split(' ')[0])}" onclick="window.__glyphPickerOnPick('emoji:${escapeJsAttr(i.e)}'); closeGlyphPicker();" style="width:2.6rem; height:2.6rem; border-radius:0.6rem; background:var(--glass-bg-strong); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.3rem;">
+                <button type="button" title="${escapeAttr(i.k.split(' ')[0])}" aria-label="${escapeAttr(i.k.split(' ')[0])}" onclick="window.__glyphPickerOnPick('emoji:${escapeJsAttr(i.e)}'); closeGlyphPicker();" style="width:2.6rem; height:2.6rem; border-radius:0.6rem; background:var(--glass-bg-strong); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.3rem;">
                     ${i.e}
                 </button>`;
             container.innerHTML = `
@@ -14149,18 +14325,18 @@ body.dark-theme[data-palette="mint"] {
             container.innerHTML = calendarCategories.map((c, i) => `
                 <div class="grid grid-cols-[22px_36px_36px_1fr_auto] items-center gap-3 text-sm py-2 settings-list-row">
                     <div class="flex flex-col gap-0.5">
-                        <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategory('${escapeJsAttr(c.id)}', -1)" title="Move up" ${i === 0 ? 'disabled' : ''}>
+                        <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategory('${escapeJsAttr(c.id)}', -1)" title="Move up" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7"></path></svg>
                         </button>
-                        <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategory('${escapeJsAttr(c.id)}', 1)" title="Move down" ${i === calendarCategories.length - 1 ? 'disabled' : ''}>
+                        <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategory('${escapeJsAttr(c.id)}', 1)" title="Move down" aria-label="Move down" ${i === calendarCategories.length - 1 ? 'disabled' : ''}>
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
                     </div>
-                    <button type="button" class="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" style="background:${escapeAttr(c.color)};" onclick="document.getElementById('cat-color-${escapeAttr(c.id)}').click()" title="Change color"></button>
+                    <button type="button" class="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" style="background:${escapeAttr(c.color)};" onclick="document.getElementById('cat-color-${escapeAttr(c.id)}').click()" title="Change color" aria-label="Change color"></button>
                     <input id="cat-color-${escapeAttr(c.id)}" type="color" class="hidden" value="${escapeAttr(c.color)}" onchange="updateCalendarCategoryColor('${escapeJsAttr(c.id)}', this.value)">
-                    <button type="button" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:${escapeAttr(c.color)};" onclick="openIconPicker('${escapeJsAttr(c.id)}')" title="Change icon">${categoryIconSvg(c.id, 26)}</button>
+                    <button type="button" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:${escapeAttr(c.color)};" onclick="openIconPicker('${escapeJsAttr(c.id)}')" title="Change icon" aria-label="Change icon">${categoryIconSvg(c.id, 26)}</button>
                     <input type="text" class="feed-edit-input font-semibold" value="${escapeAttr(c.label)}" onchange="updateCalendarCategoryLabel('${escapeJsAttr(c.id)}', this.value)" title="Rename this category">
-                    <button type="button" class="remove-class-btn p-1" onclick="removeCalendarCategory('${escapeJsAttr(c.id)}')" title="${c.deletable ? 'Remove' : 'Assignment cannot be deleted'}" ${c.deletable ? '' : 'disabled style="opacity:0.3;cursor:default;"'}>
+                    <button type="button" class="remove-class-btn p-1" onclick="removeCalendarCategory('${escapeJsAttr(c.id)}')" title="${c.deletable ? 'Remove' : 'Assignment cannot be deleted'}" aria-label="${c.deletable ? 'Remove' : 'Assignment cannot be deleted'}" ${c.deletable ? '' : 'disabled style="opacity:0.3;cursor:default;"'}>
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                     </button>
                 </div>
@@ -14269,10 +14445,10 @@ body.dark-theme[data-palette="mint"] {
                 <div class="rule-row-wrap settings-list-row" style="border-radius:0.7rem; padding:0.6rem 0.75rem;">
                     <div class="flex items-start gap-2">
                         <div class="flex flex-col gap-0.5 flex-shrink-0" style="margin-top:0.15rem;">
-                            <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategoryRule('${escapeJsAttr(r.id)}', -1)" title="Move up" ${i === 0 ? 'disabled' : ''}>
+                            <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategoryRule('${escapeJsAttr(r.id)}', -1)" title="Move up" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7"></path></svg>
                             </button>
-                            <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategoryRule('${escapeJsAttr(r.id)}', 1)" title="Move down" ${i === calendarCategoryRules.length - 1 ? 'disabled' : ''}>
+                            <button type="button" class="feed-reorder-btn" onclick="moveCalendarCategoryRule('${escapeJsAttr(r.id)}', 1)" title="Move down" aria-label="Move down" ${i === calendarCategoryRules.length - 1 ? 'disabled' : ''}>
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
                         </div>
@@ -14284,7 +14460,7 @@ body.dark-theme[data-palette="mint"] {
                             <span style="color:var(--text-muted);">→ label as</span>
                             <select class="ui-select" style="font-size:0.75rem; padding:0.15rem 0.4rem;" onchange="updateCalendarCategoryRuleCategory('${escapeJsAttr(r.id)}', this.value)">${categoryOptions(r.categoryId)}</select>
                         </div>
-                        <button type="button" class="remove-class-btn p-1 flex-shrink-0" onclick="removeCalendarCategoryRule('${escapeJsAttr(r.id)}')" title="Remove rule">
+                        <button type="button" class="remove-class-btn p-1 flex-shrink-0" onclick="removeCalendarCategoryRule('${escapeJsAttr(r.id)}')" title="Remove rule" aria-label="Remove rule">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                         </button>
                     </div>
@@ -16060,10 +16236,10 @@ body.dark-theme[data-palette="mint"] {
                         </div>
                         <div class="home-due-item-actions" style="opacity:1;">
                             <span class="home-due-countdown" style="color:${cd.color || 'var(--accent-3)'};">${daysLabel}</span>
-                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="openCountdownModal('${escapeJsAttr(cd.id)}')" title="Edit countdown">
+                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="openCountdownModal('${escapeJsAttr(cd.id)}')" title="Edit countdown" aria-label="Edit countdown">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
-                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="removeCountdown('${escapeJsAttr(cd.id)}')" title="Delete countdown">
+                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="removeCountdown('${escapeJsAttr(cd.id)}')" title="Delete countdown" aria-label="Delete countdown">
                                 <svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                             </button>
                         </div>
@@ -16100,10 +16276,10 @@ body.dark-theme[data-palette="mint"] {
                             ${(info && info.url) ? `<p class="home-item-sub home-widget-extra-desc"><a href="${escapeAttr(normalizeExternalUrl(info.url))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escapeHtml(info.url)}</a></p>` : ''}
                         </div>
                         <div class="home-due-item-actions" style="opacity:1;">
-                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="openReminderModal('${escapeJsAttr(r.id)}')" title="Edit reminder">
+                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="openReminderModal('${escapeJsAttr(r.id)}')" title="Edit reminder" aria-label="Edit reminder">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
-                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="removeReminder('${escapeJsAttr(r.id)}')" title="Delete reminder">
+                            <button type="button" class="home-assignment-done-btn" style="opacity:1;" onclick="removeReminder('${escapeJsAttr(r.id)}')" title="Delete reminder" aria-label="Delete reminder">
                                 <svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                             </button>
                         </div>
@@ -16705,7 +16881,7 @@ body.dark-theme[data-palette="mint"] {
                 <div class="digest-banner">
                     <div class="digest-banner-header">
                         <p class="digest-banner-title">Recent App Updates</p>
-                        <button type="button" class="digest-dismiss-btn" onclick="dismissAppUpdatesBanner('${escapeJsAttr(latestTs)}')" title="Dismiss">&times;</button>
+                        <button type="button" class="digest-dismiss-btn" onclick="dismissAppUpdatesBanner('${escapeJsAttr(latestTs)}')" title="Dismiss" aria-label="Dismiss">&times;</button>
                     </div>
                     <p class="digest-banner-summary">${updates.length} update${updates.length === 1 ? '' : 's'} since you last checked.</p>
                     ${sectionsHtml}
@@ -16786,7 +16962,7 @@ body.dark-theme[data-palette="mint"] {
                 `;
                 html += `
                     <div class="digest-config-bar">
-                        <button type="button" class="mini-calendar-config-btn" onclick="toggleHomeDigestPanel()" title="Configure the Today and This Week digest banners">
+                        <button type="button" class="mini-calendar-config-btn" onclick="toggleHomeDigestPanel()" title="Configure the Today and This Week digest banners" aria-label="Configure the Today and This Week digest banners">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         </button>
                         <span class="digest-config-bar-label">Configure Today/This Week digests</span>
@@ -16814,7 +16990,7 @@ body.dark-theme[data-palette="mint"] {
                             </div>
                             <p class="mini-cal-config-panel-label" style="margin-top:0.7rem;">Refresh</p>
                             <p style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.5rem;">Dismissed banners come back on their own the next day/Monday. Use this to bring them back right now instead of waiting.</p>
-                            <button type="button" class="modal-footer-button is-secondary" style="font-size:0.72rem;padding:0.35rem 0.65rem;" onclick="restoreDailyDigest(); restoreWeeklyDigest();" title="Un-dismiss the Today and This Week banners now">Show dismissed banners now</button>
+                            <button type="button" class="modal-footer-button is-secondary" style="font-size:0.72rem;padding:0.35rem 0.65rem;" onclick="restoreDailyDigest(); restoreWeeklyDigest();" title="Un-dismiss the Today and This Week banners now" aria-label="Un-dismiss the Today and This Week banners now">Show dismissed banners now</button>
                         </div>
                     ` : ''}
                 `;
@@ -16857,7 +17033,7 @@ body.dark-theme[data-palette="mint"] {
                     <div class="digest-banner">
                         <div class="digest-banner-header">
                             <p class="digest-banner-title">This Week</p>
-                            <button type="button" class="digest-dismiss-btn" onclick="dismissWeeklyDigest()" title="Dismiss">&times;</button>
+                            <button type="button" class="digest-dismiss-btn" onclick="dismissWeeklyDigest()" title="Dismiss" aria-label="Dismiss">&times;</button>
                         </div>
                         <p class="digest-banner-summary">${dueCount} assignment${dueCount === 1 ? '' : 's'} due, ${eventCount} event${eventCount === 1 ? '' : 's'} this week.</p>
                         ${statsHtml}
@@ -16926,7 +17102,7 @@ body.dark-theme[data-palette="mint"] {
                     <div class="digest-item">
                         <span class="home-dot" style="background:var(--accent-2);"></span>
                         <span class="min-w-0">${escapeHtml(r.text)}</span>
-                        <button type="button" class="digest-dismiss-btn" onclick="removeReminder('${escapeJsAttr(r.id)}')" title="Delete reminder">&times;</button>
+                        <button type="button" class="digest-dismiss-btn" onclick="removeReminder('${escapeJsAttr(r.id)}')" title="Delete reminder" aria-label="Delete reminder">&times;</button>
                     </div>
                 `).join('');
                 const countdownsTodayHtml = countdownsToday.map(cd => `
@@ -16967,7 +17143,7 @@ body.dark-theme[data-palette="mint"] {
                     <div class="digest-banner">
                         <div class="digest-banner-header">
                             <p class="digest-banner-title">Today</p>
-                            <button type="button" class="digest-dismiss-btn" onclick="dismissDailyDigest()" title="Dismiss">&times;</button>
+                            <button type="button" class="digest-dismiss-btn" onclick="dismissDailyDigest()" title="Dismiss" aria-label="Dismiss">&times;</button>
                         </div>
                         ${dailyStatsHtml}
                         <p class="digest-banner-summary">${hasAny ? `${dueToday.length} due, ${eventsToday.length} event${eventsToday.length === 1 ? '' : 's'} today.` : 'Nothing due or scheduled today.'}</p>
@@ -17072,31 +17248,6 @@ body.dark-theme[data-palette="mint"] {
                 clearSimulatedDateOverride();
                 location.reload();
             });
-
-            const style = document.createElement('style');
-            style.textContent = `
-                .form-input, .form-select {
-                    width: 100%;
-                    padding: 0.75rem;
-                    background-color: #f3f4f6;
-                    border: 1px solid #d1d5db;
-                    border-radius: 0.5rem;
-                    color: #1f2937;
-                    transition: all 0.2s ease;
-                }
-                body.dark-theme .form-input, body.dark-theme .form-select {
-                    background-color: #4b5563;
-                    border-color: #6b7280;
-                    color: #f9fafb;
-                }
-                .form-input:focus, .form-select:focus {
-                    outline: none;
-                    ring-width: 2px;
-                    ring-color: #4f46e5;
-                    border-color: #4f46e5;
-                }
-            `;
-            document.head.appendChild(style);
 
             // Determine initial view from URL hash (supports deep-linking / bookmarks)
             const initialHash = location.hash.replace('#', '');
