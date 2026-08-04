@@ -7,6 +7,12 @@
     <link rel="shortcut icon" href="Resources/logo.svg" type="image/x-icon">
     <style>
         /* Applied immediately (before Tailwind/JS load) so first paint never flashes white */
+        /* Hard global ban on horizontal scrolling -- no matter what overflows somewhere deep in
+           a view (a row of buttons that doesn't wrap, a wide table, a stray fixed-width element),
+           the page itself can never grow wider than the viewport or scroll sideways. This is a
+           safety net on top of (not a replacement for) actually fixing individual overflowing
+           rows -- see the flex-wrap additions on the Home toolbar and other button rows below. */
+        html, body { overflow-x: hidden; max-width: 100vw; }
         html { background-color: #eef1f8; }
         @media (prefers-color-scheme: dark) { html { background-color: #05050a; } }
     </style>
@@ -3597,7 +3603,7 @@ body.dark-theme[data-palette="mint"] {
                             <h1 class="gradient-text text-5xl sm:text-6xl font-extrabold tracking-tight">Home</h1>
                             <h3 class="text-xl sm:text-2xl font-medium tracking-wide mt-1" id="home-time"></h3>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center justify-end gap-2">
                             <select id="home-preset-select" class="form-select" style="font-size:0.8rem;padding:0.45rem 0.7rem;width:auto;" onchange="applyHomePreset(this.value)" title="Switch to a saved layout preset (widgets, digest, and calendar preview settings all switch together)"></select>
                             <button type="button" id="home-preset-rename-button" class="modal-footer-button is-secondary hidden" style="font-size:0.75rem;padding:0.45rem 0.55rem;" onclick="renameHomePreset(loadHomePresetSelection())" title="Rename this preset">
                                 <svg style="width:0.85rem;height:0.85rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
@@ -6535,7 +6541,7 @@ body.dark-theme[data-palette="mint"] {
                                        data-category-index="${categoryIndex}"
                                        onchange="updateCategoryName(${categoryIndex}, this.value)">
                             </div>
-                            <div class="flex items-center gap-2">
+                            <div class="flex flex-wrap items-center justify-end gap-2">
                                 ${perRowSegmentedHTML(categoryIndex, category.perRow)}
                                 <button type="button" class="duplicate-category-btn text-green-500 hover:text-green-700 p-2 rounded-full hover:bg-green-100 transition" onclick="duplicateCategory(${categoryIndex})" title="Duplicate Category">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">  <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
@@ -6586,7 +6592,7 @@ body.dark-theme[data-palette="mint"] {
                                    data-category-index="${categoryIndex}"
                                    onchange="updateCategoryName(${categoryIndex}, this.value)">
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center justify-end gap-2">
                             ${perRowSegmentedHTML(categoryIndex, category.perRow)}
                             <button type="button" class="duplicate-category-btn text-green-500 hover:text-green-700 p-2 rounded-full hover:bg-green-100 transition" onclick="duplicateCategory(${categoryIndex})" title="Duplicate Category">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">  <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
@@ -11627,7 +11633,7 @@ body.dark-theme[data-palette="mint"] {
                             <p class="mini-calendar-title">Calendar</p>
                             <p class="mini-calendar-subtitle">${viewTypeLabels[viewType]} view</p>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center justify-end gap-2">
                             ${gearHtml}
                             <button type="button" class="mini-calendar-open-btn" onclick="switchAppView('calendar')">Open full calendar</button>
                         </div>

@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-08-04T01:00:00Z",
+  "title": "Horizontal scrolling banned globally, and fixed the Home edit toolbar overflow",
+  "summary": [
+    "Added a hard global rule: the page itself can never scroll or grow sideways, no matter what overflows somewhere deep in a view. This is a safety net on top of (not instead of) fixing the actual causes.",
+    "Fixed the concrete cause behind the overlapping toolbar you saw on Home in edit mode: the row of Preset/Save/Reset/Add Widget/Done controls didn't wrap, so on a phone it was forced wider than the screen. It now wraps onto multiple lines instead. Same fix applied to the matching toolbar rows in the Class Schedule Editor and the mini Calendar preview widget's header."
+  ]
+}
